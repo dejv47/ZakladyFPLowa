@@ -39,3 +39,11 @@ Po wrzuceniu tych plików na GitHub:
    - Production + Preview.
 3. Redeploy.
 4. Sprawdź `/api/live`.
+
+
+## Poprawki v2
+
+- Carrick vs Xabi Alonso = Manchester United vs Chelsea — automatyczne.
+- Maresca vs Arteta = Manchester City vs Arsenal — automatyczne.
+- De Zerbi top 4 = pozycja Tottenhamu — automatyczne.
+- Benjamin Šeško vs Ollie Watkins = G+A we wszystkich rozgrywkach klubowych — poprawione nazwy i zasada; nadal ręczne do czasu podpięcia źródła obejmującego komplet rozgrywek klubowych.

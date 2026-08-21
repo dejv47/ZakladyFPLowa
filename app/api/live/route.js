@@ -42,10 +42,22 @@ export async function GET() {
       if (b.mode === "standings-condition") {
         const s = findStanding(standings, b.live.team);
         if (!s) return { ...base, liveText: "Brak danych drużyny" };
+
+        let conditionMet = false;
+        if (b.live.condition === "outsideTop4") conditionMet = s.rank > 4;
+        if (b.live.condition === "top4") conditionMet = s.rank <= 4;
+
+        let leader = null;
+        if (b.live.yes && b.live.no) {
+          leader = conditionMet ? b.live.yes : b.live.no;
+        } else if (b.live.condition === "outsideTop4") {
+          leader = conditionMet ? "Pachana" : "Dejv";
+        }
+
         return {
           ...base,
           liveText: `${s.team}: ${s.rank}. miejsce • ${s.points} pkt • ${s.played} meczów`,
-          leader: s.rank > 4 ? "Pachana" : "Dejv"
+          leader
         };
       }
 
