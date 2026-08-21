@@ -1,52 +1,41 @@
-# Zakłady Live
+# Zakłady Live — football-data.org
 
-Gotowa strona pod Next.js + Vercel z 15 zakładami.
+Ta wersja nie używa API-Football. Korzysta z football-data.org.
 
-## Co działa automatycznie
+## Zmienna środowiskowa
 
-Po dodaniu klucza API-Football:
-- tabela Premier League 2026/27,
-- Man City poza / w top 4,
-- Tottenham vs Liverpool,
-- Tottenham vs Bournemouth,
-- Manchester United vs Manchester City (czy United wygrał któryś ligowy mecz),
-- G+A Haaland vs Isak,
-- G+A Cherki vs Gibbs-White,
-- G+A Cherki vs Saka,
-- gole Haalanda vs próg 30,
-- Haaland G+A vs Isak + Gyökeres G+A.
+W Vercel dodaj:
 
-Dane są cache'owane na 6 godzin, żeby nie przepalać darmowego limitu API.
+FOOTBALL_DATA_TOKEN=TWÓJ_TOKEN
 
-## Zakłady wymagające doprecyzowania / ręczne
+Możesz usunąć starą zmienną API_FOOTBALL_KEY — nie jest już używana.
 
-- Resovia — awans,
-- Carrick vs Xabi Alonso — trzeba wskazać kluby,
-- Maresca vs Arteta/Bordelas — trzeba wskazać kluby,
-- Šeško vs Watkins wszystkie rozgrywki — trzeba ustalić jedno źródło wszystkich rozgrywek,
-- FPL kolejka 1 — trzeba wskazać zawodników,
-- De Zerbi top 4 — trzeba wskazać klub.
+## Co pobieramy automatycznie
 
-## Uruchomienie lokalnie
+Na jedno odświeżenie backend pobiera tylko:
+1. aktualną tabelę Premier League,
+2. mecze aktualnego sezonu Premier League,
+3. listę scorerów Premier League (limit 100).
 
-1. Zainstaluj Node.js 20+.
-2. W katalogu projektu:
-   npm install
-3. Skopiuj:
-   .env.example -> .env.local
-4. Załóż darmowe konto API-Football i wpisz:
-   API_FOOTBALL_KEY=TWÓJ_KLUCZ
-5. Uruchom:
-   npm run dev
-6. Otwórz:
-   http://localhost:3000
+football-data.org bez parametru `season` zwraca aktualny sezon.
 
-## Publikacja na Vercel
+## Ważne
 
-1. Wrzuć projekt na GitHub.
-2. Na Vercel wybierz "Add New Project" i repozytorium.
-3. W Project Settings -> Environment Variables dodaj:
-   API_FOOTBALL_KEY
-4. Deploy.
+Endpoint `scorers` zwraca ranking scorerów, a nie pełną listę wszystkich zawodników.
+Jeżeli na samym początku sezonu zawodnik nie znajduje się jeszcze w tym zestawieniu,
+strona może wyświetlić "brak na liście scorerów". Dla zakładu Haaland vs Isak + Gyökeres
+brakujący zawodnik jest liczony chwilowo jako 0 G+A.
 
-Nie używaj nazwy NEXT_PUBLIC_API_FOOTBALL_KEY — klucz ma zostać wyłącznie po stronie serwera.
+Zakład Haaland vs Isak z warunkiem minimum 2250 minut nadal wymaga końcowej weryfikacji
+minut według Transfermarkt, zgodnie z ustaloną zasadą.
+
+## Deploy
+
+Po wrzuceniu tych plików na GitHub:
+1. Vercel automatycznie zrobi deployment.
+2. Settings → Environment Variables:
+   - dodaj FOOTBALL_DATA_TOKEN,
+   - wklej token z football-data.org,
+   - Production + Preview.
+3. Redeploy.
+4. Sprawdź `/api/live`.
