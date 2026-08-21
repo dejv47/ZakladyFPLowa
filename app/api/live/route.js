@@ -32,6 +32,7 @@ export async function GET() {
         amount: money(b.amount),
         note: b.note,
         mode: b.mode,
+        manualType: b.manualType ?? null,
         status: "Trwa",
         liveText: "Ręczne rozliczenie",
         leader: null

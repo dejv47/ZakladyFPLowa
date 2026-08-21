@@ -2,18 +2,177 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { bets } from "../lib/bets";
+import { supabase } from "../lib/supabase";
 
 function money(n) {
   return `${n.toFixed(2).replace(".", ",")} zł`;
 }
 
+function defaultsFor(type) {
+  if (type === "resovia") {
+    return { status: "Trwa", note: "" };
+  }
+  if (type === "sesko-watkins") {
+    return { seskoGoals: 0, seskoAssists: 0, watkinsGoals: 0, watkinsAssists: 0 };
+  }
+  if (type === "fpl") {
+    return { dejv: 0, radek: 0, note: "" };
+  }
+  return {};
+}
+
+function manualText(type, value) {
+  const v = { ...defaultsFor(type), ...(value || {}) };
+
+  if (type === "resovia") {
+    return v.note ? `${v.status} • ${v.note}` : v.status;
+  }
+
+  if (type === "sesko-watkins") {
+    const s = Number(v.seskoGoals || 0) + Number(v.seskoAssists || 0);
+    const w = Number(v.watkinsGoals || 0) + Number(v.watkinsAssists || 0);
+    return `Benjamin Šeško: ${v.seskoGoals || 0}G + ${v.seskoAssists || 0}A = ${s} G+A — Ollie Watkins: ${v.watkinsGoals || 0}G + ${v.watkinsAssists || 0}A = ${w} G+A`;
+  }
+
+  if (type === "fpl") {
+    return `Dejv: ${v.dejv || 0} pkt — Radek: ${v.radek || 0} pkt${v.note ? ` • ${v.note}` : ""}`;
+  }
+
+  return "Ręczne rozliczenie";
+}
+
+function manualLeader(type, value) {
+  const v = { ...defaultsFor(type), ...(value || {}) };
+
+  if (type === "sesko-watkins") {
+    const s = Number(v.seskoGoals || 0) + Number(v.seskoAssists || 0);
+    const w = Number(v.watkinsGoals || 0) + Number(v.watkinsAssists || 0);
+    if (s > w) return "Dejv";
+    if (w > s) return "Kuchnia";
+    return "Remis";
+  }
+
+  if (type === "fpl") {
+    const d = Number(v.dejv || 0);
+    const r = Number(v.radek || 0);
+    if (d > r) return "Dejv";
+    if (r > d) return "Radek";
+    return "Remis";
+  }
+
+  return null;
+}
+
+function ManualEditor({ betId, type, value, onSaved }) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState({ ...defaultsFor(type), ...(value || {}) });
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  useEffect(() => {
+    setForm({ ...defaultsFor(type), ...(value || {}) });
+  }, [type, value]);
+
+  async function save() {
+    if (!supabase) {
+      setMsg("Brak konfiguracji Supabase.");
+      return;
+    }
+
+    setSaving(true);
+    setMsg("");
+
+    const { error } = await supabase
+      .from("manual_bets")
+      .upsert(
+        {
+          bet_id: betId,
+          data: form,
+          updated_at: new Date().toISOString()
+        },
+        { onConflict: "bet_id" }
+      );
+
+    setSaving(false);
+
+    if (error) {
+      setMsg(error.message);
+      return;
+    }
+
+    setMsg("Zapisano");
+    setEditing(false);
+    onSaved?.(betId, form);
+  }
+
+  if (!editing) {
+    return (
+      <button className="editBtn" type="button" onClick={() => setEditing(true)}>
+        Edytuj wynik
+      </button>
+    );
+  }
+
+  return (
+    <div className="editor">
+      {type === "sesko-watkins" && (
+        <>
+          <div className="editorGroup">
+            <strong>Benjamin Šeško</strong>
+            <label>Gole<input type="number" min="0" value={form.seskoGoals ?? 0} onChange={e => setForm({ ...form, seskoGoals: Number(e.target.value) })} /></label>
+            <label>Asysty<input type="number" min="0" value={form.seskoAssists ?? 0} onChange={e => setForm({ ...form, seskoAssists: Number(e.target.value) })} /></label>
+          </div>
+
+          <div className="editorGroup">
+            <strong>Ollie Watkins</strong>
+            <label>Gole<input type="number" min="0" value={form.watkinsGoals ?? 0} onChange={e => setForm({ ...form, watkinsGoals: Number(e.target.value) })} /></label>
+            <label>Asysty<input type="number" min="0" value={form.watkinsAssists ?? 0} onChange={e => setForm({ ...form, watkinsAssists: Number(e.target.value) })} /></label>
+          </div>
+        </>
+      )}
+
+      {type === "fpl" && (
+        <div className="editorGroup">
+          <label>Dejv — pkt<input type="number" min="0" value={form.dejv ?? 0} onChange={e => setForm({ ...form, dejv: Number(e.target.value) })} /></label>
+          <label>Radek — pkt<input type="number" min="0" value={form.radek ?? 0} onChange={e => setForm({ ...form, radek: Number(e.target.value) })} /></label>
+          <label className="wide">Uwagi<input type="text" value={form.note ?? ""} onChange={e => setForm({ ...form, note: e.target.value })} /></label>
+        </div>
+      )}
+
+      {type === "resovia" && (
+        <div className="editorGroup">
+          <label className="wide">
+            Status
+            <select value={form.status ?? "Trwa"} onChange={e => setForm({ ...form, status: e.target.value })}>
+              <option>Trwa</option>
+              <option>Aktualnie awansuje</option>
+              <option>Aktualnie nie awansuje</option>
+              <option>TAK — awansowała</option>
+              <option>NIE — nie awansowała</option>
+              <option>Anulowany</option>
+            </select>
+          </label>
+          <label className="wide">Uwagi<input type="text" value={form.note ?? ""} onChange={e => setForm({ ...form, note: e.target.value })} /></label>
+        </div>
+      )}
+
+      <div className="editorActions">
+        <button type="button" className="saveBtn" disabled={saving} onClick={save}>{saving ? "Zapisuję…" : "Zapisz"}</button>
+        <button type="button" className="cancelBtn" onClick={() => setEditing(false)}>Anuluj</button>
+        {msg && <span>{msg}</span>}
+      </div>
+    </div>
+  );
+}
+
 export default function Home() {
   const [data, setData] = useState(null);
+  const [manual, setManual] = useState({});
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState("Wszystkie");
 
-  async function load() {
+  async function loadLive() {
     setLoading(true);
     setError("");
     try {
@@ -28,15 +187,33 @@ export default function Home() {
     }
   }
 
-  useEffect(() => { load(); }, []);
+  async function loadManual() {
+    if (!supabase) return;
+    const { data: rows } = await supabase.from("manual_bets").select("bet_id,data");
+    const map = {};
+    (rows || []).forEach(r => { map[r.bet_id] = r.data; });
+    setManual(map);
+  }
 
-  const rows = data?.results ?? bets.map(b => ({
+  useEffect(() => {
+    loadLive();
+    loadManual();
+  }, []);
+
+  const rows = (data?.results ?? bets.map(b => ({
     ...b,
     amount: money(b.amount),
     status: "Trwa",
     liveText: b.mode === "manual" ? "Ręczne rozliczenie" : "Czeka na API",
     leader: null
-  }));
+  }))).map(b => {
+    if (b.mode !== "manual") return b;
+    return {
+      ...b,
+      liveText: manualText(b.manualType, manual[b.id]),
+      leader: manualLeader(b.manualType, manual[b.id])
+    };
+  });
 
   const people = useMemo(() => {
     const map = {};
@@ -61,14 +238,14 @@ export default function Home() {
           <h1>Zakłady</h1>
           <p className="sub">Aktualne wyniki, tabela i kanadyjka w jednym miejscu.</p>
         </div>
-        <button className="refresh" onClick={load} disabled={loading}>
+        <button className="refresh" onClick={() => { loadLive(); loadManual(); }} disabled={loading}>
           {loading ? "Odświeżam…" : "Odśwież"}
         </button>
       </section>
 
       {error && (
         <div className="warning">
-          <strong>Dane live jeszcze nie są podłączone.</strong>
+          <strong>Nie udało się pobrać danych live.</strong>
           <span>{error}</span>
         </div>
       )}
@@ -104,6 +281,16 @@ export default function Home() {
             </div>
 
             {b.note && <p className="note">{b.note}</p>}
+
+            {b.mode === "manual" && b.manualType && (
+              <ManualEditor
+                betId={b.id}
+                type={b.manualType}
+                value={manual[b.id]}
+                onSaved={(id, value) => setManual(prev => ({ ...prev, [id]: value }))}
+              />
+            )}
+
             <div className="status">
               <span className={b.mode === "manual" ? "dot manual" : "dot"} />
               {b.mode === "manual" ? "Ręczne" : "Automatyczne"}
@@ -132,7 +319,7 @@ export default function Home() {
       <footer>
         {data?.updatedAt
           ? `Ostatnie pobranie danych: ${new Date(data.updatedAt).toLocaleString("pl-PL")}`
-          : "Po dodaniu klucza API dane sportowe będą aktualizowane automatycznie."}
+          : "Po podłączeniu API dane sportowe będą aktualizowane automatycznie."}
       </footer>
     </main>
   );

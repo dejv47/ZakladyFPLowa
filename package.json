@@ -10,6 +10,7 @@
   "dependencies": {
     "next": "15.5.7",
     "react": "19.1.2",
-    "react-dom": "19.1.2"
+    "react-dom": "19.1.2",
+    "@supabase/supabase-js": "2.57.4"
   }
 }
