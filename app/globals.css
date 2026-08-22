@@ -644,3 +644,10 @@ body::after {
 .pressReply,.communityNote,.jugLeader{margin-top:14px;padding:16px;border-radius:16px;background:rgba(255,255,255,.065);border:1px solid rgba(255,255,255,.12)}
 .pressReply p,.communityNote p{line-height:1.6}.communityNote{border-left:4px solid #22c55e}.communityNote small,.jugRow small{display:block;opacity:.6;margin-top:4px}.sectionLead{opacity:.72}
 .jugLeader{text-align:center}.jugLeader h3{font-size:1.7rem;margin:8px}.jugTable{margin-top:12px}.jugRow{display:grid;grid-template-columns:42px 1fr auto;gap:10px;align-items:center;padding:11px 4px;border-bottom:1px solid rgba(255,255,255,.08)}
+
+.conferenceNotesLayout{display:grid;grid-template-columns:minmax(300px,.72fr) minmax(0,1.45fr);gap:18px;align-items:start;grid-column:1/-1}
+.notesSticky{position:sticky;top:14px;max-height:calc(100vh - 28px);overflow:auto;scrollbar-width:thin}
+.notesSticky .communityNote{margin-top:10px;padding:13px}
+.notesSticky .communityNote p{font-size:.92rem;line-height:1.5}
+.notesSticky .sectionLead{font-size:.84rem}
+@media(max-width:900px){.conferenceNotesLayout{grid-template-columns:1fr}.notesSticky{position:static;max-height:none;overflow:visible}}

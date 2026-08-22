@@ -521,14 +521,48 @@ function v39RivalReplies(data){
 }
 function V39RivalReplies({data}){const rows=v39RivalReplies(data);return <Card title="🎙️ Pomeczowe odpowiedzi rywali"><p className="sectionLead">Konferencja się skończyła, ale rywale oczywiście dalej mają coś do powiedzenia.</p>{rows.map((x,i)=><div className="pressReply" key={i}><b>{x.b.manager} odpowiada {x.a.manager}</b><p>{x.text}</p></div>)}</Card>}
 
-function v39Notes(data){const ps=[...(data?.managerProfiles||data?.grades||[])],gw=shameNum(data?.gw)||1;return ps.map(p=>{let t,bench=shameNum(p.benchSeason),hits=shameNum(p.hitSeason),pts=shameNum(p.gwPoints),avg=shameNum(p.avg3),rank=gwRank(p,ps);
- if(hits>=8)t=`Menedżer opowiada o planie, ale oddał już ${hits} pkt za hity. Czytelnicy uznali, że ten drobny rozpierdol finansowy warto dopisać.`;
- else if(bench>=20)t=`Wypowiedź pomija ${bench} pkt zostawionych w sezonie na ławce. Dość istotny szczegół jak na człowieka przekonanego o własnym geniuszu.`;
- else if(rank===1)t=`Kontekst częściowo potwierdza kozaczenie: ${pts} pkt to najlepszy wynik GW${gw}. Nie daje to jednak licencji na pierdolenie głupot do końca sezonu.`;
- else if(pts<avg)t=`${p.manager} zdobył ${pts} pkt przy średniej ${avg} z ostatnich 3 GW. Opowieść o pełnej kontroli jest więc, delikatnie mówiąc, naciągana.`;
- else t=`Fakty: ${pts} pkt i ${rank}. wynik GW${gw}. Reszta wypowiedzi pozostaje opinią człowieka emocjonalnie związanego z własnymi transferami.`;
- return {p,t}})}
-function V39Notes({data}){return <Card title="📝 Community Notes"><p className="sectionLead">Czytelnicy prostują konferencyjne pierdolenie za pomocą danych.</p>{v39Notes(data).map((x,i)=><div className="communityNote" key={i}><b>👥 Kontekst do wypowiedzi: {x.p.manager}</b><p>{x.t}</p><small>Notatka uznana za pomocną przez osoby posiadające kalkulator.</small></div>)}</Card>}
+function noteHash(text){let h=2166136261;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)}return Math.abs(h>>>0)}
+function contextualCommunityNote(p,quote,gw,index,league){
+ const pts=shameNum(p.gwPoints),avg=shameNum(p.avg3),bench=shameNum(p.benchSeason),hits=shameNum(p.hitSeason),rank=gwRank(p,league);
+ const mood=conferenceMood(p,league),q=(quote||"").toLowerCase();
+ const facts=[];
+ if(bench>0) facts.push(`${bench} pkt pozostawionych na ławce w sezonie`);
+ if(hits>0) facts.push(`${hits} pkt wydanych na hity`);
+ facts.push(`${pts} pkt w GW${gw}`);
+ facts.push(`${rank}. wynik tej kolejki`);
+ if(avg) facts.push(`średnia ${avg} pkt z ostatnich 3 GW`);
+
+ let angle;
+ if(q.includes("pech")) angle="Menedżer próbuje wcisnąć do zeznań słowo „pech”, ale liczby nie potwierdzają, że cały ten burdel spadł z nieba.";
+ else if(q.includes("plan")||q.includes("proces")) angle="Wypowiedź mocno eksponuje „plan” i „proces”. Czytelnicy sprawdzili więc, jak ten plan wygląda po zderzeniu z tabelą.";
+ else if(q.includes("genius")||q.includes("kozacz")||q.includes("zadowol")) angle="Ton wypowiedzi sugeruje, że za chwilę trzeba będzie odsłonić pomnik menedżera. Redakcja postanowiła sprawdzić, czy liczby również stoją na baczność.";
+ else if(q.includes("transfer")) angle="Ponieważ menedżer sam wszedł na temat transferów, wypada dopisać kontekst, którego konferencja bardzo wygodnie nie wyświetla wielkimi literami.";
+ else if(q.includes("kapitan")) angle="W konferencji pojawia się temat opaski. Community Notes przypomina, że narracja po fakcie jest zawsze łatwiejsza niż kliknięcie właściwego kapitana przed deadlinem.";
+ else if(q.includes("ław")) angle="Skoro padł temat ławki, czytelnicy otworzyli kartotekę. Wynik dochodzenia niekoniecznie spodoba się oskarżonemu.";
+ else if(mood==="great") angle="Menedżer przemawia jak człowiek, który właśnie rozjebał ligę na zawsze. Dane potwierdzają świetną GW, ale nie przyznają jeszcze immunitetu od przyszłego spierdolenia.";
+ else if(mood==="good") angle="Konferencja jest pewna siebie, choć jeszcze bez zamawiania autobusu na paradę. Liczby faktycznie dają podstawy do zadowolenia.";
+ else if(mood==="bad") angle="Menedżer brzmi jak człowiek po przesłuchaniu i tym razem statystyki nie oferują mu szczególnie mocnego alibi.";
+ else if(mood==="awful") angle="Wypowiedź sugeruje miejsce zbrodni. Po sprawdzeniu danych Community Notes potwierdza: taśma policyjna wokół składu nie byłaby przesadą.";
+ else angle="Wypowiedź jest ostrożna, więc zamiast dorabiać dramat, dopisujemy konkretny kontekst liczbowy.";
+
+ const uniqueClosers=[
+  `W aktach zostaje: ${facts[(index+gw)%facts.length]} oraz ${facts[(index+gw+2)%facts.length]}. Reszta to już konferencyjne pierdolenie.`,
+  `Najważniejszy przypis do tej przemowy: ${facts[(index*2+gw)%facts.length]}. Tego mikrofon jakoś sam nie powiedział.`,
+  `Dla ludzi, którzy wolą liczby od teatru: ${facts[(index+1)%facts.length]}; dodatkowo ${facts[(index+3)%facts.length]}.`,
+  `Community Notes dopisuje na marginesie: ${facts[(gw+2*index)%facts.length]}. Można kozaczyć dalej, ale już z pełnym materiałem dowodowym.`,
+  `Po odjęciu PR-u zostaje ${facts[(gw+index+1)%facts.length]}. Ten szczegół zmienia wydźwięk całej przemowy bardziej niż menedżer chciałby przyznać.`,
+  `Weryfikacja faktów kończy się wpisem: ${facts[(index+4)%facts.length]}. Czytelnik sam zdecyduje, czy to geniusz, pech czy zwykłe odpierdalanie.`,
+  `Redakcja nie ocenia intencji, tylko przypomina: ${facts[(gw*2+index)%facts.length]}. To dość niewygodny przypis do powyższego monologu.`,
+  `Do protokołu trafia ${facts[(gw+index*3)%facts.length]}. Konferencja brzmi odrobinę inaczej, kiedy obok położy się kalkulator.`
+ ];
+ const seed=noteHash(`${p.entry}|${gw}|${quote}|${index}`);
+ return `${angle} ${uniqueClosers[seed%uniqueClosers.length]}`;
+}
+function V39Notes({data}){
+ const league=data?.grades||[];
+ return <Card title="📝 Community Notes"><p className="sectionLead">Notatka siedzi obok konkretnej konferencji i odnosi się do tego, co naprawdę powiedział dany menedżer.</p>
+ {league.map((x,i)=>{const quote=pressQuote(x,data.gw,i,league);return <div className="communityNote" key={`${x.entry}-${data.gw}`}><b>👥 Kontekst do wypowiedzi: {x.manager}</b><p>{contextualCommunityNote(x,quote,data.gw,i,league)}</p><small>Zweryfikowano na podstawie aktualnych danych ligi i treści wypowiedzi.</small></div>})}</Card>
+}
 
 function v39Jug(data){return [...(data?.managerProfiles||data?.grades||[])].map(p=>{let bench=shameNum(p.benchSeason),hits=shameNum(p.hitSeason),avg=shameNum(p.avg3),gw=shameNum(p.gwPoints);let score=Math.max(0,Math.round(bench*.55+hits*1.35+Math.max(0,50-avg)*.45+Math.max(0,45-gw)*.15));let why=[];if(bench)why.push(`${bench} pkt na ławce`);if(hits)why.push(`${hits} pkt hitów`);if(avg<45)why.push(`forma ${avg}`);return {...p,jugScore:score,jugWhy:why}}).sort((a,b)=>b.jugScore-a.jugScore)}
 function V39Jug({data}){const r=v39Jug(data),l=r[0];return <Card title="🏆 Złoty Dzban sezonu"><p className="sectionLead">Całosezonowa tabela kompromitacji — głównie ławka, hity i długotrwała chujowa forma.</p>{l&&<div className="jugLeader"><span>👑 AKTUALNY LIDER DZBANA</span><h3>{l.manager}</h3><strong>{l.jugScore} pkt dzbana</strong><p>{l.jugWhy.join(" • ")||"Podejrzanie czysta kartoteka"}</p></div>}<div className="jugTable">{r.map((x,i)=><div className="jugRow" key={x.entry}><span>#{i+1}</span><div><b>{x.manager}</b><small>{x.team}</small></div><strong>{x.jugScore}</strong></div>)}</div></Card>}
@@ -627,7 +661,6 @@ export default function FPLPage(){
      <PostMatchStudio data={data}/>
      <section className="megaGrid studioExtras">
        <V39RivalReplies data={data}/>
-       <V39Notes data={data}/>
        <V39Jug data={data}/>
      </section>
    </>}
@@ -657,9 +690,12 @@ export default function FPLPage(){
      <Card title={data.gw>=38&&data.gwFinished?"🏁 FPLowa Awards — GALA FINAŁOWA":"🏆 FPLowa Awards — stan na dziś"}>
        <div className="awardGallery">{data.seasonAwards.map((x,i)=><div className="awardBig" key={i}><span>{x.icon}</span><div><b>{x.name}</b><strong>{x.manager}</strong><small>{x.team} • {x.value}</small></div></div>)}</div>
      </Card>
-     <Card title="🎙️ Konferencja prasowa">
-       {data.grades.map((x,i)=><blockquote key={x.entry}><div className="pressSpeaker"><span>🎙️</span><div><b>{x.manager}</b><small>{x.team}</small></div></div>{pressQuote(x,data.gw,i,data.grades)}<small>{pressReaction(x,data.gw,i,data.grades)}</small></blockquote>)}
-     </Card>
+     <div className="conferenceNotesLayout">
+       <div className="notesSticky"><V39Notes data={data}/></div>
+       <Card title="🎙️ Konferencja prasowa">
+         {data.grades.map((x,i)=><blockquote key={x.entry}><div className="pressSpeaker"><span>🎙️</span><div><b>{x.manager}</b><small>{x.team}</small></div></div>{pressQuote(x,data.gw,i,data.grades)}<small>{pressReaction(x,data.gw,i,data.grades)}</small></blockquote>)}
+       </Card>
+     </div>
    </section>}
  </main>
  </>
