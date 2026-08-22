@@ -836,29 +836,157 @@ function contextualCommunityNote(p,quote,gw,index,league){
  const pts=shameNum(p.gwPoints),avg=shameNum(p.avg3),bench=shameNum(p.benchSeason),hits=shameNum(p.hitSeason),rank=gwRank(p,league);
  const mood=conferenceMood(p,league),theme=noteTheme(quote,mood);
  const voice=EXTREME_NOTE_VOICES[index%EXTREME_NOTE_VOICES.length];
-
- // Manager-specific themed sentence:
  const opener=voice[theme](p);
 
- // GW-specific sentence (38 unique variants across the season):
- const gwIndex=Math.max(0,Math.min(37,(Number(gw)||1)-1));
- const seasonSentence=GW_NOTE_SIGNATURES[gwIndex];
+ // IMPORTANT: no shared GW boilerplate and no "this will never be reused" sentence.
+ // Every manager gets a different facts/closer construction. GW changes the selected
+ // construction inside that manager's private family, so the wording changes next round too.
+ const families=[
+  [
+   `Po sprawdzeniu liczb ${p.manager} ma ${pts} pkt w GW${gw} i ${rank}. wynik rundy. Przy ${bench} pkt zostawionych sezonowo na ławce oraz ${hits} pkt wydanych na hity ciężko udawać, że wszystkie ślady prowadzą wyłącznie do pecha.`,
+   `GW${gw} dopisuje ${p.manager} wynik ${pts} pkt i pozycję ${rank}. Forma ${avg} nie daje jeszcze prawa do przepisywania historii, zwłaszcza gdy w tle leży ${bench} pkt ławki i ${hits} pkt kosztów transferowych.`,
+   `${p.manager} kończy tę rundę z ${pts} pkt. To ${rank}. rezultat w lidze; obok niego leżą ${bench} pkt z ławki i ${hits} pkt hitów, więc konferencyjna wersja wydarzeń ma kilka bardzo niewygodnych przypisów.`
+  ],
+  [
+   `Akta ${p.manager} po GW${gw} są proste: ${pts} pkt, miejsce ${rank}, średnia ${avg}. Do teczki dochodzi ${bench} pkt ławki i ${hits} pkt hitów — materiał wystarczający, żeby nie kupować każdej wymówki jak ostatni frajer.`,
+   `Śledczy odnotowują u ${p.manager} ${pts} pkt i ${rank}. lokatę tej kolejki. ${bench} pkt na ławce oraz ${hits} kosztów transferowych nie są dowodem spisku; bardziej przypominają odciski palców właściciela konta.`,
+   `Protokół GW${gw} dla ${p.manager}: wynik ${pts}, pozycja ${rank}, forma ${avg}. Jeśli obrona chce zwalić wszystko na okoliczności, najpierw musi wyjaśnić ${bench} pkt rezerwowych i ${hits} pkt oddanych za ruchy.`
+  ],
+  [
+   `Bilans medyczny ${p.manager}: ${pts} pkt w GW${gw}, ${rank}. miejsce i forma ${avg}. Dodatkowe objawy to ${bench} pkt zalegających na ławce oraz ${hits} pkt hitów; lekarz nadal podejrzewa przewlekłą ekspozycję na własne decyzje.`,
+   `${p.manager} przynosi dziś ${pts} pkt i ${rank}. wynik rundy. Przy ${bench} pkt ławkowych i ${hits} pkt kosztów transferowych diagnoza „wszystko przez FPL” jest zdecydowanie zbyt wygodna.`,
+   `Badanie kontrolne po GW${gw}: ${p.manager} — ${pts} pkt, pozycja ${rank}, średnia ${avg}. Wyniki laboratoryjne pokazują też ${bench} pkt na rezerwie i ${hits} pkt hitów; samoleczenie składu nadal niewskazane.`
+  ],
+  [
+   `Raport zarządu ${p.manager} pokazuje ${pts} pkt w GW${gw} i ${rank}. miejsce. ${bench} pkt niewykorzystanych aktywów oraz ${hits} pkt kosztów ruchów sprawiają, że dział PR ma dziś więcej roboty niż dział sportowy.`,
+   `${p.manager} zamyka rundę z KPI na poziomie ${pts} pkt i lokatą ${rank}. W bilansie nadal widnieje ${bench} pkt ławki i ${hits} pkt hitów, więc kreatywna księgowość narracji ma swoje granice.`,
+   `Audyt operacyjny ${p.manager}: ${pts} pkt, #${rank} kolejki, forma ${avg}. Straty uboczne wynoszą ${bench} pkt na ławce i ${hits} pkt za transfery; akcjonariusze mogą być lekko wkurwieni.`
+  ],
+  [
+   `Prognoza dla ${p.manager} po GW${gw}: ${pts} pkt i ${rank}. miejsce. Nad ławką utrzymuje się front ${bench} niewykorzystanych punktów, a z kierunku transferów nadciąga ${hits} pkt kosztów — pogoda na wymówki średnia.`,
+   `${p.manager} zebrał ${pts} pkt, co daje ${rank}. wynik rundy. Radar pokazuje jeszcze ${bench} pkt na ławce i ${hits} pkt hitów; jeśli to wszystko ma być „przypadek”, przypadek jest wyjątkowo dobrze zorganizowany.`,
+   `Po GW${gw} nad ekipą ${p.manager} mamy ${pts} pkt, pozycję ${rank} i formę ${avg}. Lokalnie występują opady ${bench} punktów ławkowych oraz porywy ${hits} punktów transferowego chaosu.`
+  ],
+  [
+   `Telemetria ${p.manager} po GW${gw}: ${pts} pkt, ${rank}. czas rundy, forma ${avg}. W garażu zostało ${bench} pkt, a niepotrzebne pit stopy kosztowały ${hits}; kierowca może narzekać na tor, ale dane są bezlitosne.`,
+   `${p.manager} dowiózł ${pts} pkt i ${rank}. miejsce. ${bench} pkt zostało w garażu, ${hits} stracono na dodatkowych zjazdach — strategia może się tłumaczyć, stoper nie.`,
+   `Weekend wyścigowy ${p.manager} kończy się ${pts} pkt i lokatą ${rank}. Przy ${bench} pkt niewypuszczonych na tor i ${hits} pkt kosztów pit wall powinien może mniej gadać, a więcej patrzeć w telemetrię.`
+  ],
+  [
+   `QA sprawdziło build ${p.manager}: GW${gw} daje ${pts} pkt i ${rank}. miejsce. ${bench} pkt siedzi poza produkcją, ${hits} pkt zjadły hotfixy; root cause nie wygląda na tajemniczy bug.`,
+   `Produkcja ${p.manager} zwraca ${pts} pkt, rank ${rank} i formę ${avg}. Backlog zawiera ${bench} pkt ławki, a nieprzetestowane zmiany kosztowały ${hits}; ticket z wymówką zostaje odrzucony.`,
+   `Logi po GW${gw}: ${p.manager} — ${pts} pkt, #${rank}. ${bench} pkt nie zostało wdrożonych do XI, ${hits} pkt poszło na transferowe poprawki; system działa dokładnie tak, jak skonfigurował go użytkownik.`
+  ],
+  [
+   `Sprawdzian ${p.manager} po GW${gw}: ${pts} pkt i ${rank}. miejsce. W brudnopisie zostało ${bench} pkt z ławki, a za dodatkowe poprawki odjęto ${hits}; nauczyciel naprawdę nie musi wymyślać złośliwego komentarza.`,
+   `${p.manager} oddaje kartkę z wynikiem ${pts} pkt, co daje ${rank}. lokatę. ${bench} pkt poprawnych odpowiedzi zostało na marginesie, ${hits} pkt kosztowało poprawianie pracy — ocena pisze się sama.`,
+   `Dziennik dla ${p.manager}: GW${gw} — ${pts} pkt, miejsce ${rank}, forma ${avg}. Do uwag trafia ${bench} pkt na ławce i ${hits} pkt hitów; rodziców na razie nie wzywamy, ale numer mamy.`
+  ],
+  [
+   `Kuchnia ${p.manager} podała w GW${gw} ${pts} pkt, czyli ${rank}. wynik wieczoru. ${bench} pkt zostało w lodówce, a ${hits} pkt kosztowało poprawianie przepisu; krytyk ma pełne prawo zapytać, kto tu kurwa układa menu.`,
+   `${p.manager} serwuje ${pts} pkt i miejsce ${rank}. Na zapleczu kisi się ${bench} pkt ławki, a eksperymenty transferowe zabrały ${hits}; trudno zwalić cały smak tego dania na składniki.`,
+   `Rachunek z restauracji ${p.manager}: ${pts} pkt, #${rank}, forma ${avg}. Niewydane na salę ${bench} pkt i ${hits} pkt kosztów kuchennych pokazują, że szef nadal lubi komplikować prosty przepis.`
+  ],
+  [
+   `Kasyno podlicza ${p.manager}: ${pts} pkt w GW${gw}, ${rank}. miejsce. ${bench} pkt zostało przy stoliku rezerwowych, a ${hits} pkt wrzucono w dodatkowe zakłady; krupier nie musi nawet oszukiwać.`,
+   `${p.manager} wychodzi z rundy z ${pts} pkt i pozycją ${rank}. Na boku leży ${bench} pkt niewykorzystanych żetonów, ${hits} pkt pochłonęły kolejne ruchy — hazardzista nadal twierdzi, że ma system.`,
+   `Bilans stołu ${p.manager}: ${pts} pkt, #${rank}, średnia ${avg}. ${bench} pkt zostało poza grą, ${hits} pkt kosztowało gonienie wyniku; kasyno uprzejmie dziękuje za dalszą współpracę.`
+  ],
+  [
+   `Tabloid sprawdził ${p.manager}: ${pts} PKT W GW${gw}, MIEJSCE ${rank}! Do tego ${bench} pkt na ławce i ${hits} pkt hitów — tym razem nawet caps lock nie musi niczego zmyślać.`,
+   `SZOKUJĄCE LICZBY ${p.manager.toUpperCase()}: ${pts} pkt, #${rank}, forma ${avg}, ławka ${bench}, hity ${hits}. Nagłówek brzmi głupio, ale przynajmniej dane są prawdziwe.`,
+   `TYLKO U NAS: ${p.manager} ma ${pts} pkt i ${rank}. wynik GW${gw}. Redakcja odkryła również ${bench} pkt na ławce oraz ${hits} pkt kosztów — skandal polega głównie na tym, że wszystko jest publiczne.`
+  ],
+  [
+   `Terapeuta zapisuje przy ${p.manager}: ${pts} pkt w GW${gw}, ${rank}. miejsce, forma ${avg}. ${bench} pkt na ławce i ${hits} pkt hitów to fakty; emocjonalna interpretacja tych faktów może poczekać do końca sesji.`,
+   `${p.manager} przynosi na terapię ${pts} pkt i pozycję ${rank}. W tle siedzi ${bench} pkt niewykorzystanych oraz ${hits} pkt kosztów; ważne, żeby nie odreagować tego kolejnym impulsywnym transferem.`,
+   `Sesja GW${gw} dla ${p.manager}: wynik ${pts}, lokata ${rank}, średnia ${avg}. ${bench} pkt ławki oraz ${hits} pkt hitów zostają nazwane po imieniu, zanim pacjent zacznie budować kolejną narrację obronną.`
+  ],
+  [
+   `Kazanie liczb dla ${p.manager}: ${pts} pkt w GW${gw}, ${rank}. miejsce i forma ${avg}. ${bench} pkt zostało na ławce, ${hits} oddano za transfery; nawet cud potrzebowałby tu porządnego uzasadnienia.`,
+   `${p.manager} kończy rundę z ${pts} pkt i pozycją ${rank}. W księdze zapisano też ${bench} pkt rezerwowych i ${hits} pkt hitów — modlitwa o zmianę historii została odrzucona.`,
+   `Kronika GW${gw} zapisuje przy ${p.manager}: ${pts} punktów, #${rank}, średnia ${avg}, ławka ${bench}, hity ${hits}. Objawienia nie stwierdzono, za to konsekwencje decyzji jak najbardziej.`
+  ],
+  [
+   `Studio taktyczne podlicza ${p.manager}: ${pts} pkt, ${rank}. wynik GW${gw}, forma ${avg}. ${bench} pkt siedzi poza XI, ${hits} pkt zjadły ruchy; ekspert może gadać godzinę, ale tablica pokazuje swoje.`,
+   `${p.manager} ma ${pts} pkt i lokatę ${rank}. Rezerwowi dostarczyli ${bench} pkt sezonowo, transfery kosztowały ${hits}; przy takich liczbach analiza nie potrzebuje magicznych strzałek na ekranie.`,
+   `Panel po GW${gw}: ${p.manager} — ${pts} pkt, #${rank}, avg3 ${avg}. Ławka ${bench}, hity ${hits}; taktyczna filozofia jest fajna, dopóki nie wpada na zwykłą matematykę.`
+  ],
+  [
+   `Community Notes rozlicza ${p.manager} z ${pts} pkt w GW${gw} i ${rank}. miejsca. Forma ${avg}, ławka ${bench}, hity ${hits} — pięć faktów, z których żaden nie pytał menedżera o zgodę.`,
+   `${p.manager} zostawia po tej rundzie ślad: ${pts} pkt, pozycja ${rank}, średnia ${avg}, ${bench} na ławce i ${hits} w hitach. Narracja może się zmieniać, te liczby już nie.`,
+   `Kontekst ${p.manager} po GW${gw}: ${pts} punktów, #${rank}, forma ${avg}, bench ${bench}, hit cost ${hits}. Jeśli wypowiedź brzmi inaczej niż ten bilans, problem nie leży w kalkulatorze.`
+  ],
+  [
+   `Redakcja dopisuje przy ${p.manager}: ${pts} pkt w GW${gw}, miejsce ${rank}, średnia ${avg}. ${bench} pkt utknęło na ławce, ${hits} pkt zniknęło przez hity; bardzo konkretne tło dla bardzo kreatywnego gadania.`,
+   `${p.manager} zamyka kolejkę wynikiem ${pts} i pozycją ${rank}. Z sezonowego rachunku wystaje ${bench} pkt rezerwowych oraz ${hits} pkt kosztów — mało wygodne, za to prawdziwe.`,
+   `Po zdjęciu konferencyjnego makijażu ${p.manager} ma ${pts} pkt, #${rank}, formę ${avg}, ${bench} pkt ławki i ${hits} pkt hitów. I właśnie z tym zestawem trzeba dyskutować, nie z bajką.`
+  ]
+ ];
 
- // GW-specific fact syntax, also 38 unique structures:
- const fact=GW_FACT_FORMS[gwIndex](p,gw,pts,rank,avg,bench,hits);
+ const family=families[index%families.length];
+ const fact=family[(Math.max(1,Number(gw)||1)-1)%family.length];
 
- // A final identity sentence includes manager, team and GW.
- // This guarantees a complete note can never be identical for another manager
- // or for this manager in another round.
- const closer=`Notatka ${p.manager} / ${p.team} zostaje zamknięta wyłącznie dla GW${gw}; ten konkretny komentarz nie jest ponownie używany w żadnej innej rundzie sezonu.`;
+ // Unique ending families by manager, rotated by GW. No common boilerplate.
+ const endings=[
+  [`Jeśli ${p.manager} chce lepszego przypisu za tydzień, rozwiązanie jest banalne: mniej gadania, więcej punktów.`,
+   `Następna runda pokaże, czy ${p.manager} wyciągnął wnioski, czy tylko zmienił zestaw wymówek.`,
+   `Na dziś ${p.manager} może zamknąć mikrofon. Tabela powiedziała już wystarczająco dużo.`],
+  [`Sprawa ${p.manager} wróci przy kolejnych danych; oby tym razem materiał dowodowy był mniej kompromitujący.`,
+   `${p.manager} opuszcza salę bez wyroku, ale z bardzo konkretnym ostrzeżeniem od kalkulatora.`,
+   `Akta ${p.manager} trafiają na półkę do następnej GW. Telefon podejrzanego pozostaje pod obserwacją.`],
+  [`Pacjent ${p.manager} zostaje wypisany do domu z zaleceniem, by nie leczyć wyniku pięcioma transferami naraz.`,
+   `Kontrola ${p.manager} za tydzień; do tego czasu wskazana abstynencja od panicznych hitów.`,
+   `Rokowania ${p.manager} zależą głównie od tego, czy właściciel konta przestanie być własnym skutkiem ubocznym.`],
+  [`Zarząd ${p.manager} może zakończyć call. Rynek i tak przeczyta liczby szybciej niż komunikat PR.`,
+   `Akcjonariusze ${p.manager} czekają na następną GW; kolejnego slajdu o „procesie” mogą już nie znieść.`,
+   `Dział komunikacji ${p.manager} może pudrować wynik dalej, ale kalkulator nie podpisze NDA.`],
+  [`Alert dla ${p.manager} wygasa po tej GW. Kolejny front punktowy nadejdzie niezależnie od jego konferencji.`,
+   `Meteorolodzy kończą analizę ${p.manager}; następna prognoza może przynieść słońce albo kolejne gradobicie blanków.`,
+   `${p.manager} powinien przeczekać burzę bez wykonywania transferów pod wpływem piorunów wkurwienia.`],
+  [`Garaż ${p.manager} zamyka weekend. Następny wyścig pokaże, czy strategia została poprawiona, czy tylko przemalowano bolid.`,
+   `Telemetria ${p.manager} zostaje zapisana; pit wall może teraz spokojnie przemyśleć, po co zrobił połowę tych ruchów.`,
+   `${p.manager} wraca do garażu. Oby następnym razem szybciej jechał skład niż ego kierowcy.`],
+  [`Ticket ${p.manager} zostaje zamknięty jako „works as configured”. Pretensje proszę kierować do użytkownika.`,
+   `QA kończy test ${p.manager}; następny build oby zawierał mniej regresji i mniej genialnych hotfixów.`,
+   `Logi ${p.manager} zapisane. Przy następnym crashu nie będzie można powiedzieć, że nikt nie ostrzegał.`],
+  [`Nauczyciel oddaje pracę ${p.manager}. Poprawa za tydzień, bez ściągania z influencerów.`,
+   `${p.manager} może schować kartkę do plecaka. Ocena zostaje, choćby wymówka była napisana najładniejszym pismem.`,
+   `Dzwonek kończy lekcję ${p.manager}. Następny sprawdzian niestety już w kolejnej GW.`],
+  [`Kuchnia ${p.manager} zamyka serwis. Oby następne menu miało mniej eksperymentów, które smakują jak kara.`,
+   `Krytyk odkłada widelec przy ${p.manager}. Za tydzień sprawdzi, czy szef nauczył się nie przypalać własnych punktów.`,
+   `${p.manager} może posprzątać kuchnię. Najwięcej bałaganu jak zwykle zostało po jego własnych pomysłach.`],
+  [`Krupier żegna ${p.manager} do następnej rundy. Kasyno będzie otwarte i nadal nie będzie jego przyjacielem.`,
+   `${p.manager} może odejść od stołu. Najlepiej bez pomysłu, żeby natychmiast odegrać się kolejnym hitem.`,
+   `Żetony ${p.manager} policzone. Następna GW pokaże, czy nauczył się grać, czy tylko zmienił przesąd.`],
+  [`Redakcja zamyka temat ${p.manager}. Jutro nagłówek może być lepszy, ale dzisiejszych liczb już nie da się odkliknąć.`,
+   `${p.manager} może obrazić się na tytuł. Niestety tabela nie publikuje sprostowań na życzenie.`,
+   `Gazeta idzie do druku, a ${p.manager} zostaje z wynikiem, którego nawet najbardziej bezczelny nagłówek nie zmieni.`],
+  [`Terapeuta kończy sesję ${p.manager}. Praca domowa: nie otwierać Transfers tylko po to, żeby poczuć kontrolę.`,
+   `${p.manager} dostaje tydzień na zdrowe przepracowanie wyniku bez rozwalania połowy składu.`,
+   `Sesja ${p.manager} zakończona. Akceptacja faktów nadal tańsza niż -12.`],
+  [`Kronikarz zamyka księgę ${p.manager}. Następna GW sama dopisze, czy była pokuta, czy kolejny grzech przeciwko punktom.`,
+   `${p.manager} może liczyć na cud, ale rozsądne decyzje mają zwykle lepsze expected points.`,
+   `Kazanie dla ${p.manager} skończone. Amen, zamknij transfery i nie kombinuj.`],
+  [`Studio kończy analizę ${p.manager}. Strzałki na ekranie znikają, liczby niestety zostają.`,
+   `${p.manager} schodzi z anteny. Następny występ oby wymagał mniej tłumaczenia i więcej chwalenia.`,
+   `Eksperci odkładają tablicę ${p.manager}; kolejna GW zweryfikuje, czy dzisiejsze gadanie miało jakąkolwiek wartość.`],
+  [`Community Notes odkłada ${p.manager} do następnej rundy. Kalkulator nie zapomina, ale przynajmniej nie pierdoli.`,
+   `${p.manager} może przewinąć dalej. Fakty zostały zapisane i nie potrzebują jego aprobaty.`,
+   `Na tym kończy się korekta ${p.manager}; następna będzie dotyczyć nowych danych, nie odgrzewanego tekstu.`],
+  [`Redakcja zamyka mikrofon ${p.manager}. Kolejny otworzy dopiero świeży wynik, nie ta sama stara wymówka.`,
+   `${p.manager} dostaje ostatnie słowo tylko symbolicznie — fakty już wcześniej zabrały najlepszą kwestię.`,
+   `Koniec przypisu dla ${p.manager}. Za tydzień zaczynamy od czystej kartki i nowych powodów do szydery.`]
+ ];
+ const closer=endings[index%endings.length][(Math.max(1,Number(gw)||1)-1)%3];
 
- return `${opener} ${seasonSentence} ${fact} ${closer}`;
+ return `${opener} ${fact} ${closer}`;
 }
 
 function V39Notes({data}){
  const league=data?.grades||[];
  return <Card title="📝 Community Notes — brutalna weryfikacja">
-   <p className="sectionLead">Każda notatka analizuje konkretną treść konferencji i odpowiada dokładnie na jej motyw: pech, plan, transfery, kapitana, ławkę, hype, cierpliwość, samozachwyt albo katastrofę.</p>
+   <p className="sectionLead">Każda notatka odnosi się do konkretnej wypowiedzi i dostaje osobny styl, część liczbową oraz zakończenie dla danego menedżera.</p>
    {league.map((x,i)=>{const quote=pressQuote(x,data.gw,i,league);return <div className="communityNote" key={`${x.entry}-${data.gw}`}>
       <b>👥 Czytelnicy prostują wypowiedź: {x.manager}</b>
       <p>{contextualCommunityNote(x,quote,data.gw,i,league)}</p>
