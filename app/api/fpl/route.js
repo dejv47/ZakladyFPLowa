@@ -598,6 +598,24 @@ export async function GET() {
     );
 
 
+    const canonicalHistoryFor = (x) => {
+      const hs = [...(x.history || [])];
+      const idx = hs.findIndex(h => Number(h.gw) === Number(gw));
+      const current = {
+        gw:Number(gw),
+        points:Number(x.gwPoints || 0),
+        total:Number(x.overall || 0),
+        rank:0,
+        overallRank:0,
+        bench:Number(x.benchPoints || 0),
+        transfers:Number(x.transfers || 0),
+        cost:Number(x.transferCost || 0)
+      };
+      if (idx >= 0) hs[idx] = {...hs[idx], ...current};
+      else hs.push(current);
+      return hs.sort((a,b)=>a.gw-b.gw);
+    };
+
     // ---------- Extended season analytics v30 ----------
     const transferIQ = [];
     const transferRecords = [];
@@ -733,23 +751,6 @@ export async function GET() {
     }).sort((a,b)=>a.month.localeCompare(b.month));
 
     // ---------- FPLowa MEGA analytics v22 ----------
-    const canonicalHistoryFor = (x) => {
-      const hs = [...(x.history || [])];
-      const idx = hs.findIndex(h => Number(h.gw) === Number(gw));
-      const current = {
-        gw:Number(gw),
-        points:Number(x.gwPoints || 0),
-        total:Number(x.overall || 0),
-        rank:0,
-        overallRank:0,
-        bench:Number(x.benchPoints || 0),
-        transfers:Number(x.transfers || 0),
-        cost:Number(x.transferCost || 0)
-      };
-      if (idx >= 0) hs[idx] = {...hs[idx], ...current};
-      else hs.push(current);
-      return hs.sort((a,b)=>a.gw-b.gw);
-    };
 
     const profileComment = (x, stats, managerIndex) => {
       const {avg3, benchSeason, hitSeason, bestGW, worstGW, editorial} = stats;
