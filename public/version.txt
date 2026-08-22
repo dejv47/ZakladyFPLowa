@@ -1,1 +1,1 @@
-zaklady-live-v28-fixed-useSearchParams
+zaklady-live-v28-fixed-no-searchparams

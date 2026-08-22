@@ -2,7 +2,6 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BetsTab } from "./BetsTab";
-import { useSearchParams } from "next/navigation";
 
 function pressQuote(p, gw){
  const banks=[
@@ -102,7 +101,7 @@ function pressReaction(p, gw){
 }
 
 export default function FPLPage(){
- const searchParams=useSearchParams();
+
  const [data,setData]=useState(null),[error,setError]=useState(""),[tab,setTab]=useState("gazeta"),[profile,setProfile]=useState(null);
  async function load(){
    setError("");
@@ -113,7 +112,21 @@ export default function FPLPage(){
      setData(j);
    }catch(e){setError(e.message)}
  }
- useEffect(()=>{load(); const i=setInterval(load,5*60*1000); const v=()=>document.visibilityState==="visible"&&load(); document.addEventListener("visibilitychange",v); return()=>{clearInterval(i);document.removeEventListener("visibilitychange",v)}},[]);
+ useEffect(()=>{
+   const params = new URLSearchParams(window.location.search);
+   if(params.get("tab")==="zaklady") setTab("zaklady");
+
+   load();
+
+   const i=setInterval(load,5*60*1000);
+   const v=()=>document.visibilityState==="visible"&&load();
+   document.addEventListener("visibilitychange",v);
+
+   return()=>{
+     clearInterval(i);
+     document.removeEventListener("visibilitychange",v);
+   };
+ },[]);
  const profileData=useMemo(()=>data?.grades?.find(x=>x.entry===profile),[data,profile]);
  return <>
    <div className="sideHero sideHeroPep" aria-hidden="true" />
