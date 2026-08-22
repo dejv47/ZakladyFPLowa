@@ -2,6 +2,7 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BetsTab } from "./BetsTab";
+import { useSearchParams } from "next/navigation";
 
 function pressQuote(p, gw){
  const banks=[
