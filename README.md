@@ -67,3 +67,11 @@ Backend pobiera osobę z kadry Manchesteru City, a następnie korzysta z
 - Punkty konkretnych zawodników nadal z `/event/{GW}/live/`
 - Po zakończeniu GW artykuły korzystają z finalnych danych tej kolejki.
 - Mocniej satyryczne teksty zależne od realnych składów, kapitanów, ławki i transferów.
+
+
+## v15 — wyniki dokładnie z tabeli Waszej ligi FPL
+- GW = `league.standings.results[].event_total`
+- Overall = `league.standings.results[].total`
+- Punkty konkretnych zawodników nadal z oficjalnego `/event/{GW}/live/`.
+- Zakładka FPL odświeża się automatycznie co 5 minut i po powrocie do karty.
+- Po zakończeniu GW nagłówek przechodzi na `WYDANIE KOŃCOWE`, a teksty korzystają z finalnych danych.

@@ -13,13 +13,33 @@ export default function FPLPage(){
      setData(j);
    }catch(e){setError(e.message)}
  }
- useEffect(()=>{load()},[]);
+ useEffect(()=>{
+   load();
+
+   const interval = setInterval(load, 5 * 60 * 1000);
+
+   const onVisibility = () => {
+     if (document.visibilityState === "visible") load();
+   };
+
+   document.addEventListener("visibilitychange", onVisibility);
+
+   return () => {
+     clearInterval(interval);
+     document.removeEventListener("visibilitychange", onVisibility);
+   };
+ },[]);
  return <main className="shell fplPage">
    <nav className="topNav"><Link href="/">← Zakłady</Link><strong>FPLowa</strong><button onClick={load}>Odśwież</button></nav>
    <section className="newspaperHero">
-     <div><span className="paperKicker">FPLowa • wydanie GW {data?.gw ?? "—"}</span>
+     <div><span className="paperKicker">
+       FPLowa • wydanie GW {data?.gw ?? "—"}
+       {data ? (data.gwFinished ? " • WYDANIE KOŃCOWE" : " • LIVE") : ""}
+     </span>
      <h1>📰 PODSUMOWANIE KOLEJKI</h1>
-     <p>Najważniejsze wydarzenia, katastrofy kadrowe i decyzje, po których normalny dyrektor sportowy straciłby dostęp do hasła.</p></div>
+     <p>Najważniejsze wydarzenia, katastrofy kadrowe i decyzje, po których normalny dyrektor sportowy straciłby dostęp do hasła.</p>
+     {data?.updatedAt && <small className="fplUpdated">Automatyczna aktualizacja: {new Date(data.updatedAt).toLocaleString("pl-PL")}</small>}
+     </div>
    </section>
    {error&&<div className="error">{error}</div>}
    {!data&&!error&&<div className="loading">Redakcja zbiera materiały...</div>}

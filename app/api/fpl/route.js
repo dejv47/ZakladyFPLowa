@@ -80,10 +80,8 @@ export async function GET() {
         rank: row.rank,
         lastRank: row.last_rank,
         total: row.total,
-        gwPoints:
-          Number(picks?.entry_history?.points ?? h?.points ?? row.event_total ?? 0),
-        overall:
-          Number(picks?.entry_history?.total_points ?? h?.total_points ?? row.total ?? 0),
+        gwPoints: Number(row.event_total ?? 0),
+        overall: Number(row.total ?? 0),
         benchPoints:
           Number(picks?.entry_history?.points_on_bench ?? h?.points_on_bench ?? bench.reduce((s,x)=>s+x.rawPoints,0)),
         transferCost: h?.event_transfers_cost ?? 0,
@@ -113,7 +111,7 @@ export async function GET() {
           `${bestGW.manager} ma ${bestGW.gwPoints} pkt ${finishWord} i prowadzi w klasyfikacji tej GW. ` +
           `${bestGW.best ? `Największy syf rywalom zrobił ${bestGW.best.name} z ${bestGW.best.club}, który dorzucił ${bestGW.best.rawPoints} pkt.` : ""} ` +
           `${bestGW.captain ? `Kapitan ${bestGW.captain.name} (${bestGW.captain.club}) dostarczył ${bestGW.captain.points} pkt po mnożniku, więc tym razem opaska nie została założona przez kompletnego debila.` : ""} ` +
-          `Właściciel drużyny prawdopodobnie już uważa się za połączenie Guardioli, Monchiego i Nostradamusa. Redakcja przypomina, że jedna dobra kolejka nie kasuje całej wcześniejszej kompromitacji.`
+          `Właściciel drużyny prawdopodobnie już uważa się za połączenie Guardioli, Monchiego i Nostradamusa. Spokojnie, mistrzu — jedna dobra kolejka nie kasuje miesięcy podejmowania decyzji jak człowiek, który pierwszy raz zobaczył piłkę nożną wczoraj wieczorem.`
       });
     }
 
@@ -125,7 +123,7 @@ export async function GET() {
           `${worstGW.manager} uzbierał ${worstGW.gwPoints} pkt ${finishWord}, czyli najgorszy wynik w naszej lidze. ` +
           `${worstGW.captain ? `Opaska trafiła do ${worstGW.captain.name} z ${worstGW.captain.club} i dała ${worstGW.captain.points} pkt. Jeśli to był plan, to plan był gówniany.` : ""} ` +
           `${worstGW.benchPoints > 0 ? `Na ławce zostało jeszcze ${worstGW.benchPoints} pkt, więc nawet rezerwowi mieli prawo patrzeć na pierwszą jedenastkę z pogardą.` : ""} ` +
-          `Zarząd zapewnia, że sytuacja jest pod kontrolą, co w języku futbolu zwykle oznacza, że nikt nie ma pojęcia, co robi.`
+          `Zarząd zapewnia, że sytuacja jest pod kontrolą. Patrząc na wynik, jedyną rzeczą pod kontrolą jest chyba poziom kompromitacji, bo skład wygląda jak ustawiony przez typa, który wszedł do FPL przez przypadek, szukając wyników Ekstraklasy.`
       });
     }
 
@@ -176,8 +174,8 @@ export async function GET() {
       ok:true, league:{id:LEAGUE_ID,name:league.league.name}, gw,
       updatedAt:new Date().toISOString(),
       gwFinished,
-      teamScoreSource:"entry_history.points",
-      overallSource:"entry_history.total_points",
+      teamScoreSource:"league.standings.event_total",
+      overallSource:"league.standings.total",
       pointsSource:`/event/${gw}/live/`,
       standings:details,
       articles
