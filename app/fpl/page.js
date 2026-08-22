@@ -352,6 +352,55 @@ const MOOD_PARAGRAPHS = {
  ]
 };
 
+const BRUTAL_CONF_LINES = {
+ great:[
+  "Po takim wyniku mogę przez chwilę bezczelnie powiedzieć, że reszta ligi może mnie pocałować w dupę.",
+  "Nie będę udawał skromnego, bo po co? Punkty są moje, zielona strzałka jest moja, a rywale mogą się dziś zesrać ze złości.",
+  "Wreszcie moi zawodnicy przestali wyglądać jak banda przypadkowych typów zebranych pod Żabką pięć minut przed meczem.",
+  "Jeżeli ktoś ma problem z moją pewnością siebie, niech najpierw zrobi lepszy wynik, a potem może pierdolić.",
+  "Dzisiaj nie przyjmuję porad od ludzi pode mną w tabeli. To byłoby jak słuchanie instrukcji pływania od człowieka, który właśnie się topi."
+ ],
+ good:[
+  "Nie było idealnie, ale przynajmniej nie odpierdoliłem niczego, za co trzeba przepraszać rodzinę i znajomych.",
+  "Kilku zawodników nadal zachowuje się jak kompletne kołki, ale reszta wyciągnęła ten burdel na przyzwoity poziom.",
+  "Mogło być lepiej, mogło być też kurewsko gorzej. W tej grze taki bilans bierze się bez marudzenia.",
+  "Nie zamierzam teraz grzebać w składzie jak pojebany tylko dlatego, że jeden typ nie dowiózł punktów.",
+  "Weekend przeżyty bez większego samookaleczenia rankingowego. Jak na FPL, to już prawie sukces."
+ ],
+ neutral:[
+  "To była taka kolejka, że nawet nie wiadomo, czy się cieszyć, czy powiedzieć tylko „no i chuj” i zamknąć aplikację.",
+  "Ani dobrze, ani tragicznie. Zwykłe punktowe gówno w papierku z napisem przeciętność.",
+  "Nie wydarzyło się nic, co zasługiwałoby na pomnik, ale też nic, przez co musiałbym wypierdalać pół składu.",
+  "Kilku zagrało dobrze, kilku jakby pierwszy raz zobaczyło piłkę. Standardowy weekend w tym pierdolniku.",
+  "Tabela praktycznie wzruszyła ramionami. Ja zrobiłem dokładnie to samo."
+ ],
+ bad:[
+  "Było chujowo. Nie „poniżej oczekiwań”, nie „pechowo”. Po prostu chujowo i nie będę tego pudrował.",
+  "Kilka moich decyzji wygląda dziś tak, jakbym podejmował je najebany, z zamkniętymi oczami i telefonem trzymanym do góry nogami.",
+  "Najchętniej wypierdoliłbym teraz połowę składu, ale właśnie dlatego przez kilka dni nie powinienem dotykać przycisku Transfers.",
+  "Zawodnicy zawiedli, kapitan zawiódł, a ja im jeszcze pomogłem własnymi durnymi decyzjami. Piękna, kurwa, współpraca.",
+  "Jeżeli następna kolejka będzie wyglądała podobnie, telefon w sobotę ląduje w szufladzie, bo najwyraźniej największym zagrożeniem dla drużyny jestem ja."
+ ],
+ awful:[
+  "To był kompletny rozpierdol. Nie kolejka FPL, tylko publiczna egzekucja mojego rankingu.",
+  "Patrzę na ten wynik i naprawdę zastanawiam się, jaki debil układał ten skład. Potem przypominam sobie, że ja, i robi się jeszcze gorzej.",
+  "Wszystko się zesrało jednocześnie. Kapitan blank, punkty na ławce, transfery do dupy — pełen pakiet premium spierdolenia.",
+  "Gdyby za idiotyczne decyzje dawali punkty, właśnie rozjebałbym rekord świata.",
+  "Nie potrzebuję analizy eksperta. Potrzebuję egzorcysty, psychiatry i kogoś, kto zabierze mi kurwa telefon przed następnym deadlinem."
+ ]
+};
+
+const BRUTAL_ENDINGS = [
+ "Na następny tydzień plan jest prosty: mniej filozofowania, więcej punktów i przede wszystkim nie odpierdolić czegoś pięć minut przed deadlinem.",
+ "Jeżeli znowu zmienię sensowny plan w ostatniej chwili, macie pełne prawo nazwać mnie debilem i przypiąć ten cytat na górze strony.",
+ "Nie chcę słyszeć o pechu. Pech jest wtedy, kiedy piłka odbija się od słupka. Kliknięcie Confirm Transfers to już moja własna głupota.",
+ "Rywale nie muszą mnie niszczyć. Jak widać, czasem doskonale potrafię zrobić to sam.",
+ "Następna GW pokaże, czy wyciągnąłem wnioski, czy znowu będę tutaj siedział i tłumaczył kolejny punktowy burdel.",
+ "FPL jest prostą grą: wybierasz piłkarzy, oni nie robią tego, czego oczekujesz, a potem przez tydzień zastanawiasz się, po chuj w ogóle to robisz.",
+ "Nie obiecuję cudów. Obiecuję tylko spróbować przez siedem dni nie zachowywać się jak kompletny kretyn z dostępem do transferów.",
+ "Jeśli wszystko pójdzie źle, przynajmniej redakcja będzie miała z czego robić bekę. Jak pójdzie dobrze, to ja będę robił bekę z reszty."
+];
+
 function pressQuote(p,gw,managerIndex,league){
  const mood=conferenceMood(p,league);
  const voice=MANAGER_VOICES[managerIndex % MANAGER_VOICES.length];
@@ -364,6 +413,8 @@ function pressQuote(p,gw,managerIndex,league){
  const middle1=middleSet[(gw-1)%middleSet.length];
  const middle2=middleSet[(gw+managerIndex+2)%middleSet.length];
  const personal=VOICE_QUOTES[managerIndex % VOICE_QUOTES.length][(gw-1)%4];
+ const brutal=BRUTAL_CONF_LINES[mood][(gw*3+managerIndex)%BRUTAL_CONF_LINES[mood].length];
+ const brutalEnding=BRUTAL_ENDINGS[(gw*5+managerIndex)%BRUTAL_ENDINGS.length];
 
  const stats=[
   `W tej kolejce mam ${p.gwPoints} pkt i ${rank}. wynik w naszej lidze. Średnia z ostatnich trzech GW to ${p.avg3}, więc przynajmniej wiadomo, czy dzisiejszy wynik jest trendem, czy jednorazowym wybrykiem.`,
@@ -372,7 +423,7 @@ function pressQuote(p,gw,managerIndex,league){
   `Bilans GW${gw} to ${p.gwPoints} punktów i ${rank}. pozycja wśród naszych menedżerów. Do tego koszt hitów w sezonie wynosi ${p.hitSeason}, więc każdy następny minus cztery będzie musiał mieć naprawdę dobre alibi.`
  ][(gw+managerIndex)%4];
 
- return `„${intro} ${moodText} ${stats} ${middle1} ${middle2} ${personal}”`;
+ return `„${intro} ${moodText} ${brutal} ${stats} ${middle1} ${middle2} ${personal} ${brutalEnding}”`;
 }
 
 function pressReaction(p,gw,managerIndex,league){
