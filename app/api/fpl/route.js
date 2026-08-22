@@ -732,25 +732,6 @@ export async function GET() {
       };
     }).sort((a,b)=>a.month.localeCompare(b.month));
 
-    // Museum of Shame - season records from available data.
-    const worstGwMuseum = managerProfiles
-      .filter(p=>p.worstGW)
-      .sort((a,b)=>a.worstGW.points-b.worstGW.points)[0] || null;
-    const biggestBenchMuseum = [...managerProfiles].sort((a,b)=>b.benchSeason-a.benchSeason)[0] || null;
-    const biggestHitsMuseum = [...managerProfiles].sort((a,b)=>b.hitSeason-a.hitSeason)[0] || null;
-    const biggestFallMuseum = details.map(x=>({
-      manager:x.manager,team:x.team,drop:Math.max(0,Number(x.rank||0)-Number(x.lastRank||0))
-    })).sort((a,b)=>b.drop-a.drop)[0] || null;
-
-    const museum = [
-      worstGwMuseum && {icon:"💀",name:"Najgorsza GW sezonu",manager:worstGwMuseum.manager,team:worstGwMuseum.team,value:`${worstGwMuseum.worstGW.points} pkt • GW${worstGwMuseum.worstGW.gw}`},
-      biggestBenchMuseum && {icon:"🪑",name:"Najwięcej punktów na ławce",manager:biggestBenchMuseum.manager,team:biggestBenchMuseum.team,value:`${biggestBenchMuseum.benchSeason} pkt`},
-      biggestHitsMuseum && {icon:"💸",name:"Najwięcej oddanych punktów za hity",manager:biggestHitsMuseum.manager,team:biggestHitsMuseum.team,value:`-${biggestHitsMuseum.hitSeason} pkt`},
-      worstTransferSeason && {icon:"☠️",name:"Najgorszy transfer sezonu",manager:worstTransferSeason.manager,team:worstTransferSeason.team,value:`${worstTransferSeason.outName} → ${worstTransferSeason.inName}: ${worstTransferSeason.delta} pkt`},
-      captainFraud && {icon:"©️",name:"Najwięcej stracone na kapitanie",manager:captainFraud.manager,team:captainFraud.team,value:`-${captainFraud.lost} pkt vs idealny kapitan`},
-      biggestFallMuseum?.drop>0 && {icon:"📉",name:"Największy spadek w tabeli",manager:biggestFallMuseum.manager,team:biggestFallMuseum.team,value:`-${biggestFallMuseum.drop} miejsc`}
-    ].filter(Boolean);
-
     // ---------- FPLowa MEGA analytics v22 ----------
     const canonicalHistoryFor = (x) => {
       const hs = [...(x.history || [])];
@@ -934,6 +915,26 @@ export async function GET() {
       p.noTouch=nt?.untouched||0;
       p.managerImpact=nt?.managerImpact||0;
     });
+
+    // Museum of Shame - season records from available data.
+    const worstGwMuseum = managerProfiles
+      .filter(p=>p.worstGW)
+      .sort((a,b)=>a.worstGW.points-b.worstGW.points)[0] || null;
+    const biggestBenchMuseum = [...managerProfiles].sort((a,b)=>b.benchSeason-a.benchSeason)[0] || null;
+    const biggestHitsMuseum = [...managerProfiles].sort((a,b)=>b.hitSeason-a.hitSeason)[0] || null;
+    const biggestFallMuseum = details.map(x=>({
+      manager:x.manager,team:x.team,drop:Math.max(0,Number(x.rank||0)-Number(x.lastRank||0))
+    })).sort((a,b)=>b.drop-a.drop)[0] || null;
+
+    const museum = [
+      worstGwMuseum && {icon:"💀",name:"Najgorsza GW sezonu",manager:worstGwMuseum.manager,team:worstGwMuseum.team,value:`${worstGwMuseum.worstGW.points} pkt • GW${worstGwMuseum.worstGW.gw}`},
+      biggestBenchMuseum && {icon:"🪑",name:"Najwięcej punktów na ławce",manager:biggestBenchMuseum.manager,team:biggestBenchMuseum.team,value:`${biggestBenchMuseum.benchSeason} pkt`},
+      biggestHitsMuseum && {icon:"💸",name:"Najwięcej oddanych punktów za hity",manager:biggestHitsMuseum.manager,team:biggestHitsMuseum.team,value:`-${biggestHitsMuseum.hitSeason} pkt`},
+      worstTransferSeason && {icon:"☠️",name:"Najgorszy transfer sezonu",manager:worstTransferSeason.manager,team:worstTransferSeason.team,value:`${worstTransferSeason.outName} → ${worstTransferSeason.inName}: ${worstTransferSeason.delta} pkt`},
+      captainFraud && {icon:"©️",name:"Najwięcej stracone na kapitanie",manager:captainFraud.manager,team:captainFraud.team,value:`-${captainFraud.lost} pkt vs idealny kapitan`},
+      biggestFallMuseum?.drop>0 && {icon:"📉",name:"Największy spadek w tabeli",manager:biggestFallMuseum.manager,team:biggestFallMuseum.team,value:`-${biggestFallMuseum.drop} miejsc`}
+    ].filter(Boolean);
+
 
     // Hall of Shame v26: fixed broad category set.
     // Categories do not disappear just because the current value is zero.
