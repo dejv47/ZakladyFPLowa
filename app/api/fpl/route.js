@@ -93,6 +93,10 @@ export async function GET() {
     const players = Object.fromEntries(boot.elements.map(p => [p.id, p]));
     const teams = Object.fromEntries(boot.teams.map(t => [t.id, t]));
 
+    // Historical picks for completed/current GWs.
+    // Used for Captain Roulette, achievements, and "what if you did nothing".
+    const historicalGwIds = Array.from({ length: Number(gw) }, (_, i) => i + 1);
+
     // A team counts as having played/started only when its GW fixture actually started.
     const teamFixtureState = {};
     for (const fx of fixtures || []) {
@@ -107,13 +111,20 @@ export async function GET() {
 
     const entries = league.standings.results;
     const details = await Promise.all(entries.map(async row => {
-      const [picks, hist, transfersAll, firstGwPicks] = await Promise.all([
+      const [picks, hist, transfersAll, firstGwPicks, historicalPicks] = await Promise.all([
         fpl(`/entry/${row.entry}/event/${gw}/picks/`).catch(()=>null),
         fpl(`/entry/${row.entry}/history/`).catch(()=>null),
         fpl(`/entry/${row.entry}/transfers/`).catch(()=>[]),
         Number(gw) === 1
           ? Promise.resolve(null)
-          : fplCached(`/entry/${row.entry}/event/1/picks/`, 86400).catch(()=>null)
+          : fplCached(`/entry/${row.entry}/event/1/picks/`, 86400).catch(()=>null),
+        Promise.all(
+          historicalGwIds.map(event =>
+            event === Number(gw)
+              ? Promise.resolve(null)
+              : fplCached(`/entry/${row.entry}/event/${event}/picks/`, 21600).catch(()=>null)
+          )
+        )
       ]);
       const h = hist?.current?.find(x => x.event === gw);
       const squad=(picks?.picks||[]).map(x => {
@@ -166,6 +177,18 @@ export async function GET() {
           inId: Number(t.element_in),
           outId: Number(t.element_out)
         })),
+        historicalPicks: historicalGwIds.map((event, index) => {
+          const srcPick = event === Number(gw) ? picks : historicalPicks[index];
+          return {
+            gw:event,
+            picks:(srcPick?.picks || []).map(z => ({
+              element:Number(z.element),
+              multiplier:Number(z.multiplier || 0),
+              position:Number(z.position || 0),
+              captain:Boolean(z.is_captain)
+            }))
+          };
+        }),
         history: (() => {
           const rows = (hist?.current || []).map(z => ({
             gw: Number(z.event),
@@ -574,6 +597,160 @@ export async function GET() {
       })
     );
 
+
+    // ---------- Extended season analytics v30 ----------
+    const transferIQ = [];
+    const transferRecords = [];
+    const captainStats = [];
+    const noTouchStats = [];
+    const achievements = [];
+
+    for (const x of details) {
+      const allTransfers = (x.ownershipTransfers || []);
+      let iq = 0;
+      let bestTransfer = null;
+      let worstTransfer = null;
+
+      for (const t of allTransfers) {
+        const event = Number(t.event);
+        const statMap = gwPlayerStats[event] || {};
+        const inPts = Number((statMap[t.inId] && 0) || 0); // fallback; points handled below
+        const outPts = Number((statMap[t.outId] && 0) || 0);
+
+        // total_points are available from live archives, derive separately
+        const liveArchive = event === Number(gw)
+          ? live
+          : oldGwLives[event - 1];
+        const eventPoints = Object.fromEntries(
+          (liveArchive?.elements || []).map(el => [Number(el.id), Number(el.stats?.total_points || 0)])
+        );
+        const realIn = Number(eventPoints[t.inId] || 0);
+        const realOut = Number(eventPoints[t.outId] || 0);
+        const delta = realIn - realOut;
+
+        iq += delta;
+        const rec = {
+          event,
+          manager:x.manager,
+          team:x.team,
+          inName:players[t.inId]?.web_name || "???",
+          outName:players[t.outId]?.web_name || "???",
+          inPoints:realIn,
+          outPoints:realOut,
+          delta
+        };
+        transferRecords.push(rec);
+        if (!bestTransfer || delta > bestTransfer.delta) bestTransfer = rec;
+        if (!worstTransfer || delta < worstTransfer.delta) worstTransfer = rec;
+      }
+
+      iq -= Number(x.history?.reduce((s,h)=>s+Number(h.cost||0),0) || 0);
+
+      transferIQ.push({
+        entry:x.entry, manager:x.manager, team:x.team,
+        score:iq, bestTransfer, worstTransfer
+      });
+
+      // Captain Roulette: actual captain points vs best possible XI captain each GW.
+      let captainActual = 0;
+      let captainOptimal = 0;
+      let captainLoss = 0;
+      for (const gwPick of x.historicalPicks || []) {
+        const event = Number(gwPick.gw);
+        const liveArchive = event === Number(gw) ? live : oldGwLives[event - 1];
+        const eventPoints = Object.fromEntries(
+          (liveArchive?.elements || []).map(el => [Number(el.id), Number(el.stats?.total_points || 0)])
+        );
+        const starters = (gwPick.picks || []).filter(p => p.position <= 11);
+        const cap = starters.find(p => p.captain);
+        const capPts = cap ? Number(eventPoints[cap.element] || 0) : 0;
+        const bestPts = starters.length ? Math.max(...starters.map(p=>Number(eventPoints[p.element]||0))) : 0;
+        captainActual += capPts * 2;
+        captainOptimal += bestPts * 2;
+        captainLoss += Math.max(0, (bestPts-capPts)*2);
+      }
+      captainStats.push({
+        entry:x.entry, manager:x.manager, team:x.team,
+        actual:captainActual, optimal:captainOptimal, lost:captainLoss
+      });
+
+      // What if manager never touched GW1 squad:
+      // same initial 15 players, auto-select top 11 raw points each GW,
+      // best scorer used as captain. This is a fun counterfactual, not exact FPL autosub simulation.
+      const initial = new Set((x.initialSquadIds || []).map(Number));
+      let untouched = 0;
+      for (let event=1; event<=Number(gw); event++) {
+        const archive = event === Number(gw) ? live : oldGwLives[event - 1];
+        const pts = (archive?.elements || [])
+          .filter(el => initial.has(Number(el.id)))
+          .map(el => Number(el.stats?.total_points || 0))
+          .sort((a,b)=>b-a);
+        const xi = pts.slice(0,11);
+        const base = xi.reduce((s,v)=>s+v,0);
+        const capBonus = xi.length ? Math.max(...xi) : 0;
+        untouched += base + capBonus;
+      }
+      noTouchStats.push({
+        entry:x.entry, manager:x.manager, team:x.team,
+        actual:Number(x.overall||0),
+        untouched,
+        managerImpact:Number(x.overall||0)-untouched
+      });
+    }
+
+    const transferIQRanking=[...transferIQ].sort((a,b)=>b.score-a.score);
+    const bestTransferSeason=[...transferRecords].sort((a,b)=>b.delta-a.delta)[0] || null;
+    const worstTransferSeason=[...transferRecords].sort((a,b)=>a.delta-b.delta)[0] || null;
+    const captainRanking=[...captainStats].sort((a,b)=>b.actual-a.actual);
+    const captainFraud=[...captainStats].sort((a,b)=>b.lost-a.lost)[0] || null;
+    const noTouchRanking=[...noTouchStats].sort((a,b)=>a.managerImpact-b.managerImpact);
+
+    // Monthly awards based on completed/current FPL event dates.
+    const eventById=Object.fromEntries(boot.events.map(e=>[Number(e.id),e]));
+    const monthGroups={};
+    for(const x of details){
+      for(const h of canonicalHistoryFor(x)){
+        const ev=eventById[Number(h.gw)];
+        if(!ev?.deadline_time) continue;
+        const d=new Date(ev.deadline_time);
+        const key=`${d.getUTCFullYear()}-${String(d.getUTCMonth()+1).padStart(2,"0")}`;
+        if(!monthGroups[key]) monthGroups[key]=[];
+        monthGroups[key].push({entry:x.entry,manager:x.manager,team:x.team,gw:h.gw,points:h.points});
+      }
+    }
+    const monthlyAwards=Object.entries(monthGroups).map(([month,rows])=>{
+      const totals={};
+      for(const r of rows){
+        if(!totals[r.entry]) totals[r.entry]={entry:r.entry,manager:r.manager,team:r.team,points:0};
+        totals[r.entry].points+=Number(r.points||0);
+      }
+      const arr=Object.values(totals).sort((a,b)=>b.points-a.points);
+      return {
+        month,
+        manager:arr[0]||null,
+        fraud:arr.at(-1)||null
+      };
+    }).sort((a,b)=>a.month.localeCompare(b.month));
+
+    // Museum of Shame - season records from available data.
+    const worstGwMuseum = managerProfiles
+      .filter(p=>p.worstGW)
+      .sort((a,b)=>a.worstGW.points-b.worstGW.points)[0] || null;
+    const biggestBenchMuseum = [...managerProfiles].sort((a,b)=>b.benchSeason-a.benchSeason)[0] || null;
+    const biggestHitsMuseum = [...managerProfiles].sort((a,b)=>b.hitSeason-a.hitSeason)[0] || null;
+    const biggestFallMuseum = details.map(x=>({
+      manager:x.manager,team:x.team,drop:Math.max(0,Number(x.rank||0)-Number(x.lastRank||0))
+    })).sort((a,b)=>b.drop-a.drop)[0] || null;
+
+    const museum = [
+      worstGwMuseum && {icon:"💀",name:"Najgorsza GW sezonu",manager:worstGwMuseum.manager,team:worstGwMuseum.team,value:`${worstGwMuseum.worstGW.points} pkt • GW${worstGwMuseum.worstGW.gw}`},
+      biggestBenchMuseum && {icon:"🪑",name:"Najwięcej punktów na ławce",manager:biggestBenchMuseum.manager,team:biggestBenchMuseum.team,value:`${biggestBenchMuseum.benchSeason} pkt`},
+      biggestHitsMuseum && {icon:"💸",name:"Najwięcej oddanych punktów za hity",manager:biggestHitsMuseum.manager,team:biggestHitsMuseum.team,value:`-${biggestHitsMuseum.hitSeason} pkt`},
+      worstTransferSeason && {icon:"☠️",name:"Najgorszy transfer sezonu",manager:worstTransferSeason.manager,team:worstTransferSeason.team,value:`${worstTransferSeason.outName} → ${worstTransferSeason.inName}: ${worstTransferSeason.delta} pkt`},
+      captainFraud && {icon:"©️",name:"Najwięcej stracone na kapitanie",manager:captainFraud.manager,team:captainFraud.team,value:`-${captainFraud.lost} pkt vs idealny kapitan`},
+      biggestFallMuseum?.drop>0 && {icon:"📉",name:"Największy spadek w tabeli",manager:biggestFallMuseum.manager,team:biggestFallMuseum.team,value:`-${biggestFallMuseum.drop} miejsc`}
+    ].filter(Boolean);
+
     // ---------- FPLowa MEGA analytics v22 ----------
     const canonicalHistoryFor = (x) => {
       const hs = [...(x.history || [])];
@@ -728,6 +905,34 @@ export async function GET() {
         profileVerdict:narrative.verdict,
         comment:narrative.verdict
       };
+    });
+
+
+    // Trophy cabinet for each profile.
+    const profileAchievements = Object.fromEntries(managerProfiles.map(p=>[Number(p.entry),[]]));
+    const addAch=(entry,icon,name,value="")=>{
+      if(profileAchievements[Number(entry)]) profileAchievements[Number(entry)].push({icon,name,value});
+    };
+
+    if(bestGW) addAch(bestGW.entry,"🏆","Manager GW",`${bestGW.gwPoints} pkt`);
+    if(worstGW) addAch(worstGW.entry,"🤡","Fraud GW",`${worstGW.gwPoints} pkt`);
+    if(benchKing) addAch(benchKing.entry,"🪑","Ławkowy Guardiola",`${benchKing.benchPoints} pkt`);
+    if(capFail) addAch(capFail.entry,"©️","Kapitan Debil",`${capFail.captain?.points||0} pkt`);
+    if(transferIQRanking[0]) addAch(transferIQRanking[0].entry,"🧠","Transfer Genius",`${transferIQRanking[0].score>0?"+":""}${transferIQRanking[0].score}`);
+    if(transferIQRanking.at(-1)) addAch(transferIQRanking.at(-1).entry,"🦧","Transferowy Orangutan",`${transferIQRanking.at(-1).score}`);
+    if(captainRanking[0]) addAch(captainRanking[0].entry,"👑","Captain Mastermind",`${captainRanking[0].actual} pkt`);
+    if(captainFraud) addAch(captainFraud.entry,"🎲","Captain Fraud",`-${captainFraud.lost} vs optimum`);
+
+    managerProfiles.forEach(p=>{
+      p.achievements=profileAchievements[Number(p.entry)]||[];
+      const tiq=transferIQ.find(z=>Number(z.entry)===Number(p.entry));
+      const cap=captainStats.find(z=>Number(z.entry)===Number(p.entry));
+      const nt=noTouchStats.find(z=>Number(z.entry)===Number(p.entry));
+      p.transferIQ=tiq?.score||0;
+      p.captainActual=cap?.actual||0;
+      p.captainLost=cap?.lost||0;
+      p.noTouch=nt?.untouched||0;
+      p.managerImpact=nt?.managerImpact||0;
     });
 
     // Hall of Shame v26: fixed broad category set.
@@ -993,7 +1198,9 @@ export async function GET() {
       standings:details,
       articles:finalArticles,
       awards, breakingNews:breakingNews.slice(0,8), managerProfiles, hallOfShame:shameRecords,
-      watchList, deathMatch, rivalries, rivalryProfiles, virtualOdds, predictions, grades, gwChances, seasonAwards
+      watchList, deathMatch, rivalries, rivalryProfiles, virtualOdds, predictions, grades, gwChances, seasonAwards,
+      monthlyAwards, transferIQRanking, bestTransferSeason, worstTransferSeason,
+      captainRanking, captainFraud, noTouchRanking, museum
     }, {headers:{"Cache-Control":"no-store, no-cache, must-revalidate, max-age=0"}});
   } catch(e) {
     return NextResponse.json({ok:false,error:String(e?.message||e)}, {status:500});
