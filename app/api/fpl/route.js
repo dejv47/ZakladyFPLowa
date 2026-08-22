@@ -508,41 +508,111 @@ export async function GET() {
       const {avg3, benchSeason, hitSeason, bestGW, worstGW, editorial} = stats;
       const hs = canonicalHistoryFor(x).filter(h => h.gw < gw || gwFinished);
       const last3 = hs.slice(-3);
-      const trend = last3.length >= 3 ? last3[2].points - last3[0].points : 0;
-      const spread = bestGW && worstGW ? bestGW.points - worstGW.points : 0;
+      const trend = last3.length >= 3 ? last3[2].points-last3[0].points : 0;
+      const spread = bestGW && worstGW ? bestGW.points-worstGW.points : 0;
 
-      // Guaranteed unique skeleton per manager entry.
-      // Even if two managers have identical stats, their full profile text is built from a different template.
-      const templates = [
-        (p)=>`${x.manager} prowadzi ${x.team} jak człowiek, który przed każdym deadline'em ma trzy plany, cztery wątpliwości i jeden przycisk, którego nie powinien naciskać. Jest ${x.rank}. w lidze, ma ocenę ${editorial}/10, formę ${avg3.toFixed(1)} z ostatnich trzech zakończonych GW, ${benchSeason} pkt zostawionych na ławce i ${hitSeason} pkt wydanych na hity. ${trend>0?`Trend +${trend} sugeruje, że ten chaos zaczyna działać.`:trend<0?`Trend ${trend} wygląda jak zjazd windą bez hamulców.`:`Trend stoi w miejscu, czyli przynajmniej nic się nie pali bardziej niż zwykle.`} ${spread>0?`Między najlepszą i najgorszą GW ma ${spread} pkt różnicy — emocjonalny rollercoaster gratis.`:""} Redakcja: projekt żyje, właściciel też, choć czasem obaj wyglądają na zmęczonych.`,
-        (p)=>`${x.manager} i ${x.team} to osobny gatunek FPL-owej biologii. Ranking #${x.rank}, rating ${editorial}/10, średnia formy ${avg3.toFixed(1)}, bench tax ${benchSeason}, transfer tax ${hitSeason}. ${bestGW?`Najlepszy wyskok: ${bestGW.points} pkt w GW${bestGW.gw}.`:""} ${worstGW?`Największy zgon: ${worstGW.points} pkt w GW${worstGW.gw}.`:""} ${trend>=15?`Forma idzie ostro w górę i menedżer pewnie już uważa się za Guardiolę.`:trend<=-15?`Forma leci w dół i nawet PR-owiec zaczyna się pocić.`:`Forma porusza się spokojnie, jakby bała się zwrócić na siebie uwagę.`} Werdykt: nie wiadomo, czy to strategia, czy seria zbiegów okoliczności, ale materiału do gazety nie brakuje.`,
-        (p)=>`Raport śledczy dotyczący ${x.manager}: klub ${x.team}, pozycja ${x.rank}, ocena ${editorial}/10. W aktach: ${avg3.toFixed(1)} pkt średnio z 3 GW, ${benchSeason} pkt na ławce, ${hitSeason} pkt kosztów transferowych i rozrzut formy ${spread}. ${benchSeason>=40?`Ławka wygląda jak alternatywna jedenastka, która regularnie gra lepiej od tej właściwej.`:`Ławka na razie nie generuje materiału dowodowego na większy kryminał.`} ${hitSeason>=12?`Dział transferów działa jak kasyno po północy.`:`Transfery są zaskakująco powściągliwe jak na standardy tej ligi.`} Redakcja zamyka teczkę tylko do następnego deadline'u.`,
-        (p)=>`${x.team} pod wodzą ${x.manager} jest jak serial, którego nikt nie chce kończyć, bo co kolejkę pojawia się nowy absurd. Aktualnie #${x.rank}, editorial score ${editorial}/10, forma ${avg3.toFixed(1)}, ławka ${benchSeason}, hity ${hitSeason}. ${trend>10?`Ostatnie tygodnie są wyraźnie lepsze, więc narracja o „procesie” chwilowo ma sens.`:trend<-10?`Ostatnie tygodnie wyglądają jak sequel katastrofy, którego nikt nie zamawiał.`:`Ostatnie tygodnie są stabilne, czyli nuda — ale zdrowa.`} ${bestGW&&worstGW?`Od ${worstGW.points} do ${bestGW.points} pkt między skrajnymi kolejkami: pełne spektrum od „geniusz” do „co on odpierdolił”.`:""} `,
-        (p)=>`${x.manager}: profil operacyjny ${x.team}. Pozycja ${x.rank}. Forma 3 GW ${avg3.toFixed(1)}. Ocena ${editorial}/10. Rezerwa: ${benchSeason} pkt. Koszt eksperymentów transferowych: ${hitSeason}. ${editorial>=7?`Na ten moment wygląda to zaskakująco profesjonalnie.`:editorial>=5?`Jest poprawnie, ale redakcja nadal trzyma gaśnicę pod ręką.`:`To wygląda jak projekt prowadzony na zasadzie „zobaczymy, co się stanie”, a niestety widzimy.`} ${trend>0?`Kierunek jest dodatni (+${trend}).`:`Kierunek nie pomaga (${trend}).`} Ten profil ma własny zapach: trochę analizy, trochę paniki i zawsze za dużo pewności po dobrym haul'u.`,
-        (p)=>`Gdyby ${x.manager} był trenerem w Premier League, konferencje prasowe po meczach ${x.team} trwałyby długo. Powód: #${x.rank} w tabeli, ${avg3.toFixed(1)} formy, ${benchSeason} pkt zmarnowanych na ławce i ${hitSeason} w hitach. ${editorial>=8?`Rating ${editorial}/10 daje prawo do kozaczenia.`:editorial<=4?`Rating ${editorial}/10 daje raczej prawo do przeprosin.`:`Rating ${editorial}/10 daje głównie prawo do dalszego kombinowania.`} ${spread>=40?`Rozrzut ${spread} pkt między skrajnymi GW pokazuje, że stabilność to tutaj pojęcie teoretyczne.`:""} `,
-        (p)=>`Kartoteka ${x.manager} — ${x.team}: #${x.rank}, ocena ${editorial}/10, forma ${avg3.toFixed(1)}, bench ${benchSeason}, hits ${hitSeason}. ${bestGW?`Szczyt sezonu: ${bestGW.points} pkt.`:""} ${worstGW?`Dno sezonu: ${worstGW.points} pkt.`:""} ${trend>=20?`Ostatnio ostro odbija i zaraz będzie opowiadał, że wszystko było zaplanowane.`:trend<=-20?`Ostatnio ostro tonie i zaczyna brakować eleganckich określeń.`:`Ostatnio jedzie po płaskim terenie.`} Redakcja klasyfikuje przypadek jako: ${editorial>=7?"wkurwiająco kompetentny":editorial>=5?"niegroźny, ale obserwować":editorial>=3.5?"podejrzany":"zagrożenie dla własnego rankingu"}.`,
-        (p)=>`${x.team} ma nazwę, herb i ${x.manager}. Największym znakiem zapytania nadal pozostaje trzeci element. Liczby: miejsce ${x.rank}, ${avg3.toFixed(1)} średnio z 3 GW, rating ${editorial}/10, ${benchSeason} na ławce, ${hitSeason} kosztów. ${benchSeason>=50?`Rezerwowi mają podstawy do buntu.`:""} ${hitSeason>=16?`Księgowość ma podstawy do zawiadomienia organów ścigania.`:""} ${trend<0?`Forma ma kierunek ujemny.`:`Forma przynajmniej nie ucieka w dół.`} To profil, który nie potrzebuje fikcji — statystyki same piszą punchline'y.`,
-        (p)=>`${x.manager} w sezonie ${x.team}: obecnie ${x.rank}. miejsce i ${editorial}/10 od redakcji. Z ostatnich trzech zakończonych kolejek średnio ${avg3.toFixed(1)}, z ławki wyparowało ${benchSeason}, a dodatkowe transfery kosztowały ${hitSeason}. ${spread?`Zakres między best i worst GW: ${spread} pkt.`:""} ${trend>0?`Trend jest dodatni i właściciel może przez chwilę spać spokojniej.`:`Trend nie daje komfortu.`} Jeśli ten sezon byłby filmem, gatunek to ${editorial>=7?"sportowy dramat z happy endem w zasięgu":editorial>=5?"komedia obyczajowa":"horror psychologiczny"}.`,
-        (p)=>`Analiza techniczna ${x.manager}: ${x.team} zajmuje #${x.rank}, wskaźnik formy ${avg3.toFixed(1)}, wskaźnik cierpienia ławkowego ${benchSeason}, koszt FOMO transferowego ${hitSeason}, ocena ${editorial}/10. ${bestGW&&worstGW?`Ekstrema: ${bestGW.points}/${worstGW.points}.`:""} ${trend>=10?`Momentum rośnie.`:trend<=-10?`Momentum zdechło.`:`Momentum śpi.`} Redakcja zaleca ${editorial>=7?"nie dotykać za dużo, bo jeszcze zepsuje":"przemyśleć kilka rzeczy przed kolejnym kliknięciem Confirm Transfers"}.`,
-        (p)=>`${x.manager} jest dziś przypadkiem testowym pod tytułem „ile można wycisnąć z ${x.team} bez pełnego załamania nerwowego”. Wynik eksperymentu: pozycja ${x.rank}, rating ${editorial}/10, forma ${avg3.toFixed(1)}, bench ${benchSeason}, hits ${hitSeason}. ${trend>15?`Eksperyment ostatnio działa coraz lepiej.`:trend<-15?`Eksperyment ostatnio wymyka się spod kontroli.`:`Eksperyment jest stabilny.`} ${spread>30?`Wahania ${spread} pkt pokazują, że laboratorium czasem eksploduje.`:""} `,
-        (p)=>`Profil ryzyka ${x.manager}/${x.team}: ranking #${x.rank}, redakcja ${editorial}/10, ostatnie 3 GW ${avg3.toFixed(1)}, ławka ${benchSeason}, minusy transferowe ${hitSeason}. ${editorial<5?`Poziom ryzyka wysoki — każde kolejne kliknięcie może pogorszyć sytuację.`:editorial<7?`Poziom ryzyka średni — da się żyć.`:`Poziom ryzyka niski — przynajmniej do następnej głupoty.`} ${trend>=0?`Trend ${trend} nie straszy.`:`Trend ${trend} straszy bardziej niż powinien.`} `,
-        (p)=>`${x.manager} prowadzi ${x.team} z charakterystyczną mieszanką ${editorial>=7?"rozsądku i bezczelnej skuteczności":editorial>=5?"rozsądku i chaosu":"chaosu i kolejnego chaosu"}. #${x.rank}, ${avg3.toFixed(1)} formy, ${benchSeason} bench, ${hitSeason} hits. ${bestGW?`Najlepszy moment: ${bestGW.points}.`:""} ${worstGW?`Najgorszy: ${worstGW.points}.`:""} To profil, którego nie da się pomylić z innym, bo nawet błędy mają własny styl.`,
-        (p)=>`Jeśli ktoś szuka definicji sezonu ${x.manager}, wystarczy pięć liczb: #${x.rank}, ${editorial}/10, ${avg3.toFixed(1)}, ${benchSeason}, ${hitSeason}. ${trend>0?`Trend +${trend} daje paliwo do optymizmu.`:`Trend ${trend} zabiera paliwo.`} ${spread>0?`Rozrzut ${spread} pokazuje skalę emocji.`:""} ${x.team} pozostaje klubem, w którym każde GW może skończyć się albo masterclassem, albo dochodzeniem komisji.`,
-        (p)=>`${x.team} i ${x.manager}: sezon oceniany na ${editorial}/10, miejsce ${x.rank}. Forma ${avg3.toFixed(1)}, bench ${benchSeason}, hits ${hitSeason}. ${benchSeason>hitSeason*3?`Największym przeciwnikiem jest własna ławka.`:hitSeason>benchSeason/3?`Największym przeciwnikiem jest własny dział transferów.`:`Największym przeciwnikiem pozostaje zwykły pech i czasem zdrowy rozsądek.`} `,
-        (p)=>`Redakcja wystawia ${x.manager} kartę zawodniczą: ${x.team}, #${x.rank}, ${editorial}/10, ${avg3.toFixed(1)} avg3, ${benchSeason} bench pts, ${hitSeason} hit cost. ${trend>=15?"⬆️ forma wyraźnie rośnie":trend<=-15?"⬇️ forma wyraźnie spada":"➡️ forma stoi"}. ${spread>=35?`Wahania ${spread} są bardziej widowiskowe niż połowa meczów ligowych.`:""} `,
-        (p)=>`${x.manager} nie ma takiego samego profilu jak reszta, bo ${x.team} nie robi nic normalnie. Aktualnie #${x.rank}, rating ${editorial}/10, forma ${avg3.toFixed(1)}, ławka ${benchSeason}, transfery ${hitSeason}. ${trend>0?`Ostatnio poprawa.`:`Ostatnio brak poprawy.`} ${editorial>=7?`Jeśli utrzyma poziom, roast będzie coraz trudniejszy.`:`Jeśli utrzyma poziom, roast napisze się sam.`} `,
-        (p)=>`Dziennik obserwacyjny: ${x.manager}. Klub: ${x.team}. Stan: ${editorial>=7?"stabilny":editorial>=5?"chwiejny":"alarmowy"}. Ranking ${x.rank}, forma ${avg3.toFixed(1)}, bench waste ${benchSeason}, hit waste ${hitSeason}, spread ${spread}. ${trend>=0?`Zmiana formy ${trend>=0?"+":""}${trend}.`:`Spadek ${trend}.`} Redakcja zaleca dalszą obserwację i ograniczenie nagłych decyzji po godzinie 22.`,
-        (p)=>`${x.manager} ma sezon, który można czytać z liczb: ${x.rank}. miejsce, ${editorial}/10, ${avg3.toFixed(1)} z 3 GW, ${benchSeason} na ławce, ${hitSeason} na hitach. ${bestGW&&worstGW?`Najlepsza/najgorsza: ${bestGW.points}/${worstGW.points}.`:""} ${trend>0?`Narracja idzie w górę razem z formą.`:`Narracja robi się coraz trudniejsza do obrony.`} ${x.team} pozostaje wdzięcznym źródłem materiału.`,
-        (p)=>`Portret menedżera ${x.manager}: prowadzi ${x.team}, jest #${x.rank}, ma ${editorial}/10. Ostatnie 3 GW: ${avg3.toFixed(1)}. Ławka: ${benchSeason}. Hity: ${hitSeason}. ${spread>25?`Rozrzut ${spread} oznacza, że przewidywalność nie jest mocną stroną.`:`Wyniki są relatywnie stabilne.`} ${trend>=10?`Forma rośnie i właściciel może chwilowo chodzić dumny.`:trend<=-10?`Forma spada i właściciel powinien przestać udawać, że wszystko jest okej.`:`Forma stoi.`} `
+      /*
+       * Every manager gets a private vocabulary bank.
+       * No sentence below is shared between manager slots.
+       * Slot is stable by league order/entry, so two managers cannot receive
+       * the same authored sentence even when their stats are identical.
+       */
+      const banks = [
+        [
+          `${x.manager} prowadzi ${x.team} jak laboratorium, w którym połowa eksperymentów działa, a druga połowa kończy się pytaniem „kto kurwa na to pozwolił?”.`,
+          `Miejsce ${x.rank}. i ocena ${editorial}/10 sugerują, że chaos ma tu przynajmniej jakiś regulamin.`,
+          `Forma ${avg3.toFixed(1)} z trzech GW wygląda ${avg3>=55?"jak coś, czym można się bezczelnie chwalić":"jak coś, co lepiej omawiać przy zgaszonym świetle"}.`,
+          `${benchSeason} punktów na ławce to ${benchSeason>=35?"mały pomnik złych przeczuć":"jeszcze nie materiał na komisję śledczą"}.`,
+          `Transferowe minusy wynoszą ${hitSeason}; księgowość ${x.team} ${hitSeason>=12?"już chowa ostre przedmioty":"na razie nie wzywa ochrony"}.`
+        ],
+        [
+          `${x.manager} traktuje ${x.team} jak własny serial: co kolejkę nowy odcinek i nigdy nie wiadomo, czy będzie dramat, komedia czy totalny burdel.`,
+          `Ranking #${x.rank} daje mu obecnie ${x.rank<=3?"prawo do kozaczenia":"więcej pytań niż powodów do szampana"}.`,
+          `Średnia ${avg3.toFixed(1)} w ostatnich trzech zakończonych kolejkach mówi więcej niż wszystkie pomeczowe wymówki razem.`,
+          `Rezerwowi uzbierali ${benchSeason} punktów i ${benchSeason>=35?"powoli mogą zakładać związek zawodowy":"jeszcze nie planują przewrotu"}.`,
+          `Za dodatkowe transfery zapłacił ${hitSeason} punktów — ${hitSeason?"cennik własnej niecierpliwości":"rzadki przypadek człowieka, który umie nie klikać"}.`
+        ],
+        [
+          `Kartoteka ${x.manager} wygląda jak raport z miejsca zdarzenia pod nazwą ${x.team}.`,
+          `Pozycja ${x.rank}. przy ratingu ${editorial}/10 oznacza ${editorial>=7?"zaskakująco mało dowodów obciążających":"że prokurator FPL ma co czytać"}.`,
+          `Ostatnia forma to ${avg3.toFixed(1)} i ${trend>10?"wyraźnie nabiera rozpędu":trend<-10?"zjeżdża jak wózek bez hamulców":"stoi mniej więcej tam, gdzie stała"}.`,
+          `Na ławce leży ${benchSeason} punktów — ${benchSeason>=40?"dowód rzeczowy numer jeden":"na razie tylko poszlaka"}.`,
+          `Hity zabrały ${hitSeason}, więc dział transferowy ${hitSeason>=12?"powinien mieć przesłuchanie":"może jeszcze chodzić bez adwokata"}.`
+        ],
+        [
+          `${x.team} pod wodzą ${x.manager} przypomina knajpę bez menu: czasem dostajesz świetne danie, czasem coś, czego nikt rozsądny nie zamawiał.`,
+          `Aktualne ${x.rank}. miejsce jest ${x.rank<=3?"ładnym widokiem z góry":"przypomnieniem, że tabela nie zna litości"}.`,
+          `Forma ${avg3.toFixed(1)} ${trend>=0?"nie daje powodów do ewakuacji":"uruchamia czujnik dymu"}.`,
+          `${benchSeason} oczek na rezerwie pokazuje, że ${benchSeason>30?"najlepsze pomysły czasem siedzą poza boiskiem":"selekcja jedenastki nie jest największym problemem"}.`,
+          `Koszt zmian ponad limit: ${hitSeason}; ${hitSeason>=8?"FOMO ma tu własne biurko":"cierpliwość jeszcze nie została zwolniona"}.`
+        ],
+        [
+          `${x.manager} zarządza ${x.team} jak człowiek próbujący rozbroić bombę instrukcją znalezioną na forum.`,
+          `Ocena ${editorial}/10 przy miejscu ${x.rank}. daje ${editorial>=6.5?"chwilowy immunitet od szydery":"redakcji pełne prawo do podnoszenia brwi"}.`,
+          `${avg3.toFixed(1)} średnio z trzech GW to ${avg3>=50?"przyzwoity puls":"wynik, przy którym lekarz pyta o rodzinę"}.`,
+          `Ławkowe ${benchSeason} punktów ${benchSeason>=35?"boli bardziej za każdym ponownym spojrzeniem":"nie wymaga jeszcze terapii"}.`,
+          `Transfery kosztowały ${hitSeason}; ${hitSeason>=12?"wizja okazała się płatnym DLC":"portfel punktowy przeżył"}.`
+        ],
+        [
+          `W ${x.team} rządzonym przez ${x.manager} zdrowy rozsądek ma kartę wstępu, ale nie zawsze wpuszczają go na stadion.`,
+          `Numer ${x.rank} w tabeli i ${editorial}/10 od redakcji tworzą ${editorial>=7?"całkiem elegancki obraz":"portret z kilkoma bardzo podejrzanymi plamami"}.`,
+          `Bieżąca forma ${avg3.toFixed(1)} ${trend>0?"idzie w stronę światła":"nie daje jeszcze podstaw do fanfar"}.`,
+          `Rezerwa połknęła ${benchSeason} punktów; ${benchSeason>=40?"to już pełnoprawna grabież":"straty są kontrolowane"}.`,
+          `${hitSeason} punktów za hity brzmi ${hitSeason>=12?"jak rachunek po pijanym deadline day":"zaskakująco odpowiedzialnie"}.`
+        ],
+        [
+          `${x.manager} zrobił z ${x.team} test cierpliwości, w którym uczestnikiem, badaczem i ofiarą jest ta sama osoba.`,
+          `Pozycja ${x.rank}. ${x.rank<=3?"pozwala chwilowo udawać geniusza":"nie daje wygodnej poduszki pod ego"}.`,
+          `Wskaźnik trzech GW wynosi ${avg3.toFixed(1)}; ${trend>=15?"maszyna właśnie złapała obroty":trend<=-15?"silnik wydaje dźwięki, których nie powinien":"silnik pracuje bez większych fajerwerków"}.`,
+          `${benchSeason} punktów pozostawionych poza składem to ${benchSeason>=35?"bardzo drogi kurs podejmowania decyzji":"jeszcze rozsądne czesne"}.`,
+          `Hity: ${hitSeason}; ${hitSeason>=8?"przycisk Confirm Transfers jest zdecydowanie zbyt łatwo dostępny":"palec pozostaje pod kontrolą"}.`
+        ],
+        [
+          `${x.team} ma w osobie ${x.manager} menedżera, który potrafi zamienić zwykłą sobotę w pełnoprawne wydarzenie kryzysowe.`,
+          `${x.rank}. lokata z notą ${editorial}/10 ${editorial>=7?"wygląda jak robota fachowca":"nie trafi do folderu „bez zarzutów”"}.`,
+          `Forma ${avg3.toFixed(1)} ${avg3>=55?"daje kibicom tlen":"każe kibicom oddychać przez papierową torbę"}.`,
+          `Ławka ma ${benchSeason} punktów i ${benchSeason>=30?"zaczyna patrzeć na podstawową XI z pogardą":"zna swoje miejsce"}.`,
+          `Koszt hitów ${hitSeason} ${hitSeason>=12?"wygląda jak mandat za seryjne parkowanie na zakazie":"nie zrujnował jeszcze budżetu"}.`
+        ],
+        [
+          `${x.manager} buduje sezon ${x.team} z precyzją człowieka składającego meble bez instrukcji i z dwiema śrubkami za dużo.`,
+          `Ranking #${x.rank} ${x.rank<=3?"sugeruje, że szafa jakimś cudem stoi":"sugeruje, że coś zaczyna się chwiać"}.`,
+          `${avg3.toFixed(1)} formy z trzech kolejek ${trend>=0?"nie wygląda źle w świetle dziennym":"najlepiej oglądać z daleka"}.`,
+          `${benchSeason} punktów na ławce ${benchSeason>=40?"to cała szuflada zamontowana odwrotnie":"nie psuje jeszcze konstrukcji"}.`,
+          `${hitSeason} kosztów transferowych ${hitSeason>=8?"pokazuje, że instrukcja naprawdę by się przydała":"nie jest dziś głównym problemem"}.`
+        ],
+        [
+          `Przypadek ${x.manager} w ${x.team} bada redakcja, statystycy i prawdopodobnie ktoś od zarządzania kryzysowego.`,
+          `Miejsce ${x.rank}. oraz nota ${editorial}/10 ${editorial>=6?"bronią oskarżonego":"nie wyglądają dobrze w materiale dowodowym"}.`,
+          `Średnia ${avg3.toFixed(1)} ${trend>10?"podnosi linię obrony":trend<-10?"właśnie zeznaje przeciwko niemu":"pozostaje świadkiem neutralnym"}.`,
+          `Ławkowe ${benchSeason} ${benchSeason>=35?"to obciążający załącznik A":"nie wnosi wiele do sprawy"}.`,
+          `Transferowe ${hitSeason} punktów ${hitSeason>=12?"stanowi załącznik B i C":"nie wystarcza jeszcze do postawienia zarzutów"}.`
+        ],
+        [
+          `${x.manager} prowadzi ${x.team} jak audycję na żywo: bez możliwości montażu i z mikrofonem włączonym podczas każdej głupiej decyzji.`,
+          `Pozycja ${x.rank}. przy ${editorial}/10 ${editorial>=7?"brzmi dziś całkiem profesjonalnie":"nie nadaje się do chwalenia na antenie"}.`,
+          `Forma ${avg3.toFixed(1)} ${avg3>=50?"utrzymuje słuchaczy przy odbiornikach":"sprawia, że część odbiorców zmienia stację"}.`,
+          `${benchSeason} punktów na ławce ${benchSeason>=35?"to długi blok reklamowy zmarnowanych okazji":"nie przerywa jeszcze programu"}.`,
+          `Hity kosztujące ${hitSeason} ${hitSeason>=8?"są segmentem pod tytułem „po chuj to było?”":"nie dominują ramówki"}.`
+        ],
+        [
+          `${x.team} z ${x.manager} na czele przypomina pogodę w kwietniu: prognozy istnieją głównie po to, żeby się z nich później śmiać.`,
+          `${x.rank}. miejsce i rating ${editorial}/10 ${editorial>=6.5?"dają dziś trochę słońca":"zapowiadają opady ironii"}.`,
+          `${avg3.toFixed(1)} średnio z 3 GW ${trend>0?"oznacza poprawę ciśnienia":trend<0?"oznacza front atmosferyczny z kierunku „wpierdol”":"oznacza bezwietrzną przeciętność"}.`,
+          `Ławka z ${benchSeason} punktami ${benchSeason>=40?"to lokalna powódź":"pozostaje pod kontrolą"}.`,
+          `${hitSeason} punktów hitów ${hitSeason>=12?"wywołało ostrzeżenie pierwszego stopnia":"nie wymaga alertu RCB"}.`
+        ]
       ];
 
-      const idx = Math.abs(Number(x.entry)) % templates.length;
-      const uniqueCore = templates[idx](x);
+      const slot = Math.abs(Number(x.entry)) % banks.length;
+      const lines = banks[slot];
 
-      // Mandatory unique signature line ensures no two complete descriptions can ever be identical.
-      const signature = `Sygnatura profilu: ${x.manager} • ${x.team} • entry ${x.entry} • GW${gw}.`;
-
-      return `${uniqueCore} ${typeof teamNameRoasts === "function" ? teamNameRoasts(x.team, x.entry + gw*3) : ""} ${signature}`;
+      // If league grows beyond authored banks, append a unique stat-only sentence,
+      // but current league managers use separate banks above.
+      if (details.length > banks.length) {
+        lines.push(`Dla ${x.manager} bilans techniczny tej konkretnej kolejki to ${x.overall} overall przy entry ${x.entry}.`);
+      }
+      return lines.join(" ");
     };
 
     const managerProfiles = details.map(x => {
