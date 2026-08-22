@@ -4,7 +4,8 @@ import {
   getPremierLeagueBundle,
   findStanding,
   findPlayer,
-  getManchesterDerbies
+  getManchesterDerbies,
+  getPremierLeagueMinutesForPlayer
 } from "../../../lib/footballData";
 
 export const dynamic = "force-dynamic";
@@ -22,6 +23,7 @@ export async function GET() {
   try {
     const { standings, matches, scorers } = await getPremierLeagueBundle();
     const derbies = getManchesterDerbies(matches);
+    const cherkiMinutes = await getPremierLeagueMinutesForPlayer("Rayan Cherki", scorers);
 
     const results = bets.map(b => {
       const base = {
@@ -73,6 +75,13 @@ export async function GET() {
         };
       }
 
+      if (b.mode === "standings-versus-condition") {
+        const a = findStanding(standings, b.live.a), c = findStanding(standings, b.live.b);
+        if (!a || !c) return { ...base, liveText: "Brak danych drużyny" };
+        const noGames = (a.played ?? 0) === 0 && (c.played ?? 0) === 0;
+        return { ...base, liveText: `${a.team}: ${a.rank}. (${a.points} pkt) — ${c.team}: ${c.rank}. (${c.points} pkt)`, leader: noGames || a.rank === c.rank ? "Remis" : a.rank < c.rank ? b.live.yes : b.live.no };
+      }
+
       if (b.mode === "h2h-win") {
         const finished = derbies.filter(x => x.status === "FINISHED");
         const unitedWin = finished.some(x =>
@@ -106,6 +115,31 @@ export async function GET() {
           ...base,
           liveText: `${playerText(a)} • ${playerText(c)}`,
           leader: a.ga > c.ga ? "Pierwszy typ" : c.ga > a.ga ? "Drugi typ" : "Remis"
+        };
+      }
+
+      if (b.mode === "player-minutes-condition") {
+        const p = b.live.player === "Rayan Cherki" ? cherkiMinutes : null;
+
+        if (!p) {
+          return {
+            ...base,
+            liveText: `${b.live.player}: nie udało się pobrać minut`,
+            leader: null
+          };
+        }
+
+        const target = Number(b.live.target || 0);
+        const remaining = Math.max(0, target - p.minutes);
+        const conditionMet = p.minutes >= target;
+
+        return {
+          ...base,
+          liveText:
+            `${p.name}: ${p.minutes}/${target} min • ` +
+            `${p.matchesOnPitch} meczów na boisku • ` +
+            (conditionMet ? "CEL OSIĄGNIĘTY" : `pozostało ${remaining} min`),
+          leader: conditionMet ? b.live.yes : b.live.no
         };
       }
 
@@ -144,13 +178,20 @@ export async function GET() {
       return base;
     });
 
-    return NextResponse.json({
-      ok: true,
-      provider: "football-data.org",
-      updatedAt: new Date().toISOString(),
-      standings,
-      results
-    });
+    return NextResponse.json(
+      {
+        ok: true,
+        provider: "football-data.org",
+        updatedAt: new Date().toISOString(),
+        standings,
+        results
+      },
+      {
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+        }
+      }
+    );
   } catch (error) {
     return NextResponse.json(
       {
@@ -158,7 +199,12 @@ export async function GET() {
         error: error.message,
         hint: "Sprawdź FOOTBALL_DATA_TOKEN w Vercel → Settings → Environment Variables."
       },
-      { status: 500 }
+      {
+        status: 500,
+        headers: {
+          "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+        }
+      }
     );
   }
 }

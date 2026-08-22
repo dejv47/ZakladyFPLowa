@@ -36,3 +36,20 @@ Po dodaniu zmiennych zrób Redeploy.
 
 Ta konfiguracja celowo pozwala każdemu odwiedzającemu stronę edytować ręczne wyniki.
 Nie ma logowania ani hasła, zgodnie z założeniem projektu.
+
+
+## v4 — ochrona przed starą wersją z cache
+
+- główna strona ma `Cache-Control: no-store`,
+- `/api/live` ma `Cache-Control: no-store`,
+- frontend dodaje `?t=<timestamp>` do każdego pobrania danych,
+- request do danych live ma timeout 10 sekund,
+- po nowym deploymencie zwykłe odświeżenie powinno wystarczyć zamiast Ctrl+F5.
+
+
+## v6 — automatyczne minuty Cherkiego
+
+Zakład „Rayan Cherki minimum 2000 minut w Premier League” jest teraz automatyczny.
+Backend pobiera osobę z kadry Manchesteru City, a następnie korzysta z
+`/persons/{id}/matches?competitions=2021&status=FINISHED` i odczytuje
+`aggregations.minutesPlayed`.

@@ -15,9 +15,8 @@ function defaultsFor(type) {
   if (type === "sesko-watkins") {
     return { seskoGoals: 0, seskoAssists: 0, watkinsGoals: 0, watkinsAssists: 0 };
   }
-  if (type === "fpl") {
-    return { dejv: 0, radek: 0, note: "" };
-  }
+  if (type === "fpl") return { dejv: 0, radek: 0, note: "" };
+  if (type === "cherki-mbeumo") return { cherkiGoals: 0, cherkiAssists: 0, mbeumoGoals: 0, mbeumoAssists: 0 };
   return {};
 }
 
@@ -38,6 +37,7 @@ function manualText(type, value) {
     return `Dejv: ${v.dejv || 0} pkt — Radek: ${v.radek || 0} pkt${v.note ? ` • ${v.note}` : ""}`;
   }
 
+  if (type === "cherki-mbeumo") { const c=Number(v.cherkiGoals||0)+Number(v.cherkiAssists||0), m=Number(v.mbeumoGoals||0)+Number(v.mbeumoAssists||0); return `Rayan Cherki: ${v.cherkiGoals||0}G + ${v.cherkiAssists||0}A = ${c} G+A — Bryan Mbeumo: ${v.mbeumoGoals||0}G + ${v.mbeumoAssists||0}A = ${m} G+A`; }
   return "Ręczne rozliczenie";
 }
 
@@ -60,6 +60,8 @@ function manualLeader(type, value) {
     return "Remis";
   }
 
+  if (type === "cherki-minutes") return Number(v.minutes||0)>=2000 ? "Dejv" : "Janek";
+  if (type === "cherki-mbeumo") { const c=Number(v.cherkiGoals||0)+Number(v.cherkiAssists||0), m=Number(v.mbeumoGoals||0)+Number(v.mbeumoAssists||0); return c>m?"Dejv":m>c?"Rudy":"Remis"; }
   return null;
 }
 
@@ -138,6 +140,7 @@ function ManualEditor({ betId, type, value, onSaved }) {
           <label className="wide">Uwagi<input type="text" value={form.note ?? ""} onChange={e => setForm({ ...form, note: e.target.value })} /></label>
         </div>
       )}
+{type === "cherki-mbeumo" && (<><div className="editorGroup"><strong>Rayan Cherki</strong><label>Gole<input type="number" min="0" value={form.cherkiGoals??0} onChange={e=>setForm({...form,cherkiGoals:Number(e.target.value)})}/></label><label>Asysty<input type="number" min="0" value={form.cherkiAssists??0} onChange={e=>setForm({...form,cherkiAssists:Number(e.target.value)})}/></label></div><div className="editorGroup"><strong>Bryan Mbeumo</strong><label>Gole<input type="number" min="0" value={form.mbeumoGoals??0} onChange={e=>setForm({...form,mbeumoGoals:Number(e.target.value)})}/></label><label>Asysty<input type="number" min="0" value={form.mbeumoAssists??0} onChange={e=>setForm({...form,mbeumoAssists:Number(e.target.value)})}/></label></div></>)}
 
       {type === "resovia" && (
         <div className="editorGroup">
@@ -176,12 +179,25 @@ export default function Home() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("/api/live", { cache: "no-store" });
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), 10000);
+
+      const res = await fetch(`/api/live?t=${Date.now()}`, {
+        cache: "no-store",
+        signal: controller.signal,
+        headers: { "Cache-Control": "no-cache" }
+      });
+
+      clearTimeout(timeout);
       const json = await res.json();
       if (!res.ok || !json.ok) throw new Error(json.hint || json.error || "Błąd API");
       setData(json);
     } catch (e) {
-      setError(e.message);
+      setError(
+        e?.name === "AbortError"
+          ? "Pobieranie danych trwało zbyt długo. Spróbuj odświeżyć stronę."
+          : e.message
+      );
     } finally {
       setLoading(false);
     }
@@ -229,6 +245,8 @@ export default function Home() {
   const visible = filter === "Wszystkie"
     ? rows
     : rows.filter(r => r.people.toLowerCase().includes(filter.toLowerCase()));
+
+  const moneySummary = useMemo(() => { const net={}; rows.forEach(b=>{ if(!b.leader||["Remis","Pierwszy typ","Drugi typ"].includes(b.leader)) return; const names=b.people.split(" i ").map(x=>x.trim()); if(names.length!==2)return; const winner=names.find(n=>n.toLowerCase()===String(b.leader).toLowerCase()); if(!winner)return; const loser=names.find(n=>n!==winner); const amount=Number(String(b.amount).replace(/[^\d,.-]/g,"").replace(",","."))||0; net[winner]=(net[winner]||0)+amount; net[loser]=(net[loser]||0)-amount; }); return net; },[rows]);
 
   return (
     <main className="shell">
@@ -298,6 +316,8 @@ export default function Home() {
           </article>
         ))}
       </section>
+
+      <section className="tableWrap"><h2>Kto komu wisi — na ten moment</h2><p className="note">Orientacyjny bilans według aktualnych prowadzących. Remisy i zakłady bez lidera nie są liczone.</p><div className="table">{Object.entries(moneySummary).sort((a,b)=>b[1]-a[1]).map(([name,value])=><div className="tr" key={name}><strong>{name}</strong><span></span><span></span><span></span><strong>{value>0?"+":""}{value.toFixed(0)} zł</strong></div>)}{Object.keys(moneySummary).length===0&&<div className="tr"><strong>Na razie brak przewag do policzenia</strong></div>}</div></section>
 
       {data?.standings?.length > 0 && (
         <section className="tableWrap">
