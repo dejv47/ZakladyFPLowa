@@ -623,7 +623,14 @@ export default function FPLPage(){
        <div className="awardGallery">{data.museum.map((x,i)=><div className="awardBig" key={i}><span>{x.icon}</span><div><b>{x.name}</b><strong>{x.manager}</strong><small>{x.team} • {x.value}</small></div></div>)}</div>
      </Card>
    </section>}
-   {data&&tab==="studio"&&<PostMatchStudio data={data}/>}
+   {data&&tab==="studio"&&<>
+     <PostMatchStudio data={data}/>
+     <section className="megaGrid studioExtras">
+       <V39RivalReplies data={data}/>
+       <V39Notes data={data}/>
+       <V39Jug data={data}/>
+     </section>
+   </>}
    {data&&tab==="rywalizacja"&&<section className="megaGrid">
      <Card title="🥊 Rywalizacje head-to-head">
        <div className="rivalryCards">
@@ -653,9 +660,6 @@ export default function FPLPage(){
      <Card title="🎙️ Konferencja prasowa">
        {data.grades.map((x,i)=><blockquote key={x.entry}><div className="pressSpeaker"><span>🎙️</span><div><b>{x.manager}</b><small>{x.team}</small></div></div>{pressQuote(x,data.gw,i,data.grades)}<small>{pressReaction(x,data.gw,i,data.grades)}</small></blockquote>)}
      </Card>
-     <V39RivalReplies data={data}/>
-     <V39Notes data={data}/>
-     <V39Jug data={data}/>
    </section>}
  </main>
  </>
