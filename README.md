@@ -82,3 +82,19 @@ Backend pobiera osobę z kadry Manchesteru City, a następnie korzysta z
 - Jeśli klub zawodnika jeszcze nie rozpoczął meczu, zawodnik ma w artykułach 0 punktów i status `jeszcze nie grał`.
 - Bohater/najgorszy zawodnik wybierany jest tylko spośród graczy, których spotkanie faktycznie się rozpoczęło.
 - Zapobiega to tekstom typu „Garnacho 30 pkt” przed jego meczem.
+
+## v18 — dynamiczna FPLowa TOP 10
+Dodano pulę kategorii: Frajer kolejki, Transfer z dupy/Prokuratura FPL, 200 IQ,
+Ławkowy Guardiola, Kapitan debil, Owca kolejki, Differential Chad, Jednoosobowa armia,
+Pasożyty kolejki, Szpital polowy, Financial Fair Play, Z chuja do bohatera,
+Titanic Award, Największy pechowiec, Farciarz jebany, Derby FPLowej,
+Power Ranking oraz dotychczasowe najlepszy/najgorszy wynik.
+Każda kategoria dostaje relevance score; publikowane jest tylko 10 najwyżej ocenionych.
+
+
+## v19 — tryb chamskiego brukowca
+- Znacznie większe banki tekstów i obelg.
+- Mocniejsze przekleństwa i bezpośrednie roastowanie decyzji menedżerów.
+- Warianty zmieniają się między GW, żeby gazeta nie waliła w kółko tym samym tekstem.
+- Nadal publikowane jest maksymalnie 10 najbardziej trafnych kategorii.
+- Dane punktowe pozostają oddzielone od warstwy satyrycznej.

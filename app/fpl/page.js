@@ -37,7 +37,7 @@ export default function FPLPage(){
        {data ? (data.gwFinished ? " • WYDANIE KOŃCOWE" : " • LIVE") : ""}
      </span>
      <h1>📰 PODSUMOWANIE KOLEJKI</h1>
-     <p>Siedem kategorii, realne dane z kolejki i redakcja, która nie ma zamiaru nikogo oszczędzać.</p>
+     <p>10 najbardziej pasujących historii kolejki. Brukowiec bez litości: punkty są prawdziwe, kultura wypowiedzi już niekoniecznie.</p>
      {data?.updatedAt && <small className="fplUpdated">Automatyczna aktualizacja: {new Date(data.updatedAt).toLocaleString("pl-PL")}</small>}
      </div>
    </section>
