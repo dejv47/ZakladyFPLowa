@@ -11,164 +11,307 @@ function confHash(s){
  for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}
  return h>>>0;
 }
-function confPick(arr, seed){ return arr[Math.abs(seed)%arr.length]; }
-
 function conferenceMood(p, league){
  const pts=Number(p.gwPoints||0);
- const scores=(league||[]).map(x=>Number(x.gwPoints||0)).sort((a,b)=>a-b);
- const avg=scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:pts;
- const rank=[...(league||[])].sort((a,b)=>Number(b.gwPoints||0)-Number(a.gwPoints||0))
-   .findIndex(x=>x.entry===p.entry)+1;
- const n=Math.max(scores.length,1);
+ const sorted=[...(league||[])].sort((a,b)=>Number(b.gwPoints||0)-Number(a.gwPoints||0));
+ const rank=sorted.findIndex(x=>x.entry===p.entry)+1;
+ const n=Math.max(sorted.length,1);
+ const avg=sorted.reduce((s,x)=>s+Number(x.gwPoints||0),0)/n;
  if(rank===1 || pts>=avg+12) return "great";
  if(rank>0 && rank<=Math.max(2,Math.ceil(n*.25))) return "good";
- if(rank>=Math.max(1,Math.ceil(n*.75)) || pts<=avg-12) return "bad";
- if(rank===n || pts<=avg-20) return "awful";
+ if(rank===n || pts<=avg-18) return "awful";
+ if(rank>=Math.ceil(n*.75) || pts<=avg-10) return "bad";
  return "neutral";
 }
-
-const CONF_BANK={
- great:{
-  open:[
-   "{M} wszedł po GW{GW} jak właściciel ligi, a nie jej uczestnik. {PTS} punktów daje dziś pełne prawo do bezczelnego uśmiechu.",
-   "W siedzibie {T} po GW{GW} nie było konferencji kryzysowej. Było raczej kontrolowane chwalenie się wynikiem {PTS} pkt.",
-   "{M} pojawił się przed mikrofonami po GW{GW} w nastroju człowieka, któremu tym razem FPL nie zdążyło napluć do kawy.",
-   "Po GW{GW} {M} miał {PTS} powodów punktowych, żeby przez kilka minut udawać, że ta gra jest banalnie prosta.",
-   "{T} właśnie zaliczyło kolejkę, po której nawet najwięksi hejterzy muszą na moment zamknąć mordę: {PTS} pkt."
-  ],
-  body:[
-   "„Nie będę udawał skromnego. Dzisiaj decyzje siadły i wreszcie to ja patrzę na cudze czerwone strzałki jak na program rozrywkowy.”",
-   "„Kapitan, skład i cierpliwość wreszcie nie działały przeciwko mnie. Aż dziwnie grać w FPL bez poczucia, że ktoś cię właśnie okradł.”",
-   "„To była dobra robota, ale nie zamierzam teraz kupować pięciu differentiali tylko dlatego, że przez jeden weekend poczułem się jak geniusz.”",
-   "„Najbardziej cieszy mnie, że tym razem plan przetrwał kontakt z rzeczywistością. W tej grze to prawie wydarzenie historyczne.”",
-   "„Mogę dziś kozaczyć, ale deadline szybko leczy z pychy. Dlatego celebracja kończy się zanim zacznę wierzyć we własne tweety.”"
-  ],
-  end:[
-   "„Za tydzień chcę potwierdzenia, nie pomnika. Jedna świetna GW nie daje immunitetu na kolejne głupoty.”",
-   "„Nie ruszam połowy składu po sukcesie. Brzmi oczywiście, ale znam siebie, więc wolę powiedzieć to publicznie.”",
-   "„Dzisiaj piwo za wynik, jutro znowu analiza. FPL bardzo szybko zmienia bohatera w mema.”",
-   "„Niech rywale się martwią. Ja pierwszy raz od dawna nie muszę.”"
-  ]
- },
- good:{
-  open:[
-   "{M} po GW{GW} wyglądał na zadowolonego, ale jeszcze nie na tyle, żeby zamawiać mural pod stadionem {T}. Wynik: {PTS} pkt.",
-   "{T} wyszło z GW{GW} z {PTS} punktami i bez potrzeby wzywania egzorcysty do aplikacji FPL.",
-   "Po solidnej GW{GW} {M} usiadł przed mikrofonem spokojnie. {PTS} pkt to nie orgazm, ale zdecydowanie nie powód do płaczu.",
-   "{M} przyjął gratulacje za GW{GW} z ostrożnością człowieka, który wie, że następny deadline już ostrzy nóż.",
-   "W {T} panuje umiarkowany optymizm: {PTS} pkt, kilka trafionych decyzji i wyjątkowo mało powodów, żeby wyjebać telefon przez okno."
-  ],
-  body:[
-   "„Było dobrze. Nie idealnie, ale w FPL człowiek szybko uczy się szanować weekend, po którym nie musi usuwać aplikacji.”",
-   "„Kilka decyzji siadło, kilka można było zrobić lepiej. Najważniejsze, że nie muszę dziś wymyślać teorii o pechu.”",
-   "„Nie wygrałem świata, ale też nie zrobiłem z siebie idioty. W naszej lidze to całkiem wartościowy kompromis.”",
-   "„Forma idzie w dobrą stronę. Teraz trzeba tylko nie zepsuć jej transferem wykonanym z nudów.”",
-   "„Jest zielona energia. Nie będę jej zabijał panicznym -8 tylko dlatego, że ktoś strzelił dwa gole w sobotę.”"
-  ],
-  end:[
-   "„Bierzemy punkty i spierdalmy z konferencji zanim ktoś zapyta o ławkę.”",
-   "„Następna GW ma być kontynuacją, nie eksperymentem medycznym na własnym składzie.”",
-   "„Jest dobrze, więc największym zagrożeniem dla {T} jestem teraz prawdopodobnie ja sam.”",
-   "„Bez fajerwerków. Wystarczy, że tabela zaczyna wyglądać trochę mniej obraźliwie.”"
-  ]
- },
- neutral:{
-  open:[
-   "GW{GW} nie dała {M} ani powodów do parady, ani podstaw do emigracji. {PTS} punktów i klasyczne FPL-owe „meh”.",
-   "{M} przyszedł po GW{GW} z wynikiem {PTS} pkt. Dokładnie takim, przy którym nie wiesz, czy pić za sukces, czy z rozczarowania.",
-   "W {T} po GW{GW} atmosfera była jak wynik: ani dobrze, ani tragicznie, po prostu człowiek patrzy i wzrusza ramionami.",
-   "{PTS} punktów w GW{GW} zostawiło {M} w najbardziej irytującym miejscu FPL — bez katastrofy, ale też bez czym się pochwalić.",
-   "Konferencja {T} po GW{GW} zaczęła się od słowa „średnio”. Redakcja uznała, że tym razem analiza może się na tym właściwie zakończyć."
-  ],
-  body:[
-   "„Nie było tragedii, ale jeśli chcemy coś ugrać, samo niebycie tragicznym to trochę chujowy plan.”",
-   "„Część składu zrobiła swoje, reszta wyglądała jak statyści. Czyli standardowy weekend fantasy.”",
-   "„Nie będę robił rewolucji po przeciętnej kolejce. To właśnie rewolucje po przeciętnych kolejkach robią z ludzi późniejszych pacjentów.”",
-   "„Wynik nie boli, ale też nie daje satysfakcji. To taki remis 0:0 z FPL, którego nikt nie będzie wspominał.”",
-   "„Mam kilka rzeczy do poprawy, ale żadna nie wymaga od razu detonowania wildcarda.”"
-  ],
-  end:[
-   "„Zapominamy o tej kolejce. Ani do muzeum, ani do gabloty.”",
-   "„Następnym razem chcę dać redakcji powód do chwalenia albo przynajmniej ciekawszego wyśmiewania.”",
-   "„Punkty dopisane. Emocje można było zostawić w domu.”",
-   "„Niech GW{GW} zostanie tam, gdzie jej miejsce: w historii, najlepiej bez powtórki.”"
-  ]
- },
- bad:{
-  open:[
-   "{M} wszedł po GW{GW} z miną człowieka, który już wie, że pierwsze pytanie będzie o te jebane {PTS} punktów.",
-   "W {T} po GW{GW} nikt nie mówił o pechu. Przy {PTS} pkt pech byłby wręcz zbyt uprzejmym określeniem.",
-   "Konferencję po GW{GW} rozpoczęto bez muzyki. {M} uznał, że wynik {PTS} pkt sam w sobie jest wystarczająco smutnym soundtrackiem.",
-   "{M} po GW{GW} wyglądał, jakby właśnie zobaczył własną ławkę, kapitana i transfery jednocześnie. {PTS} pkt nie poprawiało humoru.",
-   "{T} zaliczyło kolejkę z kategorii „proszę usunąć historię przeglądania”. {M}: {PTS} punktów i sporo materiału do aktu oskarżenia."
-  ],
-  body:[
-   "„Nie będę pierdolił o procesie. Zagrałem słabo i kilka decyzji zasługuje na natychmiastowe przesłuchanie.”",
-   "„Najgorsze jest to, że przed deadlinem wszystko wydawało mi się logiczne. To trochę przerażające.”",
-   "„Jeżeli mój następny pomysł będzie równie genialny, liczę, że ktoś fizycznie odsunie mnie od klawiatury.”",
-   "„Nie będę karał całego składu za własną głupotę. Najpierw wypadałoby ukarać menedżera.”",
-   "„Ta kolejka pokazała, że można analizować przez tydzień i nadal dojść do spektakularnie złej odpowiedzi.”"
-  ],
-  end:[
-   "„Nie robię panicznych transferów. Powtarzam to teraz głównie po to, żebym sam to, kurwa, usłyszał.”",
-   "„Za tydzień chcę punktów, nie kolejnej konferencji terapeutycznej.”",
-   "„GW{GW} idzie do kosza. Oby razem z częścią moich pomysłów.”",
-   "„Kibice {T} mają prawo być wkurwieni. Ja też jestem, tylko niestety na siebie.”"
-  ]
- },
- awful:{
-  open:[
-   "Po GW{GW} {M} wszedł do sali, ale wynik {PTS} pkt wszedł tam pierwszy i od razu zaczął go napierdalać krzesłem.",
-   "{T} właśnie rozegrało fantasy odpowiednik pożaru śmietnika. {PTS} punktów i nawet śmietnik prosi o nieporównywanie.",
-   "Przy {PTS} punktach w GW{GW} konferencja {M} była formalnością. Akt oskarżenia zdążyła wcześniej napisać tabela.",
-   "{M} po GW{GW} nie szukał wymówek. Przy {PTS} pkt nawet wymówki odmówiły występu z powodu wstydu.",
-   "To nie była słaba GW{GW}. To był zamach na ranking {T}, a głównym podejrzanym pozostaje jego własny menedżer."
-  ],
-  body:[
-   "„To było gówno. Nie 'poniżej oczekiwań', nie 'trudny weekend'. Gówno. Możemy przejść do następnego pytania.”",
-   "„Jeżeli ktoś chce zobaczyć, jak nie prowadzić drużyny fantasy, chętnie udostępnię historię decyzji. Materiał jest kompletny.”",
-   "„Mój kapitan, transfery i ławka stworzyli dziś koalicję przeciwko mnie. Niestety wszystkich wybrałem osobiście.”",
-   "„Nie mam prawa narzekać na pecha, kiedy sam podałem FPL nabity pistolet i poprosiłem, żeby strzeliło mi w stopę.”",
-   "„Najrozsądniejszym ruchem po tej kolejce może być niedotykanie niczego, łącznie z aplikacją.”"
-  ],
-  end:[
-   "„Przepraszam kibiców {T}. Następna kolejka nie może być gorsza, chociaż po tym weekendzie boję się wypowiadać takie zdania.”",
-   "„Jeśli zobaczycie ode mnie -16 przed kolejną GW, zgłoście konto jako przejęte.”",
-   "„Zamykamy temat, gasimy światło i udajemy, że GW{GW} była błędem serwera.”",
-   "„Dzisiaj nie ma planu naprawczego. Najpierw trzeba ustalić, co dokładnie tu, kurwa, eksplodowało.”"
-  ]
- }
-};
-
-function renderConf(t,p,gw){
- return t.replaceAll("{M}",p.manager).replaceAll("{T}",p.team)
-  .replaceAll("{GW}",String(gw)).replaceAll("{PTS}",String(p.gwPoints??0));
+function gwRank(p,league){
+ return [...(league||[])].sort((a,b)=>Number(b.gwPoints||0)-Number(a.gwPoints||0))
+   .findIndex(x=>x.entry===p.entry)+1;
 }
+
+/*
+ Each slot below has its OWN voice and sentence construction.
+ No conference sentence is shared between slots.
+ Each mood also has 4 GW variants so the same manager does not repeat
+ the same wording every round.
+*/
+const MANAGER_VOICES = [
+ { // 0 - swagger / arrogance
+  great:[
+   p=>`${p.manager} wszedł na salę jak człowiek, który właśnie kupił tę ligę wraz z prawami telewizyjnymi. ${p.gwPoints} pkt zrobiło swoje.`,
+   p=>`W ${p.team} otwarto dziś szampana bezalkoholowego, bo ${p.manager} chce pamiętać, jak to jest być najlepszym w kolejce.`,
+   p=>`${p.manager} nie usiadł przed mikrofonem — praktycznie się przed nim rozsiadł. Przy ${p.gwPoints} pkt można sobie na chwilę pozwolić.`,
+   p=>`Po tym wyniku ${p.manager} wyglądał, jakby zaraz miał ogłosić własną dynastię. ${p.team} chwilowo daje mu do tego argumenty.`
+  ],
+  good:[
+   p=>`${p.manager} był zadowolony, ale jeszcze nie arogancki. Redakcja daje mu maksymalnie tydzień.`,
+   p=>`${p.team} zaliczyło solidny weekend, więc ${p.manager} pierwszy raz od dawna nie musiał tłumaczyć się ze wszystkiego.`,
+   p=>`${p.manager} przyjął wynik z miną człowieka, który wie, że zrobił dobrze, ale jeszcze boi się powiedzieć to za głośno.`,
+   p=>`W obozie ${p.team} jest lekki uśmiech. Nie parada, nie pomnik — po prostu weekend bez przypału.`
+  ],
+  neutral:[
+   p=>`${p.manager} przyznał, że ta kolejka była jak letnia herbata: da się wypić, ale nikt nie będzie wspominał.`,
+   p=>`${p.team} przeżyło GW bez katastrofy i bez fajerwerków. ${p.manager} nazywa to „kontrolą”.`,
+   p=>`${p.manager} wyglądał dokładnie tak, jak jego wynik: ani szczęśliwy, ani załamany, trochę wkurwiony.`,
+   p=>`To była kolejka tak przeciętna, że ${p.manager} nie znalazł nawet czego porządnie bronić na konferencji.`
+  ],
+  bad:[
+   p=>`${p.manager} wszedł bez uśmiechu. Przy takim wyniku nawet jego ego wolało zostać w szatni.`,
+   p=>`W ${p.team} zamiast konferencji powinno być przesłuchanie. ${p.manager} wie, że kilka decyzji wymaga wyjaśnień.`,
+   p=>`${p.manager} próbował zachować spokój, ale ton głosu mówił: „tak, też widziałem tę jebaną ławkę”.`,
+   p=>`Po tej kolejce ${p.manager} nie wyglądał jak właściciel ligi. Bardziej jak ktoś, komu właśnie ją odebrano.`
+  ],
+  awful:[
+   p=>`${p.manager} pojawił się na konferencji tylko dlatego, że regulamin podobno zabrania ucieczki przez okno.`,
+   p=>`${p.team} zaliczyło taki wpierdol, że ${p.manager} przez chwilę pytał, czy można anulować GW administracyjnie.`,
+   p=>`Na twarzy ${p.manager} było wszystko: szok, żal i świadomość, że screenshoty już krążą po grupie.`,
+   p=>`${p.manager} zaczął od „dzień dobry”, po czym wynik przypomniał wszystkim, że dobry to ten dzień raczej nie był.`
+  ]
+ },
+ { // 1 - courtroom voice
+  great:[
+   p=>`Sąd FPL w sprawie ${p.manager} przeciwko rozsądkowi wydał dziś zaskakujący wyrok: niewinny, a nawet cholernie skuteczny.`,
+   p=>`Prokuratura wycofała zarzuty wobec ${p.team}. Dowód numer jeden: ${p.gwPoints} punktów.`,
+   p=>`${p.manager} pojawił się z teczką pełną punktów. Tym razem materiał dowodowy działa na jego korzyść.`,
+   p=>`Po analizie akt GW sąd uznał, że ${p.manager} może przez tydzień chodzić bez kuratora.`
+  ],
+  good:[
+   p=>`Sprawa ${p.team} została warunkowo umorzona. ${p.manager} zrobił wystarczająco dużo dobrego, by uniknąć aktu oskarżenia.`,
+   p=>`Prokurator FPL nie znalazł dziś podstaw do zatrzymania ${p.manager}. Kilka decyzji wyglądało wręcz legalnie.`,
+   p=>`W aktach ${p.team} są drobne wykroczenia, ale ogólny bilans kolejki broni oskarżonego.`,
+   p=>`${p.manager} opuszcza salę sądową bez kajdanek. Wynik był przyzwoity i to go uratowało.`
+  ],
+  neutral:[
+   p=>`Postępowanie wobec ${p.manager} pozostaje otwarte. Za mało dobrego na uniewinnienie, za mało złego na wyrok.`,
+   p=>`Biegli przejrzeli kolejkę ${p.team} i wzruszyli ramionami. Materiał dowodowy jest wyjątkowo nudny.`,
+   p=>`${p.manager} otrzymał pouczenie zamiast kary. Następny deadline pokaże, czy coś zrozumiał.`,
+   p=>`Sąd odroczył rozprawę ${p.team}. Ta kolejka nie dostarczyła ani sensacji, ani mocnych dowodów.`
+  ],
+  bad:[
+   p=>`Prokuratura FPL wszczęła postępowanie wobec ${p.manager}. Zarzuty: złe decyzje, słaby wynik i bezczelność wobec logiki.`,
+   p=>`W aktach ${p.team} pojawiły się nowe dowody. ${p.manager} skorzystał z prawa do milczenia przy pytaniu o skład.`,
+   p=>`Sędzia poprosił ${p.manager} o wyjaśnienie decyzji. Odpowiedź „wydawało się sensowne” nie została uznana za okoliczność łagodzącą.`,
+   p=>`${p.team} ma problem prawny: liczby zeznają przeciwko własnemu menedżerowi.`
+  ],
+  awful:[
+   p=>`Akt oskarżenia wobec ${p.manager} ma już więcej stron niż instrukcja do FPL. Obrona odmówiła komentarza.`,
+   p=>`Sąd uznał ${p.team} za miejsce zbrodni, a ${p.manager} za osobę ostatnio widzianą przy przycisku Save My Team.`,
+   p=>`Prokurator przeczytał wynik ${p.manager}, zamknął teczkę i powiedział tylko: „ja pierdolę”.`,
+   p=>`W sprawie ${p.team} nie będzie ugody. Dowody są brutalne, a tabela wyjątkowo rozmowna.`
+  ]
+ },
+ { // 2 - medical voice
+  great:[
+   p=>`Lekarze wypisali ${p.manager} z oddziału FPL. Wyniki są świetne, ciśnienie stabilne, ego lekko podwyższone.`,
+   p=>`${p.team} odzyskało puls. ${p.manager} po dobrym wyniku wygląda zdrowiej niż przez cały poprzedni tydzień.`,
+   p=>`Badania ${p.manager} wykazały wysokie stężenie zielonych strzałek i niebezpieczny wzrost pewności siebie.`,
+   p=>`Stan ${p.team}: bardzo dobry. Lekarz zaleca nie dotykać składu bez wyraźnej potrzeby.`
+  ],
+  good:[
+   p=>`Pacjent ${p.manager} reaguje na leczenie. Punkty wróciły, panika ustąpiła, wildcard nie jest dziś potrzebny.`,
+   p=>`${p.team} jest w stanie stabilnym. ${p.manager} może wrócić do domu, ale aplikację powinien otwierać z umiarem.`,
+   p=>`Parametry ${p.manager} wyglądają zdrowo. Nie ma potrzeby amputowania połowy składu.`,
+   p=>`Konsylium uznało, że ${p.team} przeżyje bez radykalnej terapii transferowej.`
+  ],
+  neutral:[
+   p=>`Stan ${p.manager}: stabilny, bez poprawy i bez gwałtownego pogorszenia. Typowe FPL-owe podgorączkowe.`,
+   p=>`Badania ${p.team} są nijakie. Nic nie alarmuje, nic nie cieszy. Lekarz zaleca cierpliwość.`,
+   p=>`${p.manager} nie wymaga hospitalizacji, ale obserwacja do kolejnego deadline'u pozostaje wskazana.`,
+   p=>`Pacjent żyje. To najważniejszy wniosek z tej kolejki ${p.team}.`
+  ],
+  bad:[
+   p=>`${p.manager} trafił na obserwację. Objawy: czerwone strzałki, nerwowe transfery i przewlekłe patrzenie na ławkę.`,
+   p=>`Stan ${p.team} pogorszył się po weekendzie. Lekarz zabronił ${p.manager} podejmowania decyzji po 23:00.`,
+   p=>`Wyniki badań są słabe. ${p.manager} pytał o wildcard, ale lekarz przepisał mu najpierw sen i rozsądek.`,
+   p=>`${p.team} ma gorączkę transferową. Głównym nosicielem pozostaje ${p.manager}.`
+  ],
+  awful:[
+   p=>`Oddział ratunkowy przyjął ${p.manager} po ciężkim urazie rankingowym. Rokowania zależą od tego, czy przestanie dotykać składu.`,
+   p=>`Stan ${p.team}: krytyczny. Defibrylator, wildcard i trzy zdrowaśki przygotowane.`,
+   p=>`Lekarz spojrzał na wynik ${p.manager} i zapytał, czy to na pewno nie jest literówka.`,
+   p=>`W dokumentacji ${p.team} wpisano: „ostry przypadek samosabotażu fantasy”.`
+  ]
+ },
+ { // 3 - corporate/CEO
+  great:[
+   p=>`${p.manager} zaprezentował wyniki kwartalne ${p.team} i po raz pierwszy slajd „performance” nie wymagał kreatywnej księgowości.`,
+   p=>`Zarząd ${p.team} zatwierdził premię dla ${p.manager}. Akcjonariusze dostali punkty zamiast obietnic.`,
+   p=>`Raport ${p.team} wygląda świetnie: wzrost, punkty i brak konieczności zwalniania prezesa.`,
+   p=>`${p.manager} zakończył GW jak CEO po rekordowym kwartale. PowerPoint praktycznie sam się oklaskiwał.`
+  ],
+  good:[
+   p=>`Wyniki ${p.team} są na plus. ${p.manager} nie dostał premii, ale też nikt nie aktualizuje LinkedIna.`,
+   p=>`Zarząd ocenił kolejkę pozytywnie. KPI zostały dowiezione bez większego korporacyjnego bullshitu.`,
+   p=>`${p.manager} zamknął tydzień solidnie. Dział PR nie musiał nawet używać słowa „transformacja”.`,
+   p=>`Akcjonariusze ${p.team} są spokojni. Na razie nie żądają głowy ${p.manager}.`
+  ],
+  neutral:[
+   p=>`Raport ${p.team}: „zgodnie z oczekiwaniami”. Najbardziej korporacyjne określenie przeciętności, jakie istnieje.`,
+   p=>`${p.manager} dowiózł dokładnie tyle, żeby spotkanie zarządu skończyło się bez awantury i bez szampana.`,
+   p=>`KPI ${p.team} są płaskie. ${p.manager} nazwał to „fazą konsolidacji”.`,
+   p=>`W firmie ${p.team} business as usual. Czyli trochę punktów i dużo maili.`
+  ],
+  bad:[
+   p=>`Zarząd ${p.team} zażądał planu naprawczego. ${p.manager} przyniósł listę transferów, co tylko pogorszyło atmosferę.`,
+   p=>`Wyniki kwartalne są słabe. CFO zapytał ${p.manager}, dlaczego tyle punktów wydano na hity.`,
+   p=>`Akcjonariusze ${p.team} nie kupili narracji o procesie. Chcą punktów, nie roadmapy.`,
+   p=>`${p.manager} zachował stanowisko, ale HR już zarezerwował salę na „rozmowę rozwojową”.`
+  ],
+  awful:[
+   p=>`Walne zgromadzenie ${p.team} trwało siedem minut. Sześć z nich poświęcono pytaniu, co ${p.manager} właściwie odpierdolił.`,
+   p=>`Kurs akcji ${p.team} runął po publikacji wyniku. ${p.manager} zapewnia, że fundamenty są zdrowe. Nikt mu nie wierzy.`,
+   p=>`Zarząd zamroził budżet transferowy ${p.manager}. Powód: zagrożenie dla majątku spółki.`,
+   p=>`Raport audytora ${p.team} zawiera jedno zdanie: „natychmiast ograniczyć dostęp menedżera do aplikacji”.`
+  ]
+ },
+ { // 4 - military
+  great:[p=>`${p.manager} zameldował wykonanie zadania. ${p.team} wraca z GW z kompletem honorów i bez strat własnych.`,p=>`Operacja ${p.team} zakończona sukcesem. ${p.manager} może dziś przypiąć sobie medal z zielonej strzałki.`,p=>`Dowódca ${p.manager} poprowadził skład przez kolejkę bez większych strat. Wróg został wypunktowany.`,p=>`${p.team} wygrało bitwę weekendu. ${p.manager} przez chwilę może udawać Napoleona FPL.`],
+  good:[p=>`Misja ${p.team} wykonana poprawnie. ${p.manager} nie zdobył stolicy, ale wrócił z punktami.`,p=>`Dowództwo ocenia działania ${p.manager} pozytywnie. Front rankingowy przesunął się we właściwą stronę.`,p=>`${p.team} utrzymało pozycje i dołożyło kilka punktowych zdobyczy. Bez bohaterstwa, bez dezercji.`,p=>`Raport bojowy ${p.manager}: solidnie. Ammunicja punktowa wykorzystana rozsądnie.`],
+  neutral:[p=>`Na froncie ${p.team} bez przełomu. ${p.manager} wraca z patrolu z dokładnie tym samym poziomem frustracji.`,p=>`Operacja GW zakończyła się bez zwycięstwa i bez klęski. Dowództwo wzruszyło ramionami.`,p=>`${p.manager} utrzymał linię, ale nie ruszył naprzód. Wojna FPL trwa.`,p=>`Raport ${p.team}: brak istotnych zmian na froncie rankingowym.`],
+  bad:[p=>`${p.team} cofnęło się pod naporem blanków. ${p.manager} zarządził odwrót od panicznych transferów.`,p=>`Dowództwo ${p.manager} popełniło kilka błędów taktycznych. Wróg nazywa się „własna ławka”.`,p=>`Front pękł w kilku miejscach. ${p.manager} twierdzi, że sytuacja jest pod kontrolą, jak każdy przed katastrofą.`,p=>`${p.team} straciło teren. Generał ${p.manager} ma tydzień na reorganizację.`],
+  awful:[p=>`To nie była bitwa. To była rzeź. ${p.manager} wrócił z GW bez punktów honoru i z rannym ego.`,p=>`${p.team} zostało rozbite, a sztab ${p.manager} pali mapy, żeby nikt nie zobaczył planu.`,p=>`Dowództwo straciło kontakt z rzeczywistością. ${p.manager} prosi o posiłki w postaci wildcarda.`,p=>`Raport z frontu ${p.team}: katastrofa. Jeńców brak, punktów też niewiele.`]
+ },
+ { // 5 - weather
+  great:[p=>`Nad ${p.team} pełne słońce. ${p.manager} złapał punktowy wyż i chwilowo nie widać żadnego frontu katastrofalnych decyzji.`,p=>`Prognoza dla ${p.manager}: zielone strzałki, wysokie ciśnienie i lokalne opady samozachwytu.`,p=>`W ${p.team} bezchmurnie. Wynik ogrzał tabelę lepiej niż lipcowe słońce.`,p=>`${p.manager} trafił na idealne warunki punktowe. Meteorolodzy ostrzegają tylko przed nadmierną pewnością siebie.`],
+  good:[p=>`Pogoda w ${p.team} sprzyjająca: sporo punktowego słońca, pojedyncze chmury na ławce.`,p=>`${p.manager} uniknął burzy. Weekend przyjemny, bez konieczności chowania się przed tabelą.`,p=>`Nad ${p.team} lekki wyż. Nie upał, ale można spokojnie wyjść bez parasola transferowego.`,p=>`Prognoza ${p.manager}: stabilnie i dodatnio. Burze możliwe dopiero przed deadlinem.`],
+  neutral:[p=>`Nad ${p.team} zachmurzenie umiarkowane. Ani słońce, ani ulewa, po prostu szary FPL-owy dzień.`,p=>`${p.manager} dostał pogodę typu „meh”. Można przeżyć, nie ma czego fotografować.`,p=>`Ciśnienie punktowe w normie. ${p.team} bez anomalii, co samo w sobie jest anomalią.`,p=>`Prognoza: przeciętnie. ${p.manager} może schować zarówno okulary przeciwsłoneczne, jak i parasol.`],
+  bad:[p=>`Nad ${p.team} nadciągnął front czerwonych strzałek. ${p.manager} został ostrzeżony, ale i tak wyszedł bez kurtki.`,p=>`Weekend ${p.manager} to deszcz, wiatr i lokalne podtopienia na ławce.`,p=>`Meteorolodzy potwierdzają: w ${p.team} było chujowo i nie jest to kwestia modelu pogodowego.`,p=>`Ciśnienie spadło razem z rankingiem. ${p.manager} powinien unikać gwałtownych ruchów atmosferycznych.`],
+  awful:[p=>`Dla ${p.team} wydano czerwony alert. ${p.manager} powinien zostać w domu i nie zbliżać się do transferów.`,p=>`Huragan blanków przeszedł przez skład ${p.manager}. Zostały gruzy, bench points i pytania.`,p=>`Prognoza po GW: katastrofalna. ${p.team} wygląda jak po przejściu tornada z opaską kapitana.`,p=>`IMGW FPL ostrzega przed ${p.manager}: możliwe kolejne gwałtowne decyzje po weekendowej nawałnicy.`]
+ },
+ { // 6 - crime/noir
+  great:[p=>`${p.manager} opuścił miejsce zdarzenia z pełnymi kieszeniami punktów. Policja na razie nie znalazła podstaw do zatrzymania.`,p=>`W ${p.team} dokonano punktowego skoku stulecia. ${p.manager} twierdzi, że wszystko było legalne.`,p=>`Detektywi przejrzeli wynik ${p.manager}. Podejrzanie dobry, ale brak dowodów na oszustwo.`,p=>`${p.team} wyszło z weekendu bogatsze o punkty. Monitoring pokazuje ${p.manager} uśmiechającego się bezczelnie.`],
+  good:[p=>`Śledztwo w ${p.team} nie wykazało większych przestępstw przeciwko logice. ${p.manager} może iść do domu.`,p=>`${p.manager} miał czysty weekend. Kilka drobnych wykroczeń, żadnego kryminału.`,p=>`Policja FPL zamknęła sprawę ${p.team} z braku dowodów na głupotę kwalifikowaną.`,p=>`Kartoteka ${p.manager} po tej GW wygląda zaskakująco niewinnie.`],
+  neutral:[p=>`Detektyw spojrzał na wynik ${p.team} i uznał, że szkoda czasu. Zwykła przeciętność, bez znamion przestępstwa.`,p=>`${p.manager} pozostaje osobą zainteresowania, ale ta kolejka nie dostarczyła nowych dowodów.`,p=>`Monitoring ${p.team} nic ciekawego nie zarejestrował. Rutynowa GW.`,p=>`Sprawa ${p.manager} utknęła. Brak spektakularnych zbrodni, brak spektakularnych sukcesów.`],
+  bad:[p=>`Na miejscu zbrodni znaleziono ławkę pełną punktów i ślady panicznych transferów. ${p.manager} odmawia komentarza.`,p=>`Detektywi pytają ${p.manager}, dlaczego tyle punktów zniknęło. Odpowiedź „FPL” nie wystarcza.`,p=>`${p.team} trafiło do kartoteki po weekendzie pełnym podejrzanych decyzji.`,p=>`Policja zabezpieczyła telefon ${p.manager}. Historia transferów ma zostać zbadana przez biegłych.`],
+  awful:[p=>`To miejsce zbrodni. ${p.team} otoczono taśmą, a ${p.manager} jest głównym podejrzanym.`,p=>`Śledczy weszli do siedziby ${p.team} o świcie. Skala punktowych strat wymagała natychmiastowej interwencji.`,p=>`${p.manager} został zatrzymany do wyjaśnienia. Zarzut: seryjne znęcanie się nad własnym rankingiem.`,p=>`W aktach sprawy ${p.team} widnieje adnotacja: „nie pokazywać dzieciom historii tej GW”.`]
+ },
+ { // 7 - football pundit
+  great:[p=>`${p.manager} wygrał dziś taktycznie wszystko, co było do wygrania. Eksperci szukają słabszego punktu, ale chwilowo muszą się zamknąć.`,p=>`${p.team} zagrało fantasy football na wysokim poziomie. Dobór składu, kapitan, timing — wszystko się zgadzało.`,p=>`To był menedżerski masterclass ${p.manager}. Tak, powiedzieliśmy to i już żałujemy, bo ego zaraz urośnie.`,p=>`${p.manager} przeczytał tę kolejkę lepiej niż większość ligi. Studio nie ma dziś łatwego roastu.`],
+  good:[p=>`${p.manager} dobrze zarządził zasobami. Nie genialnie, ale wystarczająco, żeby ${p.team} wyszło na plus.`,p=>`Eksperci chwalą selekcję ${p.team}. Kilka decyzji siadło, żadna nie wysadziła kolejki.`,p=>`${p.manager} zagrał bezpiecznie i skutecznie. Czasem to właśnie jest najmądrzejsze.`,p=>`W studiu zgodność: ${p.team} zrobiło dobrą robotę. Kontrowersji brak, nuda dla telewizji.`],
+  neutral:[p=>`Eksperci nie mogą dojść do wniosku, czy ${p.manager} zrobił coś dobrze, czy po prostu niczego mocno nie zepsuł.`,p=>`${p.team} zakończyło weekend bez wyraźnej narracji. Klasyczne 6/10.`,p=>`Analiza ${p.manager}: kilka plusów, kilka minusów, końcowo wielkie „no dobra”.`,p=>`Studio nie ma się o co kłócić. To mówi wszystko o tej kolejce ${p.team}.`],
+  bad:[p=>`Eksperci są zgodni: ${p.manager} źle odczytał kolejkę. I nie, nie da się wszystkiego zwalić na variance.`,p=>`${p.team} miało problemy w selekcji, captaincy i chyba również komunikacji z rzeczywistością.`,p=>`Studio pyta, co ${p.manager} chciał osiągnąć. Odpowiedzi nadal brak.`,p=>`To był słaby performance menedżerski. Bez eufemizmów, bez expected bullshit.`],
+  awful:[p=>`Eksperci rozłożyli kolejkę ${p.manager} na czynniki pierwsze i żadna część nie wygląda dobrze.`,p=>`${p.team} było dziś antyreklamą zarządzania FPL. Materiał do kursu „czego nie robić”.`,p=>`Studio przerwało analizę, bo zaczęło robić się zwyczajnie przykro. ${p.manager} został sam z wynikiem.`,p=>`To był taktyczny wpierdol. ${p.manager} nie ma dziś żadnej linii obrony.`]
+ },
+ { // 8 - tabloid
+  great:[p=>`SZOK! ${p.manager} jednak umie grać w FPL. Sąsiedzi ${p.team} potwierdzają, że świętowanie trwało do późna.`,p=>`TYLKO U NAS: ${p.manager} zdobywa masę punktów i natychmiast zaczyna chodzić jak celebryta.`,p=>`NIEWIARYGODNE! ${p.team} bez kompromitacji. Redakcja sprawdza, czy to na pewno właściwe konto.`,p=>`PILNE: ${p.manager} wygrywa kolejkę. Internet pyta, kiedy sodówka uderzy do głowy.`],
+  good:[p=>`DOBRA WIADOMOŚĆ dla fanów ${p.team}: ${p.manager} tym razem nie zepsuł weekendu.`,p=>`FANI W SZOKU! Solidny wynik ${p.manager} i żadnej afery transferowej.`,p=>`NASZE ŹRÓDŁA: w domu ${p.manager} panuje spokój po przyzwoitej GW.`,p=>`EKSKLUZYWNE: ${p.team} punktuje, a menedżer nie musi się tłumaczyć. Rzadki widok.`],
+  neutral:[p=>`NUDA! ${p.manager} zalicza kolejkę, o której jutro nikt nie będzie pamiętał.`,p=>`BEZ SENSACJI: ${p.team} ani nie zachwyca, ani nie kompromituje.`,p=>`FANI OBOJĘTNI po przeciętnym wyniku ${p.manager}.`,p=>`BRAK DRAMY w ${p.team}. Redakcja zmuszona pisać o czymś innym.`],
+  bad:[p=>`SKANDAL w ${p.team}! ${p.manager} odpowiada na trudne pytania po słabym wyniku.`,p=>`FANI WŚCIEKLI! ${p.manager} tłumaczy się z kolejnego weekendu do zapomnienia.`,p=>`TYLKO U NAS: historia decyzji ${p.manager}, której sam menedżer wolałby już nie widzieć.`,p=>`ALARM w ${p.team}. Czerwone strzałki i rosnąca presja na trenera.`],
+  awful:[p=>`KATASTROFA! ${p.manager} demoluje własny ranking. Kibice ${p.team} żądają odpowiedzi.`,p=>`DRAMAT W RODZINIE FPL! Wynik ${p.manager} tak zły, że sąsiedzi słyszeli przekleństwa.`,p=>`SZOKUJĄCE SCENY w ${p.team}. Menedżer opuszcza konferencję pod eskortą własnego wstydu.`,p=>`NAJGORSZY WEEKEND? ${p.manager} zapisuje się w historii z bardzo niewłaściwego powodu.`]
+ },
+ { // 9 - therapist
+  great:[p=>`Terapeuta pogratulował ${p.manager}: pierwszy weekend od dawna, po którym może mówić o FPL bez zaciskania szczęki.`,p=>`${p.manager} przepracował lęk przed deadlinem i dostał w nagrodę punkty. ${p.team} oddycha.`,p=>`Sesja po dobrej GW była krótka. ${p.manager} głównie opowiadał, jak świetnie wszystko przewidział.`,p=>`Zdrowie psychiczne w ${p.team} poprawiło się gwałtownie wraz z wynikiem. Ciekawe zjawisko.`],
+  good:[p=>`${p.manager} zrobił postęp. Nie sprawdzał tabeli co trzy minuty i nawet zdobył punkty.`,p=>`Terapeuta ocenia tydzień ${p.team} pozytywnie. Mniej impulsywnych ruchów, mniej cierpienia.`,p=>`${p.manager} nauczył się akceptować pojedynczy blank bez natychmiastowej sprzedaży zawodnika.`,p=>`W ${p.team} zdrowa kolejka. Bez skrajności, bez ataków paniki.`],
+  neutral:[p=>`Sesja ${p.manager} przebiegła spokojnie. Nie ma euforii, nie ma rozpaczy. Terapeuta zadowolony, redakcja znudzona.`,p=>`${p.team} osiągnęło emocjonalny remis. Wynik ani nie leczy, ani nie traumatyzuje.`,p=>`${p.manager} mówi, że „jest okej”. Tym razem brzmi to nawet wiarygodnie.`,p=>`Kolejka bez wielkich emocji. To może być najzdrowszy weekend ${p.manager}.`],
+  bad:[p=>`${p.manager} wrócił na terapię z klasycznym zdaniem: „wszystko wyglądało dobrze przed deadlinem”.`,p=>`Terapeuta zabronił ${p.manager} podejmowania transferów w stanie złości.`,p=>`${p.team} aktywowało stare traumy: bench points, captain blank i czerwone strzałki.`,p=>`${p.manager} ćwiczy dziś akceptację faktu, że nie cofnie sobotniego deadline'u.`],
+  awful:[p=>`Sesja ${p.manager} została przedłużona o godzinę. Wynik wymagał interwencji specjalisty.`,p=>`${p.team} stworzyło nową traumę. Terapeuta poprosił o screenshoty, bo nie uwierzył na słowo.`,p=>`${p.manager} przeszedł wszystkie pięć etapów żałoby jeszcze przed końcem niedzielnych meczów.`,p=>`Diagnoza: ostre FPL. Zalecenie: nie otwierać aplikacji do środy.`]
+ },
+ { // 10 - casino
+  great:[p=>`${p.manager} wyszedł z kasyna FPL na plusie. Krupier patrzy krzywo, ale punkty są już na koncie.`,p=>`${p.team} trafiło jackpot. ${p.manager} zapewnia, że to skill, nie hazard.`,p=>`Ruletka kapitańska zatrzymała się na właściwym nazwisku. ${p.manager} zgarnia żetony.`,p=>`Kasyno dziś przegrało z ${p.manager}. Rzadkość, którą warto celebrować.`],
+  good:[p=>`${p.manager} zakończył weekend z umiarkowanym zyskiem. Nie jackpot, ale drink przy stole się należy.`,p=>`${p.team} grało ostrożnie i wyszło na plus. Krupier nie dostał napiwku.`,p=>`Kilka zakładów ${p.manager} weszło. Portfel punktowy wygląda zdrowo.`,p=>`Kasyno FPL oddało trochę punktów ${p.team}. Na razie bez podejrzeń.`],
+  neutral:[p=>`${p.manager} wyszedł mniej więcej na zero. Cały weekend emocji po to, żeby wrócić do punktu wyjścia.`,p=>`Stół FPL nie dał dziś ani wygranej, ani bankructwa. ${p.team} zabiera żetony dalej.`,p=>`${p.manager} grał, ale kasyno nawet nie zauważyło.`,p=>`Bilans ${p.team}: remis z krupierem. Nikt nie klaszcze.`],
+  bad:[p=>`Kasyno zabrało ${p.manager} więcej, niż powinno. Problem: część żetonów oddał dobrowolnie za hity.`,p=>`${p.team} obstawiało źle. Krupier dziękuje za współpracę.`,p=>`${p.manager} próbował odrobić straty i prawie zrobił kolejne transfery. Ochrona interweniowała.`,p=>`Ruletka kapitańska znów zatrzymała się na polu „blank”. ${p.manager} patrzy w pustkę.`],
+  awful:[p=>`${p.manager} przegrał w kasynie FPL koszulę, ranking i resztki cierpliwości.`,p=>`Ochrona wyprowadziła ${p.manager} od stołu po serii decyzji, które wyglądały jak tilt.`,p=>`${p.team} zbankrutowało punktowo. Krupier nawet nie musiał oszukiwać.`,p=>`Kasyno FPL wysłało ${p.manager} kartę VIP. Takich klientów się nie wypuszcza.`]
+ },
+ { // 11 - school
+  great:[p=>`${p.manager} zdał GW na piątkę. ${p.team} może dziś pokazać świadectwo rodzicom.`,p=>`Nauczyciel FPL wpisał ${p.manager} ocenę bardzo dobrą. Bez ściągania z template'u.`,p=>`${p.team} odrobiło pracę domową i jeszcze dostało punkty za aktywność.`,p=>`${p.manager} siedzi dziś w pierwszej ławce i wyjątkowo zna odpowiedzi.`],
+  good:[p=>`${p.manager} zaliczył sprawdzian. Nie olimpijczyk, ale spokojnie przechodzi dalej.`,p=>`${p.team} dostało czwórkę. Solidnie, bez uwag w dzienniczku.`,p=>`Nauczyciel chwali ${p.manager} za przygotowanie. Rodzice nie zostali wezwani.`,p=>`${p.team} zrobiło zadanie poprawnie. Kilka błędów, ale wynik się broni.`],
+  neutral:[p=>`${p.manager} dostał trójkę. Typowa ocena: „stać cię na więcej”.`,p=>`${p.team} zaliczyło na słowo honoru. Nikt nie będzie oprawiał tego sprawdzianu.`,p=>`W dzienniku ${p.manager} pojawiło się „dostateczny”. Najbardziej brutalne słowo przeciętności.`,p=>`Nauczyciel spojrzał na wynik ${p.team} i napisał: „pracuj dalej”.`],
+  bad:[p=>`${p.manager} oblał kartkówkę z captaincy i selekcji. Poprawa za tydzień.`,p=>`Rodzice ${p.team} zostali wezwani do szkoły. Powód: niepokojące decyzje menedżera.`,p=>`${p.manager} dostał dwóję i uwagę: „przeszkadza sam sobie”.`,p=>`Nauczyciel FPL pyta, czy ${p.manager} w ogóle przeczytał pytania przed deadlinem.`],
+  awful:[p=>`${p.manager} dostał pałę z GW. Bez prawa poprawy do następnego weekendu.`,p=>`Dyrektor szkoły wezwał ${p.manager}. ${p.team} ma poważne problemy z zachowaniem i punktami.`,p=>`Sprawdzian ${p.manager} został pokazany klasie jako przykład, czego nie robić.`,p=>`${p.team} nie zdało. Korepetytor od FPL już wysłał cennik.`]
+ },
+ { // 12 - cooking
+  great:[p=>`${p.manager} ugotował dziś świetną GW. Skład doprawiony, kapitan trafiony, nic się nie przypaliło.`,p=>`Kuchnia ${p.team} wydała danie dnia. Nawet Michelin FPL byłoby pod wrażeniem.`,p=>`${p.manager} trafił proporcje idealnie. Zero surowych blanków, dużo punktowego smaku.`,p=>`Dziś ${p.team} serwowało punkty na gorąco. Szef kuchni ${p.manager} może wyjść do gości.`],
+  good:[p=>`Danie ${p.manager} wyszło dobrze. Może nie fine dining, ale nikt nie wyszedł głodny.`,p=>`${p.team} podało solidną porcję punktów. Kuchnia działa.`,p=>`Szef ${p.manager} nie przekombinował przepisu. I właśnie dlatego smakowało.`,p=>`Weekend ${p.team}: dobre składniki, rozsądne proporcje, zero zatrucia transferowego.`],
+  neutral:[p=>`${p.manager} ugotował coś jadalnego. Nikt nie prosi o dokładkę.`,p=>`Kuchnia ${p.team} podała przeciętność z dodatkiem lekkiego rozczarowania.`,p=>`Danie poprawne technicznie, pozbawione emocji. ${p.manager} wzrusza ramionami.`,p=>`${p.team} nie przypaliło obiadu, ale też nikt nie pyta o przepis.`],
+  bad:[p=>`${p.manager} przesolił transfery i spalił kapitana. Kuchnia ${p.team} ma ciężki wieczór.`,p=>`Szef ${p.manager} twierdzi, że przepis był dobry. Goście pokazują wynik i proszą o rachunek.`,p=>`${p.team} podało blanki w trzech odsłonach. Krytycy nie zostawili napiwku.`,p=>`Kuchnia wygląda jak po awarii. ${p.manager} próbuje ratować danie transferowym ketchupem.`],
+  awful:[p=>`${p.manager} spalił nawet wodę. ${p.team} powinno zostać zamknięte przez sanepid FPL.`,p=>`Goście ${p.team} wyszli głodni i wkurwieni. Szef kuchni ukrywa się na zapleczu.`,p=>`To nie było danie, tylko przestępstwo kulinarne przeciwko rankingowi.`,p=>`${p.manager} dostał zakaz zbliżania się do kuchenki i przycisku Confirm Transfers.`]
+ },
+ { // 13 - engineering
+  great:[p=>`${p.manager} zbudował w tej GW konstrukcję, która nie tylko stoi, ale jeszcze wygląda cholernie solidnie.`,p=>`Projekt ${p.team} przeszedł wszystkie testy obciążeniowe. Inżynier ${p.manager} może podpisać odbiór.`,p=>`System ${p.team} działa zgodnie ze specyfikacją. Nikt nie wie, jak długo, ale dziś działa.`,p=>`${p.manager} dostarczył wersję produkcyjną bez krytycznych bugów. Święto.`],
+  good:[p=>`Projekt ${p.team} jest stabilny. Kilka drobnych usterek, zero awarii krytycznych.`,p=>`${p.manager} dowiózł build, który przechodzi testy. QA nie zgłasza blockerów.`,p=>`Konstrukcja trzyma. Nie trzeba refaktoryzować połowy składu.`,p=>`${p.team} działa wystarczająco dobrze, żeby nikt nie otwierał emergency change.`],
+  neutral:[p=>`System ${p.team} działa. Nie szybko, nie pięknie, ale bez crasha.`,p=>`${p.manager} wypuścił wersję „works on my machine”. Ranking nie protestuje, ale też nie klaszcze.`,p=>`Projekt stoi w miejscu. Brak regresji, brak feature'ów.`,p=>`Build ${p.team} zielony, ale coverage emocji bliskie zeru.`],
+  bad:[p=>`Produkcja ${p.team} sypie błędami. ${p.manager} twierdzi, że to edge case. Ranking twierdzi inaczej.`,p=>`QA zgłosiło blocker: decyzje ${p.manager}. Priorytet krytyczny.`,p=>`${p.team} wymaga hotfixa, ale każdy hotfix kosztuje punkty. Piękna architektura.`,p=>`${p.manager} wdrożył zmianę bez testów. Produkcja odpowiedziała czerwonym arrowem.`],
+  awful:[p=>`System ${p.team} padł na produkcji. ${p.manager} pyta, czy można zrobić rollback do piątku.`,p=>`Critical incident. Root cause analysis wskazuje na użytkownika ${p.manager}.`,p=>`${p.team} ma więcej blockerów niż punktów. DevOps odłączył telefon.`,p=>`Postmortem tej GW będzie długi. Pierwszy wniosek: nie deployować menedżera przed deadlinem.`]
+ },
+ { // 14 - religion/cult light, no protected group attacks
+  great:[p=>`${p.manager} doznał dziś objawienia punktowego. W ${p.team} wierzą, że cuda jednak istnieją.`,p=>`Świątynia FPL wysłuchała modlitw ${p.manager}. Punkty spadły z nieba.`,p=>`${p.team} przeżyło błogosławioną kolejkę. Nawet kapitan nie zdradził.`,p=>`${p.manager} przez tydzień będzie głosił ewangelię własnych decyzji.`],
+  good:[p=>`Los był łaskawy dla ${p.team}. ${p.manager} nie potrzebował nawet rytuału wildcardowego.`,p=>`${p.manager} dostał solidną porcję punktowej łaski.`,p=>`W ${p.team} panuje wiara w projekt. Tym razem ma nawet podstawy.`,p=>`Modlitwy o zieloną strzałkę zostały częściowo wysłuchane.`],
+  neutral:[p=>`FPL-owi bogowie pozostali obojętni wobec ${p.manager}. Typowa przeciętność.`,p=>`${p.team} nie dostało ani błogosławieństwa, ani klątwy.`,p=>`${p.manager} czeka na znak. Tabela milczy.`,p=>`Kolejka bez cudów. I bez plag, więc można brać.`],
+  bad:[p=>`${p.manager} pyta, za jakie grzechy dostał tę kolejkę. Redakcja ma kilka teorii.`,p=>`Nad ${p.team} zawisła klątwa blanków. Główny egzorcysta jest jednocześnie menedżerem.`,p=>`Modlitwy ${p.manager} odbiły się od sufitu. Punkty nie przyszły.`,p=>`${p.team} potrzebuje odkupienia, najlepiej w następnej GW.`],
+  awful:[p=>`To była biblijna plaga FPL. ${p.manager} przeżył, ranking niekoniecznie.`,p=>`${p.team} zostało ukarane serią blanków o niemal metafizycznej skali.`,p=>`${p.manager} szuka sensu cierpienia. FPL odpowiada: „bo możesz”.`,p=>`Egzorcyzm składu zaplanowano na środę. Wildcard trzymany w pogotowiu.`]
+ },
+ { // 15 - racing
+  great:[p=>`${p.manager} przejechał GW na pole position. ${p.team} miało tempo, strategię i zero pit stopów z paniki.`,p=>`Flaga w szachownicę dla ${p.manager}. Punkty dowiezione bez kolizji.`,p=>`${p.team} było dziś najszybsze na torze FPL. Rywale oglądali tylne skrzydło.`,p=>`${p.manager} trafił strategię opon i kapitana. Weekend wyścigowy idealny.`],
+  good:[p=>`${p.manager} finiszował wysoko. Bez zwycięstwa, ale z solidnymi punktami konstruktorów.`,p=>`${p.team} miało dobry pace. Strategia nie zepsuła wyścigu, co już jest sukcesem.`,p=>`Weekend ${p.manager}: czysto, szybko, bez głupiego pit stopu.`,p=>`${p.team} dowiozło wynik w punktach. Garaż spokojny.`],
+  neutral:[p=>`${p.manager} przejechał wyścig w środku stawki. Kamery rzadko go pokazywały.`,p=>`${p.team} miało tempo na P8. Dokładnie tak ekscytujące, jak brzmi.`,p=>`Bez awarii, bez podium. ${p.manager} zbiera punkty i jedzie dalej.`,p=>`Strategia poprawna, tempo przeciętne. Weekend do archiwum.`],
+  bad:[p=>`${p.manager} zjechał do boksu w najgorszym możliwym momencie. FPL nie dało safety cara.`,p=>`${p.team} miało słaby pace i jeszcze gorszą strategię.`,p=>`Pit wall ${p.manager} pomylił się kilka razy. Ranking płaci za paliwo.`,p=>`${p.team} wypadło poza punkty. Inżynierowie analizują, menedżer przeklina.`],
+  awful:[p=>`${p.manager} rozbił bolid na pierwszym zakręcie GW i potem tylko patrzył, jak inni punktują.`,p=>`${p.team} zaliczyło DNF rankingowe. Strategia skończyła w bandzie.`,p=>`Garaż ${p.manager} milczy. Telemetria pokazuje katastrofę od startu do mety.`,p=>`Czerwona flaga dla ${p.team}. Trzeba posprzątać fragmenty składu z toru.`]
+ }
+];
+
+const VOICE_QUOTES=[
+ ["„Dzisiaj wynik mówi za mnie, więc wyjątkowo nie muszę wymyślać mądrych teorii.”","„Nie chcę robić z jednej kolejki autobiografii geniusza.”","„Największe zagrożenie po dobrym wyniku to uwierzyć, że nagle wszystko wiem.”","„Jak działa, nie dotykaj. Muszę sobie to chyba wytatuować.”"],
+ ["„Nie będę składał apelacji od tabeli. Wyrok jest jaki jest.”","„Jeśli decyzja nie broni się punktami, to długi wywód jej nie uratuje.”","„Przyjmuję odpowiedzialność bez wnoszenia o nadzwyczajne złagodzenie kary.”","„Następny deadline będzie moją rozprawą poprawkową.”"],
+ ["„Stan psychiczny stabilny, dopóki nie otworzę zakładki Transfers.”","„Najlepszym lekarstwem byłoby kilka zielonych strzałek z rzędu.”","„Mam zakaz samodzielnego diagnozowania składu po jednym blanku.”","„Leczenie trwa. Rokowania zależą od mojego palca.”"],
+ ["„Nie będę mówił o synergii, roadmapie ani innych korporacyjnych bzdurach. Chcę punktów.”","„KPI jest prosty: przestać oddawać punkty za głupotę.”","„Nie planuję restrukturyzacji całego składu po jednym słabym kwartale.”","„Akcjonariusze mogą spać spokojnie, dopóki ja nie zacznę kombinować.”"],
+ ["„Rozkaz na kolejny tydzień: utrzymać pozycje i nie strzelać sobie w stopę.”","„Nie potrzebuję bohaterów. Potrzebuję ludzi, którzy wykonają zadanie.”","„Najgorszy wróg jest wewnętrzny i ma dostęp do mojego konta.”","„Dyscyplina przed deadlinem będzie kluczowa.”"],
+ ["„Nie kontroluję pogody, ale powinienem trochę lepiej kontrolować własne transfery.”","„Jeżeli znowu zobaczę burzę blanków, nie będę od razu ewakuował całego składu.”","„Potrzebujemy kilku słonecznych tygodni bez gwałtownych ruchów.”","„Ciśnienie spada najbardziej, kiedy sam zaczynam panikować.”"],
+ ["„Nie będę zacierał śladów. Historia transferów już wszystko wie.”","„Mam alibi na kilka decyzji, na resztę nie.”","„Najgorsze przestępstwa przeciwko rankingowi popełniałem z premedytacją.”","„Następna kolejka ma być czysta. Bez recydywy.”"],
+ ["„Analiza jest prosta: jak zdobywasz mało punktów, grałeś źle. Koniec panelu.”","„Nie mam zamiaru chować się za statystykami zaawansowanymi.”","„Selekcja musi być lepsza, kapitan bardziej oczywisty, ja mniej kreatywny.”","„W następnym studiu chcę być chwalony, nie analizowany jak trup.”"],
+ ["„Nagłówki mogą pisać co chcą, byle tabela zaczęła pisać coś przyjemniejszego.”","„Nie komentuję plotek o moim zwolnieniu, bo sam jestem zarządem.”","„Fani mają prawo krzyczeć. Ja mam obowiązek przestać dawać im powody.”","„Następna GW albo mnie wybieli, albo dostarczy wam kolejny front page.”"],
+ ["„Muszę zaakceptować, że nie każda zła kolejka wymaga natychmiastowej reakcji.”","„Pracuję nad impulsywnością. Najgorzej idzie mi przy price rise'ach.”","„Nie mogę kontrolować punktów, mogę kontrolować własne głupoty.”","„Następny tydzień traktuję jako ćwiczenie z niedotykania.”"],
+ ["„Kończę dziś grę przy stole. Żadnego odrabiania strat transferami.”","„Nie będę podwajał stawki tylko dlatego, że poprzedni zakład nie wszedł.”","„Kasyno zawsze chce, żebym grał dalej. Tym razem idę spać.”","„Żetony punktowe są zbyt drogie na emocjonalne decyzje.”"],
+ ["„Następną kartkówkę chcę napisać bez ściągania z Twittera.”","„Wyciągam wnioski, zanim nauczyciel znowu wpisze uwagę.”","„Nie chcę poprawki z captaincy co tydzień.”","„Praca domowa na ten tydzień: cierpliwość i mniej kombinowania.”"],
+ ["„Przepis jest prosty: mniej przypraw, więcej punktów.”","„Nie będę ratował spalonego dania kolejnym transferowym sosem.”","„Jak skład smakuje dobrze, nie trzeba wrzucać do niego pięciu nowych składników.”","„Następny serwis ma być spokojniejszy.”"],
+ ["„Najpierw testy, potem deployment. Koniec zmian na produkcji w piątek wieczorem.”","„Nie każdy bug wymaga przepisania całej aplikacji.”","„Mam zamiar ograniczyć hotfixy za -4.”","„Jeśli coś działa, nie refaktoryzuję tego przed deadlinem.”"],
+ ["„Nie oczekuję cudu, wystarczy kilka normalnych decyzji.”","„Następnym razem mniej modlitwy, więcej rozsądku.”","„Nie będę traktował price rise'a jak znaku z nieba.”","„Wiara w projekt zostaje, fanatyzm transferowy odpada.”"],
+ ["„Strategię na następny wyścig upraszczamy. Mniej pit stopów, więcej tempa.”","„Nie chcę znowu przegrywać GW w garażu.”","„Tempo jest ważniejsze niż desperacki undercut na transferach.”","„Następny weekend chcę zakończyć na mecie, nie w bandzie.”"]
+];
 
 function pressQuote(p,gw,managerIndex,league){
  const mood=conferenceMood(p,league);
- const bank=CONF_BANK[mood];
- // Seed contains manager + GW + result. Therefore a manager receives a different
- // combination every gameweek and the tone follows the actual GW performance.
- const seed=confHash(`${managerKey(p)}|${gw}|${p.gwPoints}|${mood}`);
- const a=confPick(bank.open, seed + managerIndex*17 + gw*31);
- const b=confPick(bank.body, seed + managerIndex*43 + gw*67);
- const c=confPick(bank.end, seed + managerIndex*89 + gw*101);
- const unique=`Ta wypowiedź należy do ${p.manager} po GW${gw}; bilans kolejki to ${p.gwPoints} pkt, miejsce w tej GW: ${[...league].sort((x,y)=>Number(y.gwPoints||0)-Number(x.gwPoints||0)).findIndex(x=>x.entry===p.entry)+1}.`;
- return `„${renderConf(a,p,gw)} ${renderConf(b,p,gw)} ${renderConf(c,p,gw)}” ${unique}`;
+ const voice=MANAGER_VOICES[managerIndex % MANAGER_VOICES.length];
+ const variants=voice[mood];
+ const v=(gw-1)%variants.length;
+ const intro=variants[v](p);
+ const quote=VOICE_QUOTES[managerIndex % VOICE_QUOTES.length][(gw-1)%4];
+ const rank=gwRank(p,league);
+ const statSentence=[
+   `${p.manager} kończy GW${gw} na ${rank}. miejscu kolejki z ${p.gwPoints} pkt; forma ostatnich trzech to ${p.avg3}.`,
+   `Bilans tej konkretnej GW dla ${p.team}: ${p.gwPoints} punktów i ${rank}. wynik w lidze.`,
+   `Tablica po GW${gw}: ${p.manager} — ${p.gwPoints} pkt, pozycja w kolejce ${rank}, bench season ${p.benchSeason}.`,
+   `Liczby przed kolejnym deadlinem: ${p.gwPoints} w GW${gw}, miejsce ${rank}, koszt hitów sezonu ${p.hitSeason}.`
+ ][(gw+managerIndex)%4];
+ return `„${intro} ${statSentence} ${quote}”`;
 }
 
 function pressReaction(p,gw,managerIndex,league){
  const mood=conferenceMood(p,league);
- const reactions={
-  great:["Redakcja: tym razem bez ironii — to była zajebista kolejka.","Redakcja: pełne prawo do kozaczenia, przynajmniej do następnego deadline'u.","Redakcja: rywale mogą przewinąć ten fragment. Będzie bolało."],
-  good:["Redakcja: solidna robota. Bez pomnika, ale i bez policyjnej taśmy wokół składu.","Redakcja: zielona strzałka smakuje najlepiej bez panicznych transferów na deser.","Redakcja: było dobrze. Teraz najtrudniejsze — niczego nie spierdolić."],
-  neutral:["Redakcja: kolejka tak średnia, że nawet szyderstwo nie chce się rozgrzać.","Redakcja: nikt nie umarł, nikt nie został bohaterem. Gramy dalej.","Redakcja: wynik do zapomnienia, ale przynajmniej nie do aktu oskarżenia."],
-  bad:["Redakcja: czerwone światło. Menedżer przynajmniej zauważył, że sam stoi na torach.","Redakcja: było słabo i żaden wykres tego nie wypudruje.","Redakcja: terapia zakończona. Teraz poprosimy o punkty."],
-  awful:["Redakcja: komisja śledcza zostaje powołana ze skutkiem natychmiastowym.","Redakcja: nie kopiujcie tego w domu. Ani w FPL. Zwłaszcza w FPL.","Redakcja: tę kolejkę należy zabezpieczyć w gablocie z napisem „dowody”."]
- };
- const arr=reactions[mood];
- return `${arr[(confHash(managerKey(p)+gw)+managerIndex)%arr.length]} [${p.manager} • GW${gw}]`;
+ const reactions=[
+   {
+    great:`Redakcja: ${p.manager} może dziś kozaczyć. Byle nie zaczął wierzyć, że odkrył kod źródłowy FPL.`,
+    good:`Redakcja: solidna robota ${p.manager}. Największym zagrożeniem pozostaje następny własny pomysł.`,
+    neutral:`Redakcja: ${p.manager} ani bohater, ani oskarżony. Sprawa wraca za tydzień.`,
+    bad:`Redakcja: ${p.manager} ma tydzień na poprawę, zanim żarty zaczną pisać się całkowicie same.`,
+    awful:`Redakcja: w sprawie ${p.manager} zabezpieczono dowody. Niektóre screeny mogą być drastyczne.`
+   },
+   {
+    great:`Redakcja: sąd FPL uniewinnia ${p.manager}. Wyrok nieprawomocny do następnej GW.`,
+    good:`Redakcja: akt oskarżenia wobec ${p.manager} trafia dziś do szuflady.`,
+    neutral:`Redakcja: postępowanie zawieszone. Brak wystarczającej liczby punktowych dowodów.`,
+    bad:`Redakcja: prokurator już ostrzy ołówek. ${p.manager} powinien uważać.`,
+    awful:`Redakcja: obrona ${p.manager} prosi o zmianę tematu. Wniosek oddalony.`
+   },
+   {
+    great:`Redakcja: pacjent ${p.manager} wypisany w dobrym stanie. Kontrola po następnym deadlinie.`,
+    good:`Redakcja: parametry ${p.manager} stabilne. Zalecamy nie eksperymentować.`,
+    neutral:`Redakcja: stan ${p.manager} bez zmian. Obserwacja trwa.`,
+    bad:`Redakcja: ${p.manager} wymaga odpoczynku od przycisku Transfers.`,
+    awful:`Redakcja: oddział intensywnej terapii rankingu gotowy na przyjęcie ${p.manager}.`
+   }
+ ];
+ const set=reactions[managerIndex%reactions.length];
+ return set[mood];
 }
 
 export default function FPLPage(){
@@ -296,9 +439,12 @@ export default function FPLPage(){
  </>
 }
 function PostMatchStudio({data}){
- const people=[...data.grades].sort((a,b)=>b.gwPoints-a.gwPoints);
+ const people=[...(data?.grades||[])].sort((a,b)=>Number(b.gwPoints||0)-Number(a.gwPoints||0));
+ if(!people.length){
+   return <section className="studioWrap"><div className="megaCard"><h2>📺 Pomeczowe studio</h2><p>Brak danych do przygotowania studia dla tej kolejki.</p></div></section>;
+ }
  const hero=people[0], victim=people.at(-1), middle=people[Math.floor(people.length/2)];
- const seed=hashText(`studio|${data.gw}|${hero?.manager}|${victim?.manager}`);
+ const seed=confHash(`studio|${data.gw}|${hero?.manager||"none"}|${victim?.manager||"none"}`);
  const openings=[
    `GW ${data.gw} zamknięta. Na jednym końcu ${hero?.manager} z ${hero?.gwPoints} pkt, na drugim ${victim?.manager} z ${victim?.gwPoints}. Czy możemy już użyć słowa kompromitacja?`,
    `Witamy po GW ${data.gw}. ${hero?.team} urządziło sobie bankiet, a ${victim?.team} najwyraźniej przyszło tylko pozmywać naczynia. Od czego zaczynamy?`,
