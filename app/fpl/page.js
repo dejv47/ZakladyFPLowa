@@ -19,7 +19,7 @@ export default function FPLPage(){
    <section className="newspaperHero">
      <div><span className="paperKicker">FPLowa • wydanie GW {data?.gw ?? "—"}</span>
      <h1>📰 PODSUMOWANIE KOLEJKI</h1>
-     <p>Najważniejsze wydarzenia, katastrofy kadrowe i decyzje wymagające komisji śledczej.</p></div>
+     <p>Najważniejsze wydarzenia, katastrofy kadrowe i decyzje, po których normalny dyrektor sportowy straciłby dostęp do hasła.</p></div>
    </section>
    {error&&<div className="error">{error}</div>}
    {!data&&!error&&<div className="loading">Redakcja zbiera materiały...</div>}
@@ -35,7 +35,7 @@ export default function FPLPage(){
         <div className="fplTr fplTh"><span>#</span><span>Drużyna</span><span>GW</span><span>Suma</span><span>Zmiana</span></div>
         {data.standings.map(x=><div className="fplTr" key={x.entry}>
           <strong>{x.rank}</strong><div><strong>{x.team}</strong><small>{x.manager}</small></div>
-          <strong>{x.gwPoints}</strong><span>{x.total}</span>
+          <strong>{x.gwPoints}</strong><span>{x.overall}</span>
           <span>{x.lastRank>x.rank?`▲ ${x.lastRank-x.rank}`:x.lastRank<x.rank?`▼ ${x.rank-x.lastRank}`:"—"}</span>
         </div>)}
       </div>

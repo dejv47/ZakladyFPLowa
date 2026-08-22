@@ -59,3 +59,11 @@ Backend pobiera osobę z kadry Manchesteru City, a następnie korzysta z
 - Punkty zawodników do artykułów są pobierane z `/event/{GW}/live/`.
 - Nie używamy już `bootstrap-static.event_points` do bieżącej kolejki.
 - Wynik GW drużyny jest liczony ze składu live minus koszt transferów.
+
+
+## v14 — oficjalne wyniki FPL i mocniejsza satyra
+- GW points = `entry_history.points`
+- Overall = `entry_history.total_points`
+- Punkty konkretnych zawodników nadal z `/event/{GW}/live/`
+- Po zakończeniu GW artykuły korzystają z finalnych danych tej kolejki.
+- Mocniej satyryczne teksty zależne od realnych składów, kapitanów, ławki i transferów.

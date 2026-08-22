@@ -27,13 +27,17 @@ export async function GET() {
       fpl(`/leagues-classic/${LEAGUE_ID}/standings/?page_standings=1`)
     ]);
 
+    const finishedEvents = boot.events.filter(e => e.finished);
+    const latestFinished = finishedEvents.at(-1);
+
     const current =
       boot.events.find(e => e.is_current) ||
-      boot.events.find(e => e.is_next) ||
+      latestFinished ||
       boot.events.find(e => !e.finished) ||
       boot.events.at(-1);
 
     const gw = current?.id || 1;
+    const gwFinished = !!current?.finished;
 
     // IMPORTANT: live GW points must come from /event/{gw}/live/.
     // bootstrap-static is metadata and should not be trusted for live article scoring.
@@ -77,11 +81,11 @@ export async function GET() {
         lastRank: row.last_rank,
         total: row.total,
         gwPoints:
-          squad
-            .filter(x => x.position <= 11)
-            .reduce((sum, x) => sum + Number(x.points || 0), 0)
-          - Number(h?.event_transfers_cost ?? 0),
-        benchPoints: h?.points_on_bench ?? bench.reduce((s,x)=>s+x.rawPoints,0),
+          Number(picks?.entry_history?.points ?? h?.points ?? row.event_total ?? 0),
+        overall:
+          Number(picks?.entry_history?.total_points ?? h?.total_points ?? row.total ?? 0),
+        benchPoints:
+          Number(picks?.entry_history?.points_on_bench ?? h?.points_on_bench ?? bench.reduce((s,x)=>s+x.rawPoints,0)),
         transferCost: h?.event_transfers_cost ?? 0,
         transfers: h?.event_transfers ?? 0,
         captain,
@@ -98,38 +102,85 @@ export async function GET() {
     const randoms=seeded(details.filter(x=>![bestGW?.entry,worstGW?.entry].includes(x.entry)), gw, 2);
 
     const articles=[];
-    if(bestGW) articles.push({
-      tag:"BOHATER KOLEJKI",
-      title:`${bestGW.team} urządza pokaz siły. Reszta ligi może już pisać skargi`,
-      body:`${bestGW.manager} wyciągnął ${bestGW.gwPoints} pkt i na ten moment wygrał kolejkę w naszej lidze. Najwięcej roboty zrobił ${bestGW.best?.name || "lider składu"} z ${bestGW.best?.club || "Premier League"}, który dorzucił ${bestGW.best?.rawPoints || 0} pkt. ${bestGW.captain ? `Opaska trafiła do ${bestGW.captain.name} (${bestGW.captain.club}) i przyniosła ${bestGW.captain.points} pkt po mnożniku.` : ""} Na konferencji prasowej nie padło jeszcze słowo „geniusz”, ale właściciel drużyny prawdopodobnie już je wpisał w bio.`
-    });
-    if(worstGW) articles.push({
-      tag:"KOMPROMITACJA",
-      title:`Alarm w ${worstGW.team}. Kolejka, o której najlepiej zapomnieć`,
-      body:`${worstGW.manager} uzbierał ${worstGW.gwPoints} pkt, czyli najmniej w naszej lidze. ${worstGW.worst && worstGW.worst.rawPoints > 0 ? `${worstGW.worst.name} z ${worstGW.worst.club} dołożył ${worstGW.worst.rawPoints} pkt i trudno powiedzieć, żeby sam uratował projekt.` : ""} ${worstGW.benchPoints ? `Na ławce zostało dodatkowo ${worstGW.benchPoints} pkt — luksus, na który pierwsza jedenastka najwyraźniej mogła tylko popatrzeć.` : ""} Zarząd zapewnia, że trener ma pełne poparcie. Jak wiadomo, takie komunikaty nigdy niczego złego nie zapowiadają.`
-    });
-    if(benchKing?.benchPoints>0) articles.push({
-      tag:"ŁAWKA PREMIUM",
-      title:`${benchKing.team} kolekcjonuje punkty. Niestety poza boiskiem`,
-      body:`Aż ${benchKing.benchPoints} pkt zostało na ławce ${benchKing.manager}. W świecie FPL jest to odpowiednik kupienia Ferrari i trzymania go pod plandeką. ${benchKing.best ? `Tymczasem ${benchKing.best.name} (${benchKing.best.club}) był jednym z tych, którzy faktycznie próbowali ratować wynik.` : ""} Komisja ligi bada, czy ustawienie składu odbywało się przed kawą.`
-    });
-    if(hitKing?.transferCost>0) articles.push({
-      tag:"DZIAŁ TRANSFERÓW",
-      title:`${hitKing.team} zapłacił za zakupy. Dosłownie`,
-      body:`${hitKing.manager} wykonał ${hitKing.transfers} transferów i oddał ${hitKing.transferCost} pkt w hitach. To odważna polityka kadrowa: najpierw samemu odjąć sobie punkty, a dopiero później próbować je odzyskać na boisku. Efekt kolejki to ${hitKing.gwPoints} pkt. Chelsea podobno pytała o numer do dyrektora sportowego.`
-    });
+
+    const finishWord = gwFinished ? "po końcowym gwizdku kolejki" : "na ten moment";
+
+    if (bestGW) {
+      articles.push({
+        tag: gwFinished ? "KRÓL KOLEJKI" : "NA RAZIE KRÓL",
+        title: `${bestGW.team} rozjeżdża konkurencję. Reszta ligi może już odpalać wymówki`,
+        body:
+          `${bestGW.manager} ma ${bestGW.gwPoints} pkt ${finishWord} i prowadzi w klasyfikacji tej GW. ` +
+          `${bestGW.best ? `Największy syf rywalom zrobił ${bestGW.best.name} z ${bestGW.best.club}, który dorzucił ${bestGW.best.rawPoints} pkt.` : ""} ` +
+          `${bestGW.captain ? `Kapitan ${bestGW.captain.name} (${bestGW.captain.club}) dostarczył ${bestGW.captain.points} pkt po mnożniku, więc tym razem opaska nie została założona przez kompletnego debila.` : ""} ` +
+          `Właściciel drużyny prawdopodobnie już uważa się za połączenie Guardioli, Monchiego i Nostradamusa. Redakcja przypomina, że jedna dobra kolejka nie kasuje całej wcześniejszej kompromitacji.`
+      });
+    }
+
+    if (worstGW) {
+      articles.push({
+        tag: "KOMPROMITACJA KOLEJKI",
+        title: `${worstGW.team} zagrało w FPL tak, jakby skład ustalał pijany losomat`,
+        body:
+          `${worstGW.manager} uzbierał ${worstGW.gwPoints} pkt ${finishWord}, czyli najgorszy wynik w naszej lidze. ` +
+          `${worstGW.captain ? `Opaska trafiła do ${worstGW.captain.name} z ${worstGW.captain.club} i dała ${worstGW.captain.points} pkt. Jeśli to był plan, to plan był gówniany.` : ""} ` +
+          `${worstGW.benchPoints > 0 ? `Na ławce zostało jeszcze ${worstGW.benchPoints} pkt, więc nawet rezerwowi mieli prawo patrzeć na pierwszą jedenastkę z pogardą.` : ""} ` +
+          `Zarząd zapewnia, że sytuacja jest pod kontrolą, co w języku futbolu zwykle oznacza, że nikt nie ma pojęcia, co robi.`
+      });
+    }
+
+    if (benchKing?.benchPoints > 0) {
+      articles.push({
+        tag: "ŁAWKA HAŃBY",
+        title: `${benchKing.team} trzyma punkty na ławce jak skarb narodowy`,
+        body:
+          `${benchKing.manager} zostawił ${benchKing.benchPoints} pkt poza podstawowym składem. To nie jest zarządzanie ławką, tylko magazynowanie cierpienia. ` +
+          `${benchKing.best ? `${benchKing.best.name} (${benchKing.best.club}) zrobił ${benchKing.best.rawPoints} pkt i przynajmniej próbował ratować ten cyrk.` : ""} ` +
+          `Jeśli rezerwowi mają WhatsAppa, to po tej kolejce powinni założyć osobną grupę bez menedżera i ustalać skład sami.`
+      });
+    }
+
+    if (hitKing?.transferCost > 0) {
+      articles.push({
+        tag: "DYREKTOR SPORTOWY Z TEMU",
+        title: `${hitKing.team} zapłaciło ${hitKing.transferCost} pkt za transfery. Chelsea pyta o CV`,
+        body:
+          `${hitKing.manager} wykonał ${hitKing.transfers} transferów i oddał ${hitKing.transferCost} pkt w hitach. ` +
+          `To piękna koncepcja: najpierw samemu ukraść sobie punkty, a potem liczyć, że nowi zawodnicy oddadzą je z odsetkami. ` +
+          `Efekt to ${hitKing.gwPoints} pkt w GW. Gdyby za chaos przyznawano bonusy, byłby to absolutny haul.`
+      });
+    }
+
     randoms.forEach((x,i)=>{
       const c=x.captain;
+      const movement =
+        x.lastRank > x.rank
+          ? `awansował z ${x.lastRank}. na ${x.rank}. miejsce`
+          : x.lastRank < x.rank
+          ? `spadł z ${x.lastRank}. na ${x.rank}. miejsce`
+          : `tkwi na ${x.rank}. miejscu jak korek w odpływie`;
+
       articles.push({
-        tag:i===0?"POD LUPĄ":"PRASA DONOSI",
-        title:`${x.team}: eksperci próbują zrozumieć plan i proszą o więcej czasu`,
-        body:`${x.manager} kończy obecną kolejkę z ${x.gwPoints} pkt i zajmuje ${x.rank}. miejsce w lidze. ${c ? `Kapitanem został ${c.name} z ${c.club}, który po uwzględnieniu opaski dostarczył ${c.points} pkt.` : ""} ${x.best ? `Najmocniejszym punktem jedenastki był ${x.best.name} (${x.best.club}) — ${x.best.rawPoints} pkt.` : ""} ${x.benchPoints ? `Problem w tym, że ławka patrzyła na to wszystko z dorobkiem ${x.benchPoints} pkt.` : "Przynajmniej ławka tym razem nie miała powodów do śmiechu."} Redakcja pozostaje w gotowości na kolejne decyzje, których nikt nie będzie umiał racjonalnie wyjaśnić.`
+        tag:i===0 ? "REDAKCJA OBŚMIEWA" : "POD LUPĄ",
+        title:`${x.team}: projekt sportowy istnieje, ale dowodów wciąż mało`,
+        body:
+          `${x.manager} zdobył ${x.gwPoints} pkt i ${movement}. ` +
+          `${c ? `Kapitanem został ${c.name} z ${c.club}; po opasce przyniósł ${c.points} pkt. ${c.points <= 4 ? "Kapitan roku — jeśli rok trwał trzy minuty i był wyjątkowo smutny." : "Tym razem opaska nie wygląda jak akt samosabotażu."}` : ""} ` +
+          `${x.best ? `Najlepszym zawodnikiem był ${x.best.name} (${x.best.club}) z ${x.best.rawPoints} pkt.` : ""} ` +
+          `${x.benchPoints > 0 ? `Na ławce zostało ${x.benchPoints} pkt, bo najwyraźniej celem gry było utrudnić sobie życie.` : "Ławka przynajmniej nie śmieje się dziś najgłośniej."} ` +
+          `Redakcja pozostaje przy stanowisku, że ten skład powinien być objęty nadzorem dorosłego.`
       });
     });
 
     return NextResponse.json({
       ok:true, league:{id:LEAGUE_ID,name:league.league.name}, gw,
-      updatedAt:new Date().toISOString(), pointsSource:`/event/${gw}/live/`, standings:details, articles
+      updatedAt:new Date().toISOString(),
+      gwFinished,
+      teamScoreSource:"entry_history.points",
+      overallSource:"entry_history.total_points",
+      pointsSource:`/event/${gw}/live/`,
+      standings:details,
+      articles
     }, {headers:{"Cache-Control":"no-store, no-cache, must-revalidate, max-age=0"}});
   } catch(e) {
     return NextResponse.json({ok:false,error:String(e?.message||e)}, {status:500});
