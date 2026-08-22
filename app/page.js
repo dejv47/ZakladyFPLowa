@@ -246,7 +246,59 @@ export default function Home() {
     ? rows
     : rows.filter(r => r.people.toLowerCase().includes(filter.toLowerCase()));
 
-  const moneySummary = useMemo(() => { const net={}; rows.forEach(b=>{ if(!b.leader||["Remis","Pierwszy typ","Drugi typ"].includes(b.leader)) return; const names=b.people.split(" i ").map(x=>x.trim()); if(names.length!==2)return; const winner=names.find(n=>n.toLowerCase()===String(b.leader).toLowerCase()); if(!winner)return; const loser=names.find(n=>n!==winner); const amount=Number(String(b.amount).replace(/[^\d,.-]/g,"").replace(",","."))||0; net[winner]=(net[winner]||0)+amount; net[loser]=(net[loser]||0)-amount; }); return net; },[rows]);
+  const debts = useMemo(() => {
+    const pairMap = {};
+
+    const firstPickOwnerByBet = {
+      3: "Dejv",
+      5: "Dejv",
+      6: "Dejv",
+      7: "Janek",
+      8: "Dejv",
+      9: "Dejv",
+      11: "Dejv",
+      19: "Janek"
+    };
+
+    rows.forEach(b => {
+      if (!b.leader || b.leader === "Remis") return;
+
+      const names = b.people.split(" i ").map(x => x.trim());
+      if (names.length !== 2) return;
+
+      let winner = names.find(
+        n => n.toLowerCase() === String(b.leader).toLowerCase()
+      );
+
+      if (!winner && b.leader === "Pierwszy typ") {
+        const owner = firstPickOwnerByBet[b.id];
+        winner = names.find(n => n.toLowerCase() === String(owner).toLowerCase());
+      }
+
+      if (!winner && b.leader === "Drugi typ") {
+        const owner = firstPickOwnerByBet[b.id];
+        winner = names.find(n => n.toLowerCase() !== String(owner).toLowerCase());
+      }
+
+      if (!winner) return;
+
+      const loser = names.find(n => n.toLowerCase() !== winner.toLowerCase());
+      if (!loser) return;
+
+      const amount =
+        Number(String(b.amount).replace(/[^\d,.-]/g, "").replace(",", ".")) || 0;
+
+      const key = `${loser.toLowerCase()}__${winner.toLowerCase()}`;
+
+      if (!pairMap[key]) {
+        pairMap[key] = { loser, winner, amount: 0 };
+      }
+
+      pairMap[key].amount += amount;
+    });
+
+    return Object.values(pairMap).sort((a, b) => b.amount - a.amount);
+  }, [rows]);
 
   return (
     <main className="shell">
@@ -317,7 +369,30 @@ export default function Home() {
         ))}
       </section>
 
-      <section className="tableWrap"><h2>Kto komu wisi — na ten moment</h2><p className="note">Orientacyjny bilans według aktualnych prowadzących. Remisy i zakłady bez lidera nie są liczone.</p><div className="table">{Object.entries(moneySummary).sort((a,b)=>b[1]-a[1]).map(([name,value])=><div className="tr" key={name}><strong>{name}</strong><span></span><span></span><span></span><strong>{value>0?"+":""}{value.toFixed(0)} zł</strong></div>)}{Object.keys(moneySummary).length===0&&<div className="tr"><strong>Na razie brak przewag do policzenia</strong></div>}</div></section>
+      <section className="tableWrap">
+        <h2>Kto komu wisi — na ten moment</h2>
+        <p className="note">
+          Liczone według tego, kto aktualnie prowadzi w każdym zakładzie.
+          Remisy i zakłady bez ustalonego lidera nie są doliczane.
+        </p>
+
+        <div className="debtList">
+          {debts.map(d => (
+            <div className="debtRow" key={`${d.loser}-${d.winner}`}>
+              <div>
+                <strong>{d.loser}</strong>
+                <span> wisi </span>
+                <strong>{d.winner}</strong>
+              </div>
+              <strong className="debtAmount">{d.amount.toFixed(0)} zł</strong>
+            </div>
+          ))}
+
+          {debts.length === 0 && (
+            <div className="debtEmpty">Na razie nikt nikomu nic nie wisi.</div>
+          )}
+        </div>
+      </section>
 
       {data?.standings?.length > 0 && (
         <section className="tableWrap">

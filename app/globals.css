@@ -241,3 +241,38 @@ footer { color: var(--muted); font-size: 12px; margin-top: 26px; text-align:cent
   .editorGroup { grid-template-columns: 1fr; }
   .editor label.wide, .editorGroup strong { grid-column: auto; }
 }
+
+
+.debtList {
+  display: grid;
+  gap: 9px;
+}
+
+.debtRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 13px;
+  padding: 13px 15px;
+}
+
+.debtRow span {
+  color: var(--muted);
+}
+
+.debtAmount {
+  color: var(--accent2);
+  white-space: nowrap;
+  font-size: 18px;
+}
+
+.debtEmpty {
+  border: 1px solid var(--border);
+  background: var(--panel);
+  border-radius: 13px;
+  padding: 14px 15px;
+  color: var(--muted);
+}
