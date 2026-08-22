@@ -41,13 +41,29 @@ export async function GET() {
 
     // IMPORTANT: live GW points must come from /event/{gw}/live/.
     // bootstrap-static is metadata and should not be trusted for live article scoring.
-    const live = await fpl(`/event/${gw}/live/`).catch(() => ({ elements: [] }));
+    const [live, fixtures] = await Promise.all([
+      fpl(`/event/${gw}/live/`).catch(() => ({ elements: [] })),
+      fpl(`/fixtures/?event=${gw}`).catch(() => [])
+    ]);
+
     const livePoints = Object.fromEntries(
       (live.elements || []).map(x => [x.id, Number(x.stats?.total_points || 0)])
     );
 
     const players = Object.fromEntries(boot.elements.map(p => [p.id, p]));
     const teams = Object.fromEntries(boot.teams.map(t => [t.id, t]));
+
+    // A team counts as having played/started only when its GW fixture actually started.
+    const teamFixtureState = {};
+    for (const fx of fixtures || []) {
+      const started = Boolean(fx.started) || Boolean(fx.finished) || Boolean(fx.finished_provisional);
+      for (const teamId of [fx.team_h, fx.team_a]) {
+        if (!teamFixtureState[teamId]) teamFixtureState[teamId] = { started: false, finished: false };
+        teamFixtureState[teamId].started = teamFixtureState[teamId].started || started;
+        teamFixtureState[teamId].finished =
+          teamFixtureState[teamId].finished || Boolean(fx.finished) || Boolean(fx.finished_provisional);
+      }
+    }
 
     const entries = league.standings.results;
     const details = await Promise.all(entries.map(async row => {
@@ -61,8 +77,13 @@ export async function GET() {
         return {
           name: p.web_name || "???",
           club: teams[p.team]?.short_name || teams[p.team]?.name || "?",
-          points: Number(livePoints[x.element] || 0) * Number(x.multiplier || 0),
-          rawPoints: Number(livePoints[x.element] || 0),
+          played: Boolean(teamFixtureState[p.team]?.started),
+          finished: Boolean(teamFixtureState[p.team]?.finished),
+          points:
+            (teamFixtureState[p.team]?.started ? Number(livePoints[x.element] || 0) : 0)
+            * Number(x.multiplier || 0),
+          rawPoints:
+            teamFixtureState[p.team]?.started ? Number(livePoints[x.element] || 0) : 0,
           captain: !!x.is_captain,
           multiplier: x.multiplier,
           position: x.position
@@ -71,8 +92,9 @@ export async function GET() {
       const starters=squad.filter(x=>x.position<=11);
       const bench=squad.filter(x=>x.position>11);
       const captain=squad.find(x=>x.captain);
-      const best=starters.slice().sort((a,b)=>b.rawPoints-a.rawPoints)[0];
-      const worst=starters.slice().sort((a,b)=>a.rawPoints-b.rawPoints)[0];
+      const playedStarters = starters.filter(x => x.played);
+      const best = playedStarters.slice().sort((a,b)=>b.rawPoints-a.rawPoints)[0] || null;
+      const worst = playedStarters.slice().sort((a,b)=>a.rawPoints-b.rawPoints)[0] || null;
       return {
         entry: row.entry,
         team: row.entry_name,
@@ -87,6 +109,7 @@ export async function GET() {
         transferCost: h?.event_transfers_cost ?? 0,
         transfers: h?.event_transfers ?? 0,
         captain,
+        captainHasPlayed: Boolean(captain?.played),
         best,
         worst,
         squad
@@ -110,7 +133,7 @@ export async function GET() {
         body:
           `${bestGW.manager} ma ${bestGW.gwPoints} pkt ${finishWord} i prowadzi w klasyfikacji tej GW. ` +
           `${bestGW.best ? `Największy syf rywalom zrobił ${bestGW.best.name} z ${bestGW.best.club}, który dorzucił ${bestGW.best.rawPoints} pkt.` : ""} ` +
-          `${bestGW.captain ? `Kapitan ${bestGW.captain.name} (${bestGW.captain.club}) dostarczył ${bestGW.captain.points} pkt po mnożniku, więc tym razem opaska nie została założona przez kompletnego debila.` : ""} ` +
+          `${bestGW.captain ? (bestGW.captainHasPlayed ? `Kapitan ${bestGW.captain.name} (${bestGW.captain.club}) dostarczył ${bestGW.captain.points} pkt po mnożniku, więc tym razem opaska nie została założona przez kompletnego debila.` : `Kapitan ${bestGW.captain.name} (${bestGW.captain.club}) jeszcze nie zagrał, więc redakcja wstrzymuje się z gratulacjami i wyzwiskami.`) : ""} ` +
           `Właściciel drużyny prawdopodobnie już uważa się za połączenie Guardioli, Monchiego i Nostradamusa. Spokojnie, mistrzu — jedna dobra kolejka nie kasuje miesięcy podejmowania decyzji jak człowiek, który pierwszy raz zobaczył piłkę nożną wczoraj wieczorem.`
       });
     }
@@ -121,7 +144,7 @@ export async function GET() {
         title: `${worstGW.team} zagrało w FPL tak, jakby skład ustalał pijany losomat`,
         body:
           `${worstGW.manager} uzbierał ${worstGW.gwPoints} pkt ${finishWord}, czyli najgorszy wynik w naszej lidze. ` +
-          `${worstGW.captain ? `Opaska trafiła do ${worstGW.captain.name} z ${worstGW.captain.club} i dała ${worstGW.captain.points} pkt. Jeśli to był plan, to plan był gówniany.` : ""} ` +
+          `${worstGW.captain ? (worstGW.captainHasPlayed ? `Opaska trafiła do ${worstGW.captain.name} z ${worstGW.captain.club} i dała ${worstGW.captain.points} pkt. Jeśli to był plan, to plan był gówniany.` : `Kapitan ${worstGW.captain.name} (${worstGW.captain.club}) jeszcze nie wyszedł na boisko, więc tej katastrofy nie da się jeszcze uczciwie zwalić na niego.`) : ""} ` +
           `${worstGW.benchPoints > 0 ? `Na ławce zostało jeszcze ${worstGW.benchPoints} pkt, więc nawet rezerwowi mieli prawo patrzeć na pierwszą jedenastkę z pogardą.` : ""} ` +
           `Zarząd zapewnia, że sytuacja jest pod kontrolą. Patrząc na wynik, jedyną rzeczą pod kontrolą jest chyba poziom kompromitacji, bo skład wygląda jak ustawiony przez typa, który wszedł do FPL przez przypadek, szukając wyników Ekstraklasy.`
       });
@@ -163,7 +186,7 @@ export async function GET() {
         title:`${x.team}: projekt sportowy istnieje, ale dowodów wciąż mało`,
         body:
           `${x.manager} zdobył ${x.gwPoints} pkt i ${movement}. ` +
-          `${c ? `Kapitanem został ${c.name} z ${c.club}; po opasce przyniósł ${c.points} pkt. ${c.points <= 4 ? "Kapitan roku — jeśli rok trwał trzy minuty i był wyjątkowo smutny." : "Tym razem opaska nie wygląda jak akt samosabotażu."}` : ""} ` +
+          `${c ? (x.captainHasPlayed ? `Kapitanem został ${c.name} z ${c.club}; po opasce przyniósł ${c.points} pkt. ${c.points <= 4 ? "Kapitan roku — jeśli rok trwał trzy minuty i był wyjątkowo smutny." : "Tym razem opaska nie wygląda jak akt samosabotażu."}` : `Kapitan ${c.name} (${c.club}) jeszcze nie grał. Na razie jedynym jego wkładem w kolejkę jest zajmowanie miejsca obok literki C.`) : ""} ` +
           `${x.best ? `Najlepszym zawodnikiem był ${x.best.name} (${x.best.club}) z ${x.best.rawPoints} pkt.` : ""} ` +
           `${x.benchPoints > 0 ? `Na ławce zostało ${x.benchPoints} pkt, bo najwyraźniej celem gry było utrudnić sobie życie.` : "Ławka przynajmniej nie śmieje się dziś najgłośniej."} ` +
           `Redakcja pozostaje przy stanowisku, że ten skład powinien być objęty nadzorem dorosłego.`
@@ -177,6 +200,7 @@ export async function GET() {
       teamScoreSource:"league.standings.event_total",
       overallSource:"league.standings.total",
       pointsSource:`/event/${gw}/live/`,
+      fixtureSource:`/fixtures/?event=${gw}`,
       standings:details,
       articles
     }, {headers:{"Cache-Control":"no-store, no-cache, must-revalidate, max-age=0"}});

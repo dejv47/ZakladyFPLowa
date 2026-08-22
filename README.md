@@ -75,3 +75,10 @@ Backend pobiera osobę z kadry Manchesteru City, a następnie korzysta z
 - Punkty konkretnych zawodników nadal z oficjalnego `/event/{GW}/live/`.
 - Zakładka FPL odświeża się automatycznie co 5 minut i po powrocie do karty.
 - Po zakończeniu GW nagłówek przechodzi na `WYDANIE KOŃCOWE`, a teksty korzystają z finalnych danych.
+
+
+## v16 — punkty tylko po rozpoczęciu realnego meczu
+- Pobieramy `/fixtures/?event={GW}`.
+- Jeśli klub zawodnika jeszcze nie rozpoczął meczu, zawodnik ma w artykułach 0 punktów i status `jeszcze nie grał`.
+- Bohater/najgorszy zawodnik wybierany jest tylko spośród graczy, których spotkanie faktycznie się rozpoczęło.
+- Zapobiega to tekstom typu „Garnacho 30 pkt” przed jego meczem.
