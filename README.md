@@ -98,3 +98,11 @@ Każda kategoria dostaje relevance score; publikowane jest tylko 10 najwyżej oc
 - Warianty zmieniają się między GW, żeby gazeta nie waliła w kółko tym samym tekstem.
 - Nadal publikowane jest maksymalnie 10 najbardziej trafnych kategorii.
 - Dane punktowe pozostają oddzielone od warstwy satyrycznej.
+
+## v20 — żarty z nazw drużyn
+- Silnik wykrywa fragmenty nazw fantasy teamów i dokłada tematyczne punchline'y.
+- Specjalne warianty m.in. dla nazw zawierających Man Cioty/cioty, City, United, Liverpool,
+  Arsenal, Spurs/Tottenham, Chelsea, Villa, Real i FC.
+- Każdy klub ma też dużą pulę uniwersalnych roastów.
+- Punchline'y są mieszane z istniejącymi bankami tekstów zależnie od GW i kategorii,
+  więc artykuły są znacznie bardziej zróżnicowane.

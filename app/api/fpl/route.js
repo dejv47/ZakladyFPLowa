@@ -183,6 +183,92 @@ export async function GET() {
       "Najbardziej imponujące jest to, że wszystkie te decyzje były dobrowolne."
     ];
 
+    // Team-name-aware roast engine. It deliberately keys off fantasy team names
+    // and adds extra jokes without changing any scoring data.
+    const normalizeName = (s="") =>
+      s.toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+
+    const teamNameRoasts = (teamName, salt=0) => {
+      const n = normalizeName(teamName);
+      const pools = [];
+
+      if (n.includes("man ciot")) pools.push(
+        "Nazwa „Man Cioty” zobowiązuje i zespół robi wszystko, żeby reputacji nie zepsuć.",
+        "Man Cioty ponownie udowadniają, że człon „Man” w nazwie jest bardziej aspiracją niż opisem projektu sportowego.",
+        "W Man Ciotach atmosfera podobno świetna — wynik chujowy, ale przynajmniej branding się zgadza.",
+        "Kibice Man Ciot domagają się charakteru. Zarząd odpowiedział, że sama nazwa powinna wystarczyć.",
+        "Man Cioty weszły w tę kolejkę z rozmachem i wyszły z niej jak zwykle: z memem zamiast planu."
+      );
+      if (n.includes("ciot")) pools.push(
+        "Drużyna z „ciotami” w nazwie znów dostarczyła redakcji materiału szybciej niż zawodnicy punktów.",
+        "Nazwa miała być żartem, ale wyniki zaczynają ją traktować jak instrukcję obsługi."
+      );
+      if (n.includes("city") || n.includes("man c")) pools.push(
+        "City w nazwie, a zarządzanie bardziej jak w klubie z niedzielnej ligi po sobotnim weselu.",
+        "Ambicje jak Manchester City, wykonanie jak Manchester Shitty."
+      );
+      if (n.includes("united") || n.includes("manu") || n.includes("man u")) pools.push(
+        "„United” jest tu chyba tylko w nazwie, bo punkty i zdrowy rozsądek dawno się rozeszły.",
+        "Manchesterowe aspiracje są, tylko wynik wygląda jak kolejny kryzys na Old Trafford."
+      );
+      if (n.includes("liver") || n.includes("pool")) pools.push(
+        "Liverpool w nazwie, ale pressing wykonuje głównie właściciel na przycisku odświeżania tabeli.",
+        "You'll Never Walk Alone, chyba że chodzi o marsz w dół tabeli — wtedy drużyna radzi sobie sama."
+      );
+      if (n.includes("arsenal") || n.includes("gunner")) pools.push(
+        "Arsenalowe inspiracje pełną gębą: dużo nadziei, dużo analiz i potencjał do spektakularnego wkurwienia.",
+        "Kanonierzy? Na razie bardziej kapiszony — huk jest, punktów mniej."
+      );
+      if (n.includes("tottenham") || n.includes("spurs") || n.includes("totki")) pools.push(
+        "Tottenham w nazwie, więc cierpienie właściciela było najwyraźniej wpisane w statut klubu.",
+        "Spurs DNA działa bez zarzutu: kiedy pojawia się nadzieja, zaraz ktoś ją efektownie rozpierdala."
+      );
+      if (n.includes("chelsea")) pools.push(
+        "Chelsea-style squad building: dużo nazwisk, dużo pomysłów i ani jednego człowieka pewnego, po co to wszystko.",
+        "Projekt wygląda jak okno transferowe Chelsea — ruchu od cholery, sensu trzeba szukać z lupą."
+      );
+      if (n.includes("villa")) pools.push(
+        "Villa w nazwie brzmi elegancko, ale w środku tej posiadłości ktoś właśnie nasrał na dywan.",
+        "Aston Villa vibes: ambicje europejskie, a menedżer FPL chwilami zarządza jak woźny po godzinach."
+      );
+      if (n.includes("real")) pools.push(
+        "„Real” w nazwie jest odważne, bo realny jest tu głównie ból po sprawdzeniu punktów.",
+        "Galácticos w nazwie, galaktyczna jest na razie skala odklejenia właściciela."
+      );
+      if (n.includes("fc")) pools.push(
+        "Dumny dopisek FC sugeruje profesjonalizm. Wynik sugeruje, że to skrót od „Fucking Catastrophe”.",
+        "FC brzmi poważnie, dopóki człowiek nie zobaczy, co właściciel odpierdolił ze składem."
+      );
+
+      const generic = [
+        `Nazwa „${teamName}” brzmi jak klub z ambicjami. Szkoda, że decyzje kadrowe brzmią jak wołanie o pomoc.`,
+        `${teamName} ma własny herb, nazwę i menedżera. Z tych trzech rzeczy najbardziej podejrzany jest menedżer.`,
+        `Dział PR ${teamName} prosi, żeby nie łączyć nazwy klubu z tym, co właśnie wydarzyło się na boisku.`,
+        `${teamName} ponownie pokazuje, że kreatywna nazwa drużyny nie daje żadnych punktów za kreatywne spierdalanie kolejki.`,
+        `W siedzibie ${teamName} trwa analiza. Pierwszy wniosek: „kto, kurwa, zatwierdził ten skład?”.`,
+        `${teamName} wygląda jak projekt, który na prezentacji miał ładne slajdy, a potem ktoś zapomniał zatrudnić ludzi kompetentnych.`,
+        `Kibice ${teamName} zasługują na wyjaśnienia. Niestety właściciel sam ich potrzebuje.`,
+        `${teamName}: nazwa premium, zarządzanie w wersji trial.`,
+        `Skauci ${teamName} podobno pracowali całą noc. Efekty wskazują, że grali wtedy w Counter-Strike'a.`,
+        `${teamName} nie jest dziś drużyną. To bardziej eksperyment społeczny sprawdzający, ile cierpienia wytrzyma jeden właściciel konta FPL.`
+      ];
+
+      const all = [...pools, ...generic];
+      return all[(gw * 7 + salt * 11 + teamName.length) % all.length];
+    };
+
+    const extraPunch = (owner, salt=0) => {
+      const lines = [
+        `${teamNameRoasts(owner.team, salt)} ${variants(ownerRoasts, salt+20)}`,
+        `${variants(ownerRoasts, salt+21)} ${teamNameRoasts(owner.team, salt+1)}`,
+        `${teamNameRoasts(owner.team, salt+2)} Redakcja zaleca nie podejmować kolejnych decyzji bez nadzoru osoby trzeźwej.`,
+        `${teamNameRoasts(owner.team, salt+3)} Na konferencji prasowej zabrakło pytań, bo wszyscy tylko patrzyli z niedowierzaniem.`,
+        `${teamNameRoasts(owner.team, salt+4)} Komisja ligi rozważa wprowadzenie testu na inteligencję przed przyciskiem „Save My Team”.`,
+        `${teamNameRoasts(owner.team, salt+5)} Bukmacherzy przestali przyjmować zakłady na kolejną głupią decyzję — kurs spadł do 1.01.`
+      ];
+      return lines[(gw + salt + owner.team.length) % lines.length];
+    };
+
     const sorted = [...details].sort((a,b)=>b.gwPoints-a.gwPoints);
     const bestGW = sorted[0];
     const worstGW = sorted.at(-1);
@@ -192,13 +278,13 @@ export async function GET() {
     if (bestGW) add(90 + bestGW.gwPoints, {
       tag:"👑 KRÓL TEGO BURDELU",
       title:`${bestGW.team} rozjebało konkurencję. Rywale już produkują wymówki`,
-      body:`${bestGW.manager} ma ${bestGW.gwPoints} pkt ${finishWord}. ${bestGW.best ? `${bestGW.best.name} (${bestGW.best.club}) dołożył ${bestGW.best.rawPoints} pkt i zrobił za pół składu robotę.` : ""} ${bestGW.captain ? (bestGW.captainHasPlayed ? `Kapitan ${bestGW.captain.name} dowiózł ${bestGW.captain.points} pkt po mnożniku.` : `Kapitan ${bestGW.captain.name} jeszcze nie grał, więc ten burdel może być jeszcze większy.`) : ""} Menedżer chodzi teraz jak Guardiola po mistrzostwie, choć tydzień temu prawdopodobnie sam nie wiedział, po co ma połowę tych piłkarzy.`
+      body:`${bestGW.manager} ma ${bestGW.gwPoints} pkt ${finishWord}. ${bestGW.best ? `${bestGW.best.name} (${bestGW.best.club}) dołożył ${bestGW.best.rawPoints} pkt i zrobił za pół składu robotę.` : ""} ${bestGW.captain ? (bestGW.captainHasPlayed ? `Kapitan ${bestGW.captain.name} dowiózł ${bestGW.captain.points} pkt po mnożniku.` : `Kapitan ${bestGW.captain.name} jeszcze nie grał, więc ten burdel może być jeszcze większy.`) : ""} Menedżer chodzi teraz jak Guardiola po mistrzostwie, choć tydzień temu prawdopodobnie sam nie wiedział, po co ma połowę tych piłkarzy. ${extraPunch(bestGW,31)}`
     });
 
     if (worstGW) add(100 + Math.max(0, bestGW.gwPoints-worstGW.gwPoints), {
       tag:"💩 KOMPROMITACJA KOLEJKI",
       title:`${worstGW.team}: ktoś powinien odebrać temu człowiekowi hasło do FPL`,
-      body:`${worstGW.manager} ma ${worstGW.gwPoints} pkt, czyli najmniej w lidze. ${variants(scoreRoasts,1)}. ${worstGW.benchPoints ? `Na ławce kisi się ${worstGW.benchPoints} pkt, więc nawet rezerwowi patrzą na trenera jak na idiotę.` : ""} Zarząd milczy. Trudno się dziwić — co tu kurwa komentować. ${variants(ownerRoasts,11)}`
+      body:`${worstGW.manager} ma ${worstGW.gwPoints} pkt, czyli najmniej w lidze. ${variants(scoreRoasts,1)}. ${worstGW.benchPoints ? `Na ławce kisi się ${worstGW.benchPoints} pkt, więc nawet rezerwowi patrzą na trenera jak na idiotę.` : ""} Zarząd milczy. Trudno się dziwić — co tu kurwa komentować. ${extraPunch(worstGW,32)}`
     });
 
     if (benchKing?.benchPoints > 0) add(75 + benchKing.benchPoints*3, {
@@ -219,7 +305,7 @@ export async function GET() {
     if (capFail) add(70 + Math.max(0,12-(capFail.captain?.points||0))*4, {
       tag:"©️ KAPITAN DEBIL",
       title:`${capFail.team} zaufało ${capFail.captain.name}. No i po chuj?`,
-      body:`${capFail.manager} dał opaskę ${capFail.captain.name} (${capFail.captain.club}), który po mnożniku dał ${capFail.captain.points} pkt. ${variants(captainRoasts,3)}. ${capFail.best&&capFail.best.name!==capFail.captain.name ? `Tymczasem ${capFail.best.name} zrobił ${capFail.best.rawPoints} pkt bez tej zaszczytnej literki C.` : ""}`
+      body:`${capFail.manager} dał opaskę ${capFail.captain.name} (${capFail.captain.club}), który po mnożniku dał ${capFail.captain.points} pkt. ${variants(captainRoasts,3)}. ${capFail.best&&capFail.best.name!==capFail.captain.name ? `Tymczasem ${capFail.best.name} zrobił ${capFail.best.rawPoints} pkt bez tej zaszczytnej literki C.` : ""} ${extraPunch(capFail,35)}`
     });
 
     // Frajer kolejki / transfer z dupy: sold player outscored the replacement.
@@ -230,7 +316,7 @@ export async function GET() {
     if (tf) add(85 + (tf.outPoints-tf.inPoints)*5, {
       tag:"🤡 FRAJER KOLEJKI",
       title:`${tf.owner.team} wyrzuca ${tf.outName}, a ten odpowiada ${tf.outPoints} punktami`,
-      body:`${tf.owner.manager} sprzedał ${tf.outName} (${tf.outClub}) i kupił ${tf.inName} (${tf.inClub}). Nowy nabytek zrobił ${tf.inPoints} pkt, stary ${tf.outPoints}. Różnica: ${tf.outPoints-tf.inPoints} pkt prosto w mordę. Rynek transferowy właśnie wystawił rachunek za bycie mądrzejszym od wszystkich.`
+      body:`${tf.owner.manager} sprzedał ${tf.outName} (${tf.outClub}) i kupił ${tf.inName} (${tf.inClub}). Nowy nabytek zrobił ${tf.inPoints} pkt, stary ${tf.outPoints}. Różnica: ${tf.outPoints-tf.inPoints} pkt prosto w mordę. Rynek transferowy właśnie wystawił rachunek za bycie mądrzejszym od wszystkich. ${extraPunch(tf.owner,36)}`
     });
 
     // 200 IQ / Differential Chad.
@@ -290,7 +376,7 @@ export async function GET() {
     if(faller) add(60+(faller.rank-faller.lastRank)*8,{
       tag:"📉 TITANIC AWARD",
       title:`${faller.team} leci w dół. Orkiestra może już zacząć grać`,
-      body:`${faller.manager} spadł z ${faller.lastRank}. na ${faller.rank}. miejsce. ${faller.gwPoints} pkt nie wystarczyło, żeby zatkać dziurę w kadłubie. Jeżeli tak dalej pójdzie, następny raport będziemy pisać z dna tabeli.`
+      body:`${faller.manager} spadł z ${faller.lastRank}. na ${faller.rank}. miejsce. ${faller.gwPoints} pkt nie wystarczyło, żeby zatkać dziurę w kadłubie. Jeżeli tak dalej pójdzie, następny raport będziemy pisać z dna tabeli. ${extraPunch(faller,37)}`
     });
 
     // Luck / bad luck proxies based on bench and captain outcomes.
@@ -333,7 +419,7 @@ export async function GET() {
     if(crimes[0]) add(110+crimes[0].score,{
       tag:"🚨 PROKURATURA FPL",
       title:`Wszczęto śledztwo przeciwko ${crimes[0].owner.team}`,
-      body:`Zarzut: ${crimes[0].text}. Redakcja przeanalizowała materiał dowodowy i nie znalazła żadnych okoliczności łagodzących. ${crimes[0].owner.manager} ma prawo zachować milczenie i powinien z niego, kurwa, skorzystać, bo próba tłumaczenia tego gówna może być jeszcze bardziej kompromitująca niż sama decyzja. ${variants(ownerRoasts,15)}`
+      body:`Zarzut: ${crimes[0].text}. Redakcja przeanalizowała materiał dowodowy i nie znalazła żadnych okoliczności łagodzących. ${crimes[0].owner.manager} ma prawo zachować milczenie i powinien z niego, kurwa, skorzystać, bo próba tłumaczenia tego gówna może być jeszcze bardziej kompromitująca niż sama decyzja. ${extraPunch(crimes[0].owner,38)}`
     });
 
     // Power ranking proxy: current overall table + GW form.
