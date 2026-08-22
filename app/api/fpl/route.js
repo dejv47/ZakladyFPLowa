@@ -136,8 +136,6 @@ export async function GET() {
       };
     }));
 
-    const randoms=seeded(details.filter(x=>![bestGW?.entry,worstGW?.entry].includes(x.entry)), gw, 2);
-
     // Build a larger pool of categories, score how relevant each one is
     // for this GW, then publish only the 10 strongest stories.
     const candidates = [];
