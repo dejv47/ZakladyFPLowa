@@ -115,12 +115,35 @@ export async function GET() {
         best,
         worst,
         squad,
-        history: (hist?.current || []).map(z => ({
-          gw: z.event, points: Number(z.points || 0), total: Number(z.total_points || 0),
-          rank: Number(z.rank || 0), overallRank: Number(z.overall_rank || 0),
-          bench: Number(z.points_on_bench || 0), transfers: Number(z.event_transfers || 0),
-          cost: Number(z.event_transfers_cost || 0)
-        })),
+        history: (() => {
+          const rows = (hist?.current || []).map(z => ({
+            gw: Number(z.event),
+            points: Number(z.points || 0),
+            total: Number(z.total_points || 0),
+            rank: Number(z.rank || 0),
+            overallRank: Number(z.overall_rank || 0),
+            bench: Number(z.points_on_bench || 0),
+            transfers: Number(z.event_transfers || 0),
+            cost: Number(z.event_transfers_cost || 0)
+          }));
+
+          const currentIndex = rows.findIndex(z => z.gw === Number(gw));
+          const canonicalCurrent = {
+            gw: Number(gw),
+            points: Number(row.event_total ?? picks?.entry_history?.points ?? 0),
+            total: Number(row.total ?? picks?.entry_history?.total_points ?? 0),
+            rank: Number(picks?.entry_history?.rank ?? 0),
+            overallRank: Number(picks?.entry_history?.overall_rank ?? 0),
+            bench: Number(picks?.entry_history?.points_on_bench ?? h?.points_on_bench ?? 0),
+            transfers: Number(picks?.entry_history?.event_transfers ?? h?.event_transfers ?? 0),
+            cost: Number(picks?.entry_history?.event_transfers_cost ?? h?.event_transfers_cost ?? 0)
+          };
+
+          if (currentIndex >= 0) rows[currentIndex] = canonicalCurrent;
+          else rows.push(canonicalCurrent);
+
+          return rows.sort((a,b) => a.gw - b.gw);
+        })(),
         gwTransfers: (transfersAll || [])
           .filter(t => Number(t.event) === Number(gw))
           .map(t => {
@@ -462,36 +485,134 @@ export async function GET() {
       finalArticles.push({tag:a.tag,title:a.title,body:a.body});
     }
 
-    // ---------- FPLowa MEGA analytics ----------
+    // ---------- FPLowa MEGA analytics v22 ----------
+    const canonicalHistoryFor = (x) => {
+      const hs = [...(x.history || [])];
+      const idx = hs.findIndex(h => Number(h.gw) === Number(gw));
+      const current = {
+        gw:Number(gw),
+        points:Number(x.gwPoints || 0),
+        total:Number(x.overall || 0),
+        rank:0,
+        overallRank:0,
+        bench:Number(x.benchPoints || 0),
+        transfers:Number(x.transfers || 0),
+        cost:Number(x.transferCost || 0)
+      };
+      if (idx >= 0) hs[idx] = {...hs[idx], ...current};
+      else hs.push(current);
+      return hs.sort((a,b)=>a.gw-b.gw);
+    };
+
+    const profileComment = (x, stats) => {
+      const lines = [];
+      const {avg3, benchSeason, hitSeason, bestGW, worstGW, editorial} = stats;
+
+      if (editorial >= 8) {
+        lines.push(`${x.manager} na razie wygląda jak ktoś, kto faktycznie wie, co robi, co w tej lidze jest już podejrzane.`);
+      } else if (editorial >= 6.5) {
+        lines.push(`${x.manager} trzyma poziom i nie daje redakcji zbyt wielu powodów do publicznego linczu. Jeszcze.`);
+      } else if (editorial >= 5) {
+        lines.push(`${x.manager} jest dokładnie w strefie „ani geniusz, ani kompletny dzban”. Stabilna przeciętność, piękna rzecz.`);
+      } else if (editorial >= 3.5) {
+        lines.push(`${x.manager} podejmuje tyle średnich decyzji, że zaczyna to wyglądać jak świadoma filozofia futbolu.`);
+      } else {
+        lines.push(`${x.manager} prowadzi ten projekt tak, jakby celem sezonu było zebranie materiału do Hall of Shame.`);
+      }
+
+      if (benchSeason >= 40) {
+        lines.push(`Na ławce zostawił już ${benchSeason} pkt, więc część jego najlepszych zawodników regularnie ogląda sukces z miejsca dla widzów.`);
+      }
+      if (hitSeason >= 12) {
+        lines.push(`Do tego wydał ${hitSeason} pkt na hity. Dział transferów ma budżet ujemny i najwyraźniej jest z tego dumny.`);
+      } else if (hitSeason === 0) {
+        lines.push(`Przynajmniej nie rozdaje punktów za transfery jak ulotek pod galerią handlową.`);
+      }
+
+      if (bestGW && worstGW && bestGW.points - worstGW.points >= 35) {
+        lines.push(`Rozrzut między najlepszą a najgorszą GW to ${bestGW.points - worstGW.points} pkt, czyli stabilność godna kolejki górskiej.`);
+      }
+
+      if (avg3 >= 65) {
+        lines.push(`Ostatnie trzy kolejki: ${avg3.toFixed(1)} średnio. Forma jest konkretna i reszta ligi ma prawo być wkurwiona.`);
+      } else if (avg3 <= 35) {
+        lines.push(`Ostatnie trzy kolejki: ${avg3.toFixed(1)} średnio. To już nie kryzys formy, tylko regularny program autodestrukcji.`);
+      }
+
+      return lines.join(" ");
+    };
+
     const managerProfiles = details.map(x => {
-      const hs = x.history || [];
+      const hs = canonicalHistoryFor(x);
       const last3 = hs.slice(-3);
       const avg3 = last3.length ? last3.reduce((a,z)=>a+z.points,0)/last3.length : x.gwPoints;
       const avg = hs.length ? hs.reduce((a,z)=>a+z.points,0)/hs.length : x.gwPoints;
-      const best = hs.length ? [...hs].sort((a,b)=>b.points-a.points)[0] : null;
-      const worst = hs.length ? [...hs].sort((a,b)=>a.points-b.points)[0] : null;
-      const benchSeason = hs.reduce((a,z)=>a+z.bench,0);
-      const hitSeason = hs.reduce((a,z)=>a+z.cost,0);
-      const form = last3.map(z => z.points >= 65 ? "🔥" : z.points >= 50 ? "👍" : z.points >= 35 ? "😐" : "💩").join("") || "—";
-      const editorial = Math.max(1, Math.min(10, 5 + (avg3-50)/12 - hitSeason/40 - benchSeason/120));
-      const label = editorial >= 8 ? "ELITA" : editorial >= 6.5 ? "W FORMIE" : editorial >= 5 ? "JESZCZE ŻYJE" : editorial >= 3.5 ? "DO ZWOLNIENIA" : "TRUP";
+      const bestGW = hs.length ? [...hs].sort((a,b)=>b.points-a.points)[0] : null;
+      const worstGW = hs.length ? [...hs].sort((a,b)=>a.points-b.points)[0] : null;
+      const benchSeason = hs.reduce((a,z)=>a+Number(z.bench||0),0);
+      const hitSeason = hs.reduce((a,z)=>a+Number(z.cost||0),0);
+
+      const form = last3.map(z =>
+        z.points >= 70 ? "🔥" :
+        z.points >= 55 ? "👍" :
+        z.points >= 40 ? "😐" : "💩"
+      ).join("") || "—";
+
+      // More stable editorial rating: rank + form + discipline.
+      const rankComponent = details.length > 1
+        ? ((details.length - x.rank) / (details.length - 1)) * 4
+        : 2;
+      const formComponent = Math.max(0, Math.min(4, (avg3 - 30) / 12));
+      const disciplineComponent = Math.max(0, 2 - hitSeason/16 - benchSeason/120);
+      const editorial = Math.max(1, Math.min(10, 1 + rankComponent + formComponent + disciplineComponent));
+
+      const label =
+        editorial >= 8 ? "ELITA" :
+        editorial >= 6.5 ? "W FORMIE" :
+        editorial >= 5 ? "JESZCZE ŻYJE" :
+        editorial >= 3.5 ? "DO ZWOLNIENIA" : "TRUP";
+
+      const stats = {
+        avg:Number(avg.toFixed(1)),
+        avg3:Number(avg3.toFixed(1)),
+        bestGW, worstGW, benchSeason, hitSeason,
+        editorial:Number(editorial.toFixed(1))
+      };
+
       return {
         entry:x.entry, team:x.team, manager:x.manager, rank:x.rank, overall:x.overall,
-        gwPoints:x.gwPoints, avg:Number(avg.toFixed(1)), avg3:Number(avg3.toFixed(1)),
-        bestGW:best, worstGW:worst, benchSeason, hitSeason, form,
-        editorial:Number(editorial.toFixed(1)), label
+        gwPoints:x.gwPoints, ...stats, form, label,
+        comment:profileComment(x, stats)
       };
     });
 
     const hallOfShame = [];
     for (const p of managerProfiles) {
-      if (p.worstGW) hallOfShame.push({kind:"Najgorszy wynik GW", value:`${p.worstGW.points} pkt (GW${p.worstGW.gw})`, manager:p.manager, team:p.team, score:100-p.worstGW.points});
-      hallOfShame.push({kind:"Punkty na ławce", value:`${p.benchSeason} pkt`, manager:p.manager, team:p.team, score:p.benchSeason});
-      hallOfShame.push({kind:"Koszt hitów", value:`-${p.hitSeason} pkt`, manager:p.manager, team:p.team, score:p.hitSeason});
+      if (p.worstGW) {
+        hallOfShame.push({
+          kind:"Najgorszy wynik GW",
+          value:`${p.worstGW.points} pkt (GW${p.worstGW.gw})`,
+          manager:p.manager, team:p.team,
+          score:100-p.worstGW.points
+        });
+      }
+      hallOfShame.push({
+        kind:"Punkty na ławce",
+        value:`${p.benchSeason} pkt`,
+        manager:p.manager, team:p.team,
+        score:p.benchSeason
+      });
+      hallOfShame.push({
+        kind:"Koszt hitów",
+        value:`-${p.hitSeason} pkt`,
+        manager:p.manager, team:p.team,
+        score:p.hitSeason
+      });
     }
-    const shameRecords = ["Najgorszy wynik GW","Punkty na ławce","Koszt hitów"].map(kind =>
-      hallOfShame.filter(x=>x.kind===kind).sort((a,b)=>b.score-a.score)[0]
-    ).filter(Boolean);
+
+    const shameRecords = ["Najgorszy wynik GW","Punkty na ławce","Koszt hitów"]
+      .map(kind => hallOfShame.filter(x=>x.kind===kind).sort((a,b)=>b.score-a.score)[0])
+      .filter(Boolean);
 
     const awards = [
       bestGW && {icon:"🏆",name:"Mózg GW",manager:bestGW.manager,team:bestGW.team,value:`${bestGW.gwPoints} pkt`},
@@ -501,22 +622,22 @@ export async function GET() {
       tf && {icon:"💸",name:"Transferowy Kryminalista",manager:tf.owner.manager,team:tf.owner.team,value:`-${tf.outPoints-tf.inPoints} pkt vs sprzedany`}
     ].filter(Boolean);
 
-    // Live news only uses players whose real fixture has started.
     const breakingNews = [];
     for (const x of details) {
-      if (x.best?.rawPoints >= 8) breakingNews.push(`PILNE: ${x.best.name} (${x.best.club}) ma ${x.best.rawPoints} pkt dla ${x.manager}. W siedzibie ${x.team} chwilowo przestali przeklinać.`);
-      if (x.captainHasPlayed && x.captain?.points <= 4) breakingNews.push(`ALARM: kapitan ${x.manager}, ${x.captain.name}, daje tylko ${x.captain.points} pkt po mnożniku. Pierwsze „kurwa” prawdopodobnie już padło.`);
-      if (x.benchPoints >= 8) breakingNews.push(`SKANDAL: ${x.manager} kisi ${x.benchPoints} pkt na ławce. Ławka domaga się zmiany trenera.`);
+      if (x.best?.rawPoints >= 8)
+        breakingNews.push(`PILNE: ${x.best.name} (${x.best.club}) ma ${x.best.rawPoints} pkt dla ${x.manager}. W siedzibie ${x.team} chwilowo przestali przeklinać.`);
+      if (x.captainHasPlayed && x.captain?.points <= 4)
+        breakingNews.push(`ALARM: kapitan ${x.manager}, ${x.captain.name}, daje tylko ${x.captain.points} pkt po mnożniku. Pierwsze „kurwa” prawdopodobnie już padło.`);
+      if (x.benchPoints >= 8)
+        breakingNews.push(`SKANDAL: ${x.manager} kisi ${x.benchPoints} pkt na ławce. Ławka domaga się zmiany trenera.`);
     }
 
-    // Players that still matter for each manager.
     const watchList = details.map(x => ({
       manager:x.manager, team:x.team,
       remaining:x.squad.filter(p=>p.position<=11&&!p.played).map(p=>p.name),
       active:x.squad.filter(p=>p.position<=11&&p.played&&!p.finished).map(p=>p.name)
     }));
 
-    // Closest live race and differential players.
     let deathMatch = null;
     for(let i=0;i<details.length;i++) for(let j=i+1;j<details.length;j++){
       const a=details[i], b=details[j], gap=Math.abs(a.gwPoints-b.gwPoints);
@@ -531,54 +652,70 @@ export async function GET() {
       }
     }
 
-    // Rivalry: who beat whom more often in completed/current histories.
     const rivalries=[];
     for(let i=0;i<details.length;i++) for(let j=i+1;j<details.length;j++){
       const a=details[i],b=details[j];
-      const ah=Object.fromEntries((a.history||[]).map(h=>[h.gw,h.points]));
-      const bh=Object.fromEntries((b.history||[]).map(h=>[h.gw,h.points]));
+      const ah=Object.fromEntries(canonicalHistoryFor(a).map(h=>[h.gw,h.points]));
+      const bh=Object.fromEntries(canonicalHistoryFor(b).map(h=>[h.gw,h.points]));
       let aw=0,bw=0,draw=0;
-      for(const k of Object.keys(ah)) if(k in bh){ if(ah[k]>bh[k])aw++; else if(bh[k]>ah[k])bw++; else draw++; }
+      for(const k of Object.keys(ah)) if(k in bh){
+        if(ah[k]>bh[k]) aw++;
+        else if(bh[k]>ah[k]) bw++;
+        else draw++;
+      }
       rivalries.push({a:a.manager,b:b.manager,aWins:aw,bWins:bw,draw});
     }
 
-    // Virtual odds: entertainment-only index from overall position + last-3 form.
-    const strengths=managerProfiles.map(p=>({p,s:Math.max(.1,(details.length-p.rank+1)*2+p.avg3/20)}));
-    const strengthSum=strengths.reduce((a,x)=>a+x.s,0);
-    const virtualOdds=strengths.map(({p,s})=>{
-      const prob=s/strengthSum;
-      return {manager:p.manager,team:p.team,prob:Number((prob*100).toFixed(1)),odds:Number(Math.max(1.05,1/prob).toFixed(2))};
+    // Realistic entertainment odds:
+    // use CURRENT overall-point deficit to leader + recent form.
+    // At the start of season, probabilities stay relatively flat.
+    const leaderOverall = Math.max(...managerProfiles.map(p=>p.overall), 0);
+    const seasonProgress = Math.max(1, Math.min(38, Number(gw))) / 38;
+    const rawStrengths = managerProfiles.map(p => {
+      const deficit = leaderOverall - p.overall;
+      const deficitPenalty = deficit / (55 - 25*seasonProgress); // harsher later in season
+      const formBoost = (p.avg3 - 50) / 18;
+      const rankBoost = (details.length - p.rank) / Math.max(1, details.length-1);
+      const rating = -deficitPenalty + formBoost + rankBoost;
+      return {p, rating};
+    });
+
+    const temperature = seasonProgress < 0.2 ? 1.8 : seasonProgress < 0.5 ? 1.35 : 1.05;
+    const expVals = rawStrengths.map(x => Math.exp(x.rating / temperature));
+    const expSum = expVals.reduce((a,b)=>a+b,0) || 1;
+
+    const virtualOdds = rawStrengths.map((x,i) => {
+      const prob = expVals[i] / expSum;
+      return {
+        manager:x.p.manager,
+        team:x.p.team,
+        prob:Number((prob*100).toFixed(1)),
+        odds:Number(Math.max(1.15, (1/prob)*1.08).toFixed(2))
+      };
     }).sort((a,b)=>b.prob-a.prob);
 
-    // Editorial predictions. During a live GW these are explicitly "from now", not fake pre-deadline predictions.
     const predictions = {
       label: gwFinished ? `Typ redakcji na GW${gw+1}` : `Typ redakcji od teraz w GW${gw}`,
       winner: managerProfiles.slice().sort((a,b)=>b.avg3-a.avg3)[0] || null,
       danger: managerProfiles.slice().sort((a,b)=>a.avg3-b.avg3)[0] || null
     };
 
-    // Manager grades based only on real current/historical FPL data.
-    const grades = managerProfiles.map(p=>({
-      ...p,
-      comment:p.editorial>=8 ? "Niestety trzeba przyznać: skurczybyk wie, co robi." :
-        p.editorial>=6 ? "Nie jest źle. Redakcja odkłada akt oskarżenia do następnej kolejki." :
-        p.editorial>=4 ? "Przeciętnie. Jeden punkt za zalogowanie, reszta za brak pełnej katastrofy." :
-        "Jeden punkt za zalogowanie się, drugi z litości. Reszta punktów zaginęła razem z kompetencjami."
-    }));
+    const grades = managerProfiles;
 
-    // Approximate live chance for winning this GW, clearly marked as fun estimate.
+    // Current GW fun probabilities based on canonical league score + remaining starters.
     const liveStrength = details.map(x=>{
       const remaining=x.squad.filter(p=>p.position<=11&&!p.played).length;
-      return {x,score:Math.max(.1,x.gwPoints+remaining*3.5)};
+      return {x,score:Number(x.gwPoints||0)+remaining*3.5};
     });
-    const liveSum=liveStrength.reduce((a,z)=>a+Math.exp(z.score/18),0);
-    const gwChances=liveStrength.map(z=>({
+    const maxScore = Math.max(...liveStrength.map(z=>z.score), 0);
+    const liveExp = liveStrength.map(z=>Math.exp((z.score-maxScore)/12));
+    const liveSum = liveExp.reduce((a,b)=>a+b,0) || 1;
+    const gwChances=liveStrength.map((z,i)=>({
       manager:z.x.manager,team:z.x.team,points:z.x.gwPoints,
       remaining:z.x.squad.filter(p=>p.position<=11&&!p.played).length,
-      chance:Number((100*Math.exp(z.score/18)/liveSum).toFixed(1))
+      chance:Number((100*liveExp[i]/liveSum).toFixed(1))
     })).sort((a,b)=>b.chance-a.chance);
 
-    // End-of-season style awards can be shown all season and become the final gala after GW38.
     const seasonAwards = [
       managerProfiles.slice().sort((a,b)=>a.rank-b.rank)[0] && {name:"👑 MVP sezonu",p:managerProfiles.slice().sort((a,b)=>a.rank-b.rank)[0]},
       managerProfiles.slice().sort((a,b)=>b.benchSeason-a.benchSeason)[0] && {name:"🪑 Król ławki",p:managerProfiles.slice().sort((a,b)=>b.benchSeason-a.benchSeason)[0]},
