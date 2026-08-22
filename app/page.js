@@ -301,7 +301,10 @@ export default function Home() {
   }, [rows]);
 
   return (
-    <main className="shell">
+    <>
+      <div className="sideHero sideHeroPep" aria-hidden="true" />
+      <div className="sideHero sideHeroCherki" aria-hidden="true" />
+      <main className="shell">
       <section className="hero">
         <div>
           <p className="eyebrow">SEZON 2026/27</p>
@@ -417,5 +420,6 @@ export default function Home() {
           : "Po podłączeniu API dane sportowe będą aktualizowane automatycznie."}
       </footer>
     </main>
+    </>
   );
 }
