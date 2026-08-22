@@ -713,6 +713,15 @@ export async function GET() {
             `Do następnego deadline'u wszystko może się zmienić. Zwłaszcza na gorsze.`
           ], 99);
 
+      const signatureLines = [
+        `${x.manager} ma dziś profil ${x.icon || ""} ${x.label}, ranking #${x.rank}, ocenę ${editorial}/10 i średnią ${avg3.toFixed(1)} z ostatnich trzech zakończonych GW.`,
+        `Bilans diagnostyczny: pozycja ${x.rank}, forma ${avg3.toFixed(1)}, ławka ${benchSeason}, hity ${hitSeason}, rozrzut ${spread}. Brzmi jak raport medyczny i momentami nim jest.`,
+        `Gdyby zamknąć ten sezon w pięciu liczbach: #${x.rank} • ${avg3.toFixed(1)} formy • ${benchSeason} na ławce • ${hitSeason} hitów • ${spread} spreadu. Lekarz zaleca obserwację.`,
+        `${x.team} ma własny fingerprint: miejsce ${x.rank}, trend ${trend >= 0 ? "+" : ""}${trend}, bench ${benchSeason}, hits ${hitSeason}, rating ${editorial}/10. Trudno to pomylić z kimkolwiek innym.`,
+        `Profil ryzyka ${x.manager}: ${editorial >= 7 ? "niski" : editorial >= 5 ? "średni" : "wysoki"} • trend ${trend} • ławka ${benchSeason} • koszty transferów ${hitSeason}.`,
+        `Redakcja zapisuje do akt: ${x.manager}, ${x.team}, #${x.rank}, ${editorial}/10, ${avg3.toFixed(1)} formy, ${benchSeason} zmarnowanych na ławce. Podpisano i opieczętowano.`
+      ];
+
       return [
         pick(openers,1),
         pick(formLines,2),
@@ -720,7 +729,8 @@ export async function GET() {
         pick(hitLines,4),
         pick(trendLines,5),
         pick(rankLines,6),
-        ending
+        ending,
+        pick(signatureLines,7)
       ].join(" ");
     };
 
@@ -775,106 +785,102 @@ export async function GET() {
       };
     });
 
-    const hallOfShame = [];
+    // Hall of Shame v26: fixed broad category set.
+    // Categories do not disappear just because the current value is zero.
+    const completedProfiles = managerProfiles;
 
-    for (const p of managerProfiles) {
-      if (p.worstGW && p.worstGW.gw > 0) {
-        hallOfShame.push({
-          kind:"💀 Najgorszy wynik GW",
-          value:`${p.worstGW.points} pkt (GW${p.worstGW.gw})`,
-          manager:p.manager, team:p.team,
-          score:Math.max(0, 100 - p.worstGW.points),
-          raw:p.worstGW.points
-        });
+    const pickMin = (arr, getter) =>
+      arr.length ? [...arr].sort((a,b)=>getter(a)-getter(b))[0] : null;
+    const pickMax = (arr, getter) =>
+      arr.length ? [...arr].sort((a,b)=>getter(b)-getter(a))[0] : null;
+
+    const worstGwOwner = pickMin(
+      completedProfiles.filter(p=>p.worstGW && p.worstGW.gw > 0),
+      p=>p.worstGW.points
+    );
+
+    const benchOwner = pickMax(completedProfiles, p=>p.benchSeason || 0);
+    const hitOwner = pickMax(completedProfiles, p=>p.hitSeason || 0);
+    const rollerOwner = pickMax(
+      completedProfiles.filter(p=>p.bestGW && p.worstGW),
+      p=>(p.bestGW.points-p.worstGW.points)
+    );
+    const coldOwner = pickMin(completedProfiles.filter(p=>p.avg3>0), p=>p.avg3);
+    const badRatingOwner = pickMin(completedProfiles, p=>p.editorial);
+    const cellarOwner = pickMax(completedProfiles, p=>p.rank);
+    const lowAverageOwner = pickMin(completedProfiles.filter(p=>p.avg>0), p=>p.avg);
+    const worstFormOwner = pickMin(completedProfiles.filter(p=>p.avg3>0), p=>p.avg3);
+    const unstableOwner = pickMax(
+      completedProfiles.filter(p=>p.bestGW && p.worstGW),
+      p=>(p.bestGW.points-p.worstGW.points)
+    );
+
+    const shameRecords = [
+      {
+        kind:"💀 Najgorszy wynik GW",
+        manager:worstGwOwner?.manager || "—",
+        team:worstGwOwner?.team || "Brak danych",
+        value:worstGwOwner?.worstGW ? `${worstGwOwner.worstGW.points} pkt (GW${worstGwOwner.worstGW.gw})` : "Jeszcze brak zakończonej GW"
+      },
+      {
+        kind:"🪑 Król ławki",
+        manager:benchOwner?.manager || "—",
+        team:benchOwner?.team || "Brak danych",
+        value:(benchOwner?.benchSeason || 0) > 0 ? `${benchOwner.benchSeason} pkt na ławce` : "0 pkt — na razie brak kompromitacji"
+      },
+      {
+        kind:"💸 Transferowy kryminalista",
+        manager:hitOwner?.manager || "—",
+        team:hitOwner?.team || "Brak danych",
+        value:(hitOwner?.hitSeason || 0) > 0 ? `-${hitOwner.hitSeason} pkt w hitach` : "0 pkt — jeszcze nikt nie odpierdolił hitów"
+      },
+      {
+        kind:"🎢 Rollercoaster sezonu",
+        manager:rollerOwner?.manager || "—",
+        team:rollerOwner?.team || "Brak danych",
+        value:rollerOwner?.bestGW && rollerOwner?.worstGW
+          ? `${rollerOwner.bestGW.points-rollerOwner.worstGW.points} pkt różnicy`
+          : "Za mało zakończonych GW"
+      },
+      {
+        kind:"🧊 Lodówka — najgorsza forma 3 GW",
+        manager:coldOwner?.manager || "—",
+        team:coldOwner?.team || "Brak danych",
+        value:coldOwner?.avg3 > 0 ? `${coldOwner.avg3} pkt średnio` : "Za mało historii"
+      },
+      {
+        kind:"🏺 Złoty Dzban redakcji",
+        manager:badRatingOwner?.manager || "—",
+        team:badRatingOwner?.team || "Brak danych",
+        value:badRatingOwner ? `${badRatingOwner.editorial}/10` : "Brak danych"
+      },
+      {
+        kind:"🕳️ Piwnica tabeli",
+        manager:cellarOwner?.manager || "—",
+        team:cellarOwner?.team || "Brak danych",
+        value:cellarOwner ? `${cellarOwner.rank}. miejsce` : "Brak danych"
+      },
+      {
+        kind:"📉 Najniższa średnia sezonu",
+        manager:lowAverageOwner?.manager || "—",
+        team:lowAverageOwner?.team || "Brak danych",
+        value:lowAverageOwner?.avg > 0 ? `${lowAverageOwner.avg} pkt / GW` : "Za mało zakończonych GW"
+      },
+      {
+        kind:"🥶 Najgorszy trend formy",
+        manager:worstFormOwner?.manager || "—",
+        team:worstFormOwner?.team || "Brak danych",
+        value:worstFormOwner?.avg3 > 0 ? `${worstFormOwner.avg3} średnio z 3 GW` : "Za mało historii"
+      },
+      {
+        kind:"🎰 Największa niestabilność",
+        manager:unstableOwner?.manager || "—",
+        team:unstableOwner?.team || "Brak danych",
+        value:unstableOwner?.bestGW && unstableOwner?.worstGW
+          ? `${unstableOwner.bestGW.points} ↔ ${unstableOwner.worstGW.points}`
+          : "Za mało zakończonych GW"
       }
-
-      if (p.bestGW && p.bestGW.gw > 0) {
-        hallOfShame.push({
-          kind:"🎢 Największy rollercoaster",
-          value:`${(p.bestGW.points - (p.worstGW?.points ?? p.bestGW.points))} pkt różnicy`,
-          manager:p.manager, team:p.team,
-          score:Math.max(0, p.bestGW.points - (p.worstGW?.points ?? p.bestGW.points)),
-          raw:Math.max(0, p.bestGW.points - (p.worstGW?.points ?? p.bestGW.points))
-        });
-      }
-
-      if (p.benchSeason > 0) {
-        hallOfShame.push({
-          kind:"🪑 Punkty na ławce",
-          value:`${p.benchSeason} pkt`,
-          manager:p.manager, team:p.team,
-          score:p.benchSeason,
-          raw:p.benchSeason
-        });
-      }
-
-      if (p.hitSeason > 0) {
-        hallOfShame.push({
-          kind:"💸 Koszt hitów",
-          value:`-${p.hitSeason} pkt`,
-          manager:p.manager, team:p.team,
-          score:p.hitSeason,
-          raw:p.hitSeason
-        });
-      }
-
-      if (p.avg3 > 0) {
-        hallOfShame.push({
-          kind:"🧊 Najzimniejsza forma 3 GW",
-          value:`${p.avg3} pkt średnio`,
-          manager:p.manager, team:p.team,
-          score:Math.max(0, 100 - p.avg3),
-          raw:p.avg3,
-          lowerIsWorse:true
-        });
-      }
-
-      if (p.editorial > 0) {
-        hallOfShame.push({
-          kind:"🏺 Najgorsza ocena redakcji",
-          value:`${p.editorial}/10`,
-          manager:p.manager, team:p.team,
-          score:Math.max(0, 10 - p.editorial),
-          raw:p.editorial,
-          lowerIsWorse:true
-        });
-      }
-
-      if (p.rank > 0) {
-        hallOfShame.push({
-          kind:"🕳️ Piwnica tabeli",
-          value:`${p.rank}. miejsce`,
-          manager:p.manager, team:p.team,
-          score:p.rank,
-          raw:p.rank
-        });
-      }
-    }
-
-    const hallKinds = [
-      "💀 Najgorszy wynik GW",
-      "🪑 Punkty na ławce",
-      "💸 Koszt hitów",
-      "🎢 Największy rollercoaster",
-      "🧊 Najzimniejsza forma 3 GW",
-      "🏺 Najgorsza ocena redakcji",
-      "🕳️ Piwnica tabeli"
     ];
-
-    const shameRecords = hallKinds.map(kind => {
-      const candidates = hallOfShame.filter(x => x.kind === kind);
-      if (!candidates.length) return null;
-
-      if (kind === "🧊 Najzimniejsza forma 3 GW" || kind === "🏺 Najgorsza ocena redakcji") {
-        return candidates.sort((a,b) => a.raw - b.raw)[0];
-      }
-
-      if (kind === "💀 Najgorszy wynik GW") {
-        return candidates.sort((a,b) => a.raw - b.raw)[0];
-      }
-
-      return candidates.sort((a,b) => b.score - a.score)[0];
-    }).filter(Boolean);
 
     const awards = [
       bestGW && {icon:"🏆",name:"Mózg GW",manager:bestGW.manager,team:bestGW.team,value:`${bestGW.gwPoints} pkt`},
