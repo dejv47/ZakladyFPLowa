@@ -522,46 +522,238 @@ function v39RivalReplies(data){
 function V39RivalReplies({data}){const rows=v39RivalReplies(data);return <Card title="🎙️ Pomeczowe odpowiedzi rywali"><p className="sectionLead">Konferencja się skończyła, ale rywale oczywiście dalej mają coś do powiedzenia.</p>{rows.map((x,i)=><div className="pressReply" key={i}><b>{x.b.manager} odpowiada {x.a.manager}</b><p>{x.text}</p></div>)}</Card>}
 
 function noteHash(text){let h=2166136261;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)}return Math.abs(h>>>0)}
+
+const NOTE_VOICES = [
+ {
+  pech:(p)=>`Czytelnicy zwracają uwagę, że ${p.manager} próbuje przepchnąć narrację o pechu, ale przypadek nie kliknął mu transferów ani nie ustawił ławki. To nadal był jego własny podpis pod tym burdelem.`,
+  plan:(p)=>`W przemowie ${p.manager} dużo miejsca zajmuje „plan”. Community Notes przypomina, że dobry plan powinien od czasu do czasu przeżyć kontakt z tabelą, a nie tylko świetnie brzmieć przed deadlinem.`,
+  transfer:(p)=>`Skoro ${p.manager} sam poruszył transfery, warto dopisać, że rynek nie jest magiczną maszyną do naprawiania wszystkich problemów. Czasem to właśnie menedżer jest problemem wymagającym transferu.`,
+  kapitan:(p)=>`${p.manager} mówi o opasce jak o trudnym dylemacie. Czytelnicy dodają, że kapitan nie wybiera się sam, więc odpowiedzialność za tę loterię nadal siedzi po tej samej stronie mikrofonu.`,
+  lawka:(p)=>`Wątek ławki w wypowiedzi ${p.manager} wymaga przypisu: rezerwowi nie teleportowali się tam po deadline'ie. Ktoś ich tam, kurwa, posadził.`,
+  good:(p)=>`${p.manager} ma prawo być zadowolony, ale Community Notes prosi o zachowanie kontaktu z rzeczywistością: jedna dobra kolejka nie zamienia człowieka automatycznie w mózg całej ligi.`,
+  bad:(p)=>`W przypadku ${p.manager} konferencja brzmi jak próba posprzątania po wybuchu. Dane potwierdzają, że wybuch faktycznie miał miejsce i nie był wyłącznie medialną przesadą.`,
+  neutral:(p)=>`Wypowiedź ${p.manager} jest ostrożna, co tym razem dobrze współgra z faktami: ta kolejka nie daje ani podstaw do pomnika, ani do publicznej egzekucji.`
+ },
+ {
+  pech:(p)=>`Wersja ${p.manager}: pech. Wersja Community Notes: pech nie zna hasła do konta FPL i nie wciska „Confirm Transfers”.`,
+  plan:(p)=>`${p.manager} używa słowa „proces”, więc czytelnicy sprawdzili proces od strony produktu końcowego. Wynik bywa mniej romantyczny niż prezentacja menedżera.`,
+  transfer:(p)=>`Do wypowiedzi ${p.manager} o transferach dopisano kontekst: każdy ruch wygląda mądrze przed pierwszym gwizdkiem, a później często okazuje się po prostu drogim sposobem na wkurwienie samego siebie.`,
+  kapitan:(p)=>`Opaska pojawia się w zeznaniach ${p.manager}. Community Notes przypomina, że „wydawało się logiczne” jest opisem decyzji, a nie zwolnieniem z odpowiedzialności.`,
+  lawka:(p)=>`${p.manager} wspomina o ławce. Czytelnicy odpowiadają: ławka nie jest zjawiskiem pogodowym, tylko częścią składu ustawioną przez menedżera.`,
+  good:(p)=>`Faktycznie, ${p.manager} ma dziś czym kozaczyć. Problem zacznie się dopiero wtedy, gdy pomyli dobry weekend z dożywotnim certyfikatem nieomylności.`,
+  bad:(p)=>`Community Notes nie znalazło w liczbach mocnego alibi dla ${p.manager}. Znalazło za to sporo materiału do rubryki „sam sobie to zrobiłeś”.`,
+  neutral:(p)=>`${p.manager} nie przesadza ani z euforią, ani z rozpaczą. Dane również są mniej więcej tak samo nudne.`
+ },
+ {
+  pech:(p)=>`Kartoteka ${p.manager} nie potwierdza, by „pech” był jedynym podejrzanym. W sprawie nadal występują decyzje personalne, captaincy i kilka bardzo konkretnych kliknięć.`,
+  plan:(p)=>`Community Notes przejrzało plan ${p.manager} i stwierdza, że strategia jest łatwiejsza do obrony w słowach niż w punktach. Śledztwo trwa.`,
+  transfer:(p)=>`Transferowa część konferencji ${p.manager} otrzymuje adnotację: decyzja była dobrowolna, wykonana przy pełnej świadomości i nie ma podstaw do obciążenia winą osób trzecich.`,
+  kapitan:(p)=>`W sprawie kapitana ${p.manager} nie stwierdzono udziału siły wyższej. Opaska znalazła się na zawodniku w wyniku świadomego działania właściciela konta.`,
+  lawka:(p)=>`Śledczy potwierdzają: punkty na ławce należały do kadry ${p.manager}. Nie zostały podrzucone przez konkurencję.`,
+  good:(p)=>`Postępowanie przeciwko ${p.manager} zostaje na tę GW warunkowo umorzone. Wynik jest wystarczająco dobry, by uniknąć aktu oskarżenia.`,
+  bad:(p)=>`Materiał dowodowy nie sprzyja ${p.manager}. Redakcja zaleca mniej narracji obronnej, więcej poprawnych decyzji.`,
+  neutral:(p)=>`Brak podstaw do postawienia ${p.manager} przed sądem FPL. Brak również podstaw do wręczania medalu.`
+ },
+ {
+  pech:(p)=>`Diagnoza „pech” przedstawiona przez ${p.manager} wymaga konsultacji. Objawy wskazują również na przewlekłą ekspozycję na własne decyzje.`,
+  plan:(p)=>`Plan leczenia przedstawiony przez ${p.manager} brzmi rozsądnie, ale historia FPL zna wiele przypadków nawrotu dokładnie pięć minut przed deadlinem.`,
+  transfer:(p)=>`Community Notes przypomina ${p.manager}, że transfer nie jest tabletką przeciwbólową. Przyjęty w panice potrafi wywołać kolejne skutki uboczne przez kilka GW.`,
+  kapitan:(p)=>`Wybór kapitana przez ${p.manager} nie jest chorobą zakaźną. To dobra wiadomość dla reszty ligi i gorsza dla samego pacjenta.`,
+  lawka:(p)=>`Ławka ${p.manager} wykazuje niepokojąco wysoką aktywność punktową. Lekarz zaleca dokładniejsze badanie przed kolejnym ustawieniem XI.`,
+  good:(p)=>`Stan ${p.manager} po tej kolejce jest dobry. Zalecenie: nie rozpoczynać samodzielnie agresywnej terapii transferowej bez wskazań.`,
+  bad:(p)=>`${p.manager} wymaga obserwacji. Największym zagrożeniem pozostaje możliwość samodzielnego leczenia składu serią hitów.`,
+  neutral:(p)=>`Parametry ${p.manager} są stabilne. Ani poprawa, ani zgon. Kontrola za tydzień.`
+ },
+ {
+  pech:(p)=>`Dział PR ${p.manager} użył terminu „pech”. Audyt wykazał jednak, że część strat wynika z decyzji zarządczych, nie z warunków rynkowych.`,
+  plan:(p)=>`${p.manager} prezentuje roadmapę. Community Notes sprawdziło KPI i sugeruje, by kolejne slajdy zawierały nieco więcej punktów, a mniej korporacyjnego pierdolenia.`,
+  transfer:(p)=>`Koszt działań transferowych ${p.manager} należy traktować jako realny wydatek operacyjny, nie jako abstrakcyjną „inwestycję w upside”.`,
+  kapitan:(p)=>`Decyzja captaincy ${p.manager} została zatwierdzona przez jednoosobowy zarząd. Nie znaleziono podstaw do obciążenia działu compliance.`,
+  lawka:(p)=>`Niewykorzystane aktywa punktowe na ławce ${p.manager} sugerują problemy z alokacją zasobów. CFO jest podobno wkurwiony.`,
+  good:(p)=>`Wyniki ${p.manager} w tej GW są mocne i zarząd może pochwalić się kwartalnym slajdem bez kreatywnej księgowości.`,
+  bad:(p)=>`Wynik ${p.manager} nie spełnił KPI. Zarząd rozważa restrukturyzację, choć największy koszt siedzi nadal na fotelu menedżera.`,
+  neutral:(p)=>`Rezultat ${p.manager} jest zgodny z oczekiwaniami. Czyli wystarczająco poprawny, by nikt nie zwoływał nadzwyczajnego zebrania.`
+ },
+ {
+  pech:(p)=>`Prognoza ${p.manager} wskazuje na „pech”, ale dane meteorologiczne pokazują również lokalne opady złych decyzji i silny wiatr od strony ławki.`,
+  plan:(p)=>`Plan ${p.manager} miał być słoneczny. Front meczowy przyniósł jednak warunki, których powerpoint nie przewidział.`,
+  transfer:(p)=>`Transfery ${p.manager} przypominają gwałtowne zmiany pogody: łatwo je wykonać, trudniej potem wyjaśnić, czemu cały ranking jest mokry.`,
+  kapitan:(p)=>`Opaska ${p.manager} trafiła w strefę podwyższonego ryzyka. Ostrzeżenie było dostępne przed deadlinem, ale zostało zignorowane.`,
+  lawka:(p)=>`Nad ławką ${p.manager} utrzymuje się wyjątkowo silny wyż punktowy. W podstawowej XI warunki bywają mniej korzystne.`,
+  good:(p)=>`Dla ${p.manager} wydano komunikat o dobrej pogodzie punktowej. Możliwe lokalne porywy samozachwytu.`,
+  bad:(p)=>`Nad ${p.manager} przeszedł front czerwonych strzałek. Zaleca się pozostanie z dala od transferów wykonywanych pod wpływem burzy emocjonalnej.`,
+  neutral:(p)=>`Warunki punktowe wokół ${p.manager} są przeciętne. Bez alertów, bez plażowania na szczycie tabeli.`
+ },
+ {
+  pech:(p)=>`Detektywi przesłuchali „pecha” wskazanego przez ${p.manager}. Podejrzany ma alibi na czas wykonywania transferów.`,
+  plan:(p)=>`Plan ${p.manager} został zabezpieczony jako dowód rzeczowy. Na razie nie wiadomo, czy pomoże obronie, czy prokuraturze.`,
+  transfer:(p)=>`Historia transferów ${p.manager} pozostaje jawna i niestety dla oskarżonego bardzo czytelna. Nie wszystkie ślady prowadzą do rywali.`,
+  kapitan:(p)=>`W sprawie opaski ${p.manager} ustalono, że nie została ona przydzielona przez włamywacza. Śledztwo praktycznie zamknięte.`,
+  lawka:(p)=>`Punkty znalezione na ławce ${p.manager} zostały zabezpieczone. Brak śladów włamania — wygląda na robotę wewnętrzną.`,
+  good:(p)=>`Kartoteka ${p.manager} po tej kolejce jest czysta. Policja FPL nie ma dziś powodów do interwencji.`,
+  bad:(p)=>`${p.manager} pozostaje głównym podejrzanym w sprawie uszkodzenia własnego rankingu. Motyw: przesadna wiara we własne pomysły.`,
+  neutral:(p)=>`Śledztwo wokół ${p.manager} nie przyniosło sensacji. Zwykła przeciętność nie jest jeszcze przestępstwem.`
+ },
+ {
+  pech:(p)=>`Eksperci studia nie kupują w pełni tłumaczenia ${p.manager} o pechu. Pech istnieje, ale nie odpowiada za każdą decyzję w XI.`,
+  plan:(p)=>`Taktyczny plan ${p.manager} wygląda rozsądnie w teorii. Problem pojawia się wtedy, gdy teoria dostaje 2 punkty i schodzi w 58. minucie.`,
+  transfer:(p)=>`Panel ekspertów przypomina ${p.manager}: transfer ma poprawiać drużynę, nie tylko dostarczać emocji przed deadlinem.`,
+  kapitan:(p)=>`Captaincy ${p.manager} zostaje ocenione po wyniku, ale decyzja należała do menedżera. VAR nie może jej cofnąć.`,
+  lawka:(p)=>`Studio zauważa, że ławka ${p.manager} zbyt często wygląda jak mocniejsza formacja od pierwszego składu. To dość niewygodna analiza.`,
+  good:(p)=>`${p.manager} zasłużył na pochwałę. Eksperci proszą jedynie, by nie wyciągał z jednej kolejki wniosku, że stał się nieomylny.`,
+  bad:(p)=>`Analiza ${p.manager} jest brutalna: wynik słaby, decyzje pod lupą, wymówki bez expected value.`,
+  neutral:(p)=>`Panel ocenia ${p.manager} na klasyczne 6/10. Ani geniusz, ani człowiek do natychmiastowego zwolnienia.`
+ },
+ {
+  pech:(p)=>`Nagłówek „PECH ZNISZCZYŁ ${p.manager.toUpperCase()}” byłby klikalny, ale Community Notes dodaje, że część dramatu została wyprodukowana we własnym zakresie.`,
+  plan:(p)=>`„PLAN ${p.manager.toUpperCase()} DZIAŁA?” — czytelnicy sugerują dopisać znak zapytania większą czcionką, bo tabela nie zawsze potwierdza narrację.`,
+  transfer:(p)=>`„TRANSFEROWY SZOK!” — ${p.manager} sam otworzył ten temat, więc przypominamy, że każdy ruch miał autora i nie był nim tajemniczy haker.`,
+  kapitan:(p)=>`„Afera z opaską!” brzmi dobrze na okładce. Fakty są mniej sensacyjne: ${p.manager} po prostu wybrał kapitana i ponosi konsekwencje.`,
+  lawka:(p)=>`„PUNKTY UWIĘZIONE NA ŁAWCE!” — dramatyczny nagłówek, ale wyjątkowo zgodny z rzeczywistością ${p.manager}.`,
+  good:(p)=>`„${p.manager.toUpperCase()} NA FALI!” — tym razem brukowiec nie musi specjalnie przesadzać, bo wynik naprawdę się broni.`,
+  bad:(p)=>`„KRYZYS ${p.manager.toUpperCase()}!” — Community Notes nie potwierdza jeszcze końca świata, ale przyznaje, że materiał wygląda paskudnie.`,
+  neutral:(p)=>`„NIC SIĘ NIE STAŁO!” — najuczciwszy nagłówek do kolejki ${p.manager}.`
+ },
+ {
+  pech:(p)=>`Terapeutyczna wersja ${p.manager} skupia się na pechu. Community Notes zachęca do rozdzielenia rzeczy niekontrolowalnych od tych klikniętych własnym palcem.`,
+  plan:(p)=>`${p.manager} mówi o planie, co jest zdrowe. Mniej zdrowe byłoby uzależnianie poczucia własnej wartości od tego, czy plan przyniesie haul.`,
+  transfer:(p)=>`Transfery ${p.manager} warto traktować jako decyzje, nie reakcje emocjonalne. Szczególnie te wykonywane zaraz po blanku.`,
+  kapitan:(p)=>`Opaska nie definiuje ${p.manager} jako człowieka. Definiuje natomiast część jego wyniku w FPL, więc całkowicie zignorować tematu też się nie da.`,
+  lawka:(p)=>`Ławka ${p.manager} może być źródłem frustracji, ale Community Notes zaleca nie przenosić tej frustracji bezpośrednio na przycisk sprzedaży.`,
+  good:(p)=>`${p.manager} ma prawo czuć satysfakcję. Zdrowa reakcja to radość, mniej zdrowa to natychmiastowe przekonanie o własnej wyższości nad ligą.`,
+  bad:(p)=>`Słaba GW ${p.manager} nie wymaga natychmiastowego rozwalenia całego składu. Wymaga za to zaakceptowania, że weekend był zwyczajnie chujowy.`,
+  neutral:(p)=>`Emocje ${p.manager} są adekwatne do wyniku: umiarkowane. Terapia może zostać dziś skrócona.`
+ },
+ {
+  pech:(p)=>`Kasyno FPL chętnie przyjmie wersję ${p.manager} o pechu, ale przypomina, że to gracz sam postawił żetony na konkretnych zawodników.`,
+  plan:(p)=>`Plan ${p.manager} to strategia przy stole, nie gwarancja wygranej. Nawet najlepszy układ może zostać rozjebany przez variance.`,
+  transfer:(p)=>`Każdy hit ${p.manager} to kolejny żeton na stole. Community Notes przypomina, że kasyno uwielbia ludzi próbujących szybko odrobić straty.`,
+  kapitan:(p)=>`Captaincy ${p.manager} była zakładem z wysoką stawką. Krupier nie ponosi odpowiedzialności za wybrane pole.`,
+  lawka:(p)=>`Ławka ${p.manager} wygląda jak stos żetonów zostawiony obok stołu dokładnie wtedy, kiedy wypadł właściwy numer.`,
+  good:(p)=>`${p.manager} wygrał tę rundę z kasynem. Najgorsze, co może teraz zrobić, to natychmiast podwoić stawkę.`,
+  bad:(p)=>`Kasyno zabrało ${p.manager} trochę punktów. Community Notes radzi nie próbować odzyskać ich jednym desperackim ruchem.`,
+  neutral:(p)=>`${p.manager} wyszedł mniej więcej na zero. Krupier wzrusza ramionami, gracz może iść dalej.`
+ },
+ {
+  pech:(p)=>`Nauczyciel nie przyjął od ${p.manager} usprawiedliwienia „pech”. Zadanie było wykonywane samodzielnie i bez przymusu.`,
+  plan:(p)=>`Plan ${p.manager} wyglądał dobrze w zeszycie. Sprawdzian pokazał, które fragmenty materiału wymagają powtórki.`,
+  transfer:(p)=>`Transfery ${p.manager} zostają dopisane do pracy domowej pod hasłem „najpierw pomyśl, potem klikaj”.`,
+  kapitan:(p)=>`Pytanie o kapitana było na sprawdzianie. ${p.manager} zaznaczył odpowiedź samodzielnie.`,
+  lawka:(p)=>`Punkty na ławce ${p.manager} wyglądają jak poprawne odpowiedzi wpisane w brudnopisie zamiast na arkuszu.`,
+  good:(p)=>`${p.manager} zaliczył tę kolejkę bardzo dobrze. Nauczyciel przypomina jednak, że semestr jeszcze się nie skończył.`,
+  bad:(p)=>`Ocena ${p.manager} za tę GW jest słaba. Poprawa możliwa za tydzień, ściąganie z Twittera niewskazane.`,
+  neutral:(p)=>`${p.manager} dostał klasyczne „dostateczny”. Najbardziej bezlitosna forma przeciętności.`
+ },
+ {
+  pech:(p)=>`Szef ${p.manager} obwinia składniki, ale Community Notes przypomina, kto układał menu i wkładał danie do pieca.`,
+  plan:(p)=>`Przepis ${p.manager} wyglądał dobrze na papierze. Efekt końcowy pokazuje, że sama receptura nie gwarantuje smaku.`,
+  transfer:(p)=>`Transfery ${p.manager} są jak dokładanie przypraw: jedna może pomóc, pięć wrzuconych w panice robi z dania niejadalne gówno.`,
+  kapitan:(p)=>`Kapitan był daniem głównym menu ${p.manager}. Jeśli wyszedł surowy, kucharz nadal odpowiada za kuchnię.`,
+  lawka:(p)=>`Najlepsze składniki ${p.manager} zbyt często stoją na półce zamiast trafiać na talerz. Krytycy kulinarni zauważyli.`,
+  good:(p)=>`${p.manager} ugotował bardzo przyzwoitą GW. Zalecenie: nie zmieniać całego przepisu tylko dlatego, że deser mógł być lepszy.`,
+  bad:(p)=>`Kuchnia ${p.manager} miała słaby serwis. Sanepid jeszcze nie zamyka lokalu, ale notatka trafia do akt.`,
+  neutral:(p)=>`Danie ${p.manager} jest poprawne, jadalne i kompletnie niezapamiętywalne.`
+ },
+ {
+  pech:(p)=>`Inżynier ${p.manager} zgłasza „pech” jako root cause. Community Notes odpowiada: część błędów reprodukuje się po kliknięciu przez tego samego użytkownika.`,
+  plan:(p)=>`Architektura planu ${p.manager} wygląda sensownie. Problemem jest kilka wdrożeń, które produkcja brutalnie zweryfikowała.`,
+  transfer:(p)=>`Transfery ${p.manager} to zmiany na produkcji. Im więcej hotfixów bez testów, tym większa szansa, że ranking po prostu się wyjebie.`,
+  kapitan:(p)=>`Captaincy była konfiguracją ustawioną ręcznie przez ${p.manager}. Nie jest to bug systemowy.`,
+  lawka:(p)=>`Ławka ${p.manager} zawiera zasoby, które regularnie działają lepiej niż komponenty wdrożone na produkcję. QA zgłasza problem.`,
+  good:(p)=>`Build ${p.manager} przechodzi testy tej GW. Nie oznacza to jeszcze, że można bezkarnie refaktoryzować pół składu.`,
+  bad:(p)=>`Produkcja ${p.manager} zgłasza regresję wynikową. Zalecany hotfix: mniej panicznych decyzji.`,
+  neutral:(p)=>`System ${p.manager} działa bez większych błędów i bez godnych uwagi nowych feature'ów.`
+ },
+ {
+  pech:(p)=>`${p.manager} wskazuje pecha jako siłę wyższą. Community Notes przypomina, że część cierpienia powstała jednak całkowicie ziemskimi metodami.`,
+  plan:(p)=>`Wiara ${p.manager} w plan jest imponująca. Dane sugerują jedynie, by nie zamieniać wiary w fanatyzm przed kolejnym deadlinem.`,
+  transfer:(p)=>`Transfery ${p.manager} nie są objawieniem. Są decyzjami, które można oceniać bez teologii i z użyciem zwykłego kalkulatora.`,
+  kapitan:(p)=>`Opaska ${p.manager} nie została wybrana przez przeznaczenie. Menedżer miał w tej historii bardzo aktywną rolę.`,
+  lawka:(p)=>`Punkty na ławce ${p.manager} wyglądają jak niewysłuchane modlitwy, tylko że formularz wyboru XI wypełniał sam zainteresowany.`,
+  good:(p)=>`Bogowie FPL byli dla ${p.manager} łaskawi, ale również jego decyzje zasługują dziś na część pochwał.`,
+  bad:(p)=>`${p.manager} może modlić się o odbicie, lecz Community Notes sugeruje dorzucić do tego również sensowny skład.`,
+  neutral:(p)=>`Siły wyższe pozostały wobec ${p.manager} obojętne. Wynik dokładnie tak samo.`
+ },
+ {
+  pech:(p)=>`Zespół ${p.manager} zgłasza pecha jako przyczynę słabego okrążenia. Telemetria pokazuje jednak kilka błędów kierowcy.`,
+  plan:(p)=>`Strategia wyścigowa ${p.manager} była przygotowana, ale tor FPL nie ma obowiązku współpracować z pit wallem.`,
+  transfer:(p)=>`Każdy transfer ${p.manager} przypomina pit stop: może pomóc, ale źle wybrany moment potrafi rozpierdolić cały wyścig.`,
+  kapitan:(p)=>`Kapitan to decyzja strategiczna ${p.manager}, nie awaria bolidu. Telemetria nie przyjmuje wymówki.`,
+  lawka:(p)=>`Najlepsze tempo punktowe ${p.manager} zbyt często zostaje w garażu. Inżynierowie pytają o strategię startową.`,
+  good:(p)=>`${p.manager} przejechał tę GW bardzo dobrze. Teraz najważniejsze, żeby nie zrobić niepotrzebnego pit stopu.`,
+  bad:(p)=>`Weekend ${p.manager} zakończył się poza punktami. Analiza wskazuje zarówno pecha, jak i błędy strategiczne.`,
+  neutral:(p)=>`${p.manager} dojechał w środku stawki. Bez kolizji, bez podium, bez większego dramatu.`
+ }
+];
+
 function contextualCommunityNote(p,quote,gw,index,league){
  const pts=shameNum(p.gwPoints),avg=shameNum(p.avg3),bench=shameNum(p.benchSeason),hits=shameNum(p.hitSeason),rank=gwRank(p,league);
  const mood=conferenceMood(p,league),q=(quote||"").toLowerCase();
- const facts=[];
- if(bench>0) facts.push(`${bench} pkt pozostawionych na ławce w sezonie`);
- if(hits>0) facts.push(`${hits} pkt wydanych na hity`);
- facts.push(`${pts} pkt w GW${gw}`);
- facts.push(`${rank}. wynik tej kolejki`);
- if(avg) facts.push(`średnia ${avg} pkt z ostatnich 3 GW`);
+ const voice=NOTE_VOICES[index%NOTE_VOICES.length];
 
- let angle;
- if(q.includes("pech")) angle="Menedżer próbuje wcisnąć do zeznań słowo „pech”, ale liczby nie potwierdzają, że cały ten burdel spadł z nieba.";
- else if(q.includes("plan")||q.includes("proces")) angle="Wypowiedź mocno eksponuje „plan” i „proces”. Czytelnicy sprawdzili więc, jak ten plan wygląda po zderzeniu z tabelą.";
- else if(q.includes("genius")||q.includes("kozacz")||q.includes("zadowol")) angle="Ton wypowiedzi sugeruje, że za chwilę trzeba będzie odsłonić pomnik menedżera. Redakcja postanowiła sprawdzić, czy liczby również stoją na baczność.";
- else if(q.includes("transfer")) angle="Ponieważ menedżer sam wszedł na temat transferów, wypada dopisać kontekst, którego konferencja bardzo wygodnie nie wyświetla wielkimi literami.";
- else if(q.includes("kapitan")) angle="W konferencji pojawia się temat opaski. Community Notes przypomina, że narracja po fakcie jest zawsze łatwiejsza niż kliknięcie właściwego kapitana przed deadlinem.";
- else if(q.includes("ław")) angle="Skoro padł temat ławki, czytelnicy otworzyli kartotekę. Wynik dochodzenia niekoniecznie spodoba się oskarżonemu.";
- else if(mood==="great") angle="Menedżer przemawia jak człowiek, który właśnie rozjebał ligę na zawsze. Dane potwierdzają świetną GW, ale nie przyznają jeszcze immunitetu od przyszłego spierdolenia.";
- else if(mood==="good") angle="Konferencja jest pewna siebie, choć jeszcze bez zamawiania autobusu na paradę. Liczby faktycznie dają podstawy do zadowolenia.";
- else if(mood==="bad") angle="Menedżer brzmi jak człowiek po przesłuchaniu i tym razem statystyki nie oferują mu szczególnie mocnego alibi.";
- else if(mood==="awful") angle="Wypowiedź sugeruje miejsce zbrodni. Po sprawdzeniu danych Community Notes potwierdza: taśma policyjna wokół składu nie byłaby przesadą.";
- else angle="Wypowiedź jest ostrożna, więc zamiast dorabiać dramat, dopisujemy konkretny kontekst liczbowy.";
+ let key="neutral";
+ if(q.includes("pech")) key="pech";
+ else if(q.includes("plan")||q.includes("proces")) key="plan";
+ else if(q.includes("transfer")) key="transfer";
+ else if(q.includes("kapitan")||q.includes("opask")) key="kapitan";
+ else if(q.includes("ławk")||q.includes("law")) key="lawka";
+ else if(mood==="great"||mood==="good") key="good";
+ else if(mood==="bad"||mood==="awful") key="bad";
 
- const uniqueClosers=[
-  `W aktach zostaje: ${facts[(index+gw)%facts.length]} oraz ${facts[(index+gw+2)%facts.length]}. Reszta to już konferencyjne pierdolenie.`,
-  `Najważniejszy przypis do tej przemowy: ${facts[(index*2+gw)%facts.length]}. Tego mikrofon jakoś sam nie powiedział.`,
-  `Dla ludzi, którzy wolą liczby od teatru: ${facts[(index+1)%facts.length]}; dodatkowo ${facts[(index+3)%facts.length]}.`,
-  `Community Notes dopisuje na marginesie: ${facts[(gw+2*index)%facts.length]}. Można kozaczyć dalej, ale już z pełnym materiałem dowodowym.`,
-  `Po odjęciu PR-u zostaje ${facts[(gw+index+1)%facts.length]}. Ten szczegół zmienia wydźwięk całej przemowy bardziej niż menedżer chciałby przyznać.`,
-  `Weryfikacja faktów kończy się wpisem: ${facts[(index+4)%facts.length]}. Czytelnik sam zdecyduje, czy to geniusz, pech czy zwykłe odpierdalanie.`,
-  `Redakcja nie ocenia intencji, tylko przypomina: ${facts[(gw*2+index)%facts.length]}. To dość niewygodny przypis do powyższego monologu.`,
-  `Do protokołu trafia ${facts[(gw+index*3)%facts.length]}. Konferencja brzmi odrobinę inaczej, kiedy obok położy się kalkulator.`
+ const opener=voice[key](p);
+
+ // Manager-specific second sentences. No sentence is shared with another manager slot.
+ const uniqueFacts=[
+   `${p.manager} ma obecnie ${pts} pkt w GW${gw}, ${rank}. wynik kolejki, ${bench} pkt sezonowo na ławce i ${hits} pkt kosztów hitów. Ten zestaw faktów jest mniej elastyczny niż konferencyjna narracja.`,
+   `Kartoteka ${p.manager}: GW${gw} — ${pts} pkt; pozycja w rundzie — ${rank}; bench waste — ${bench}; hit cost — ${hits}. Czytelnicy proszą, by te liczby leżały obok każdej przyszłej przemowy.`,
+   `Dla porządku w protokole ${p.manager}: ${pts} punktów teraz, ${avg} średnio z trzech GW, ${bench} zostawionych na rezerwie i ${hits} oddanych za dodatkowe ruchy.`,
+   `Bilans liczbowy ${p.manager} nie używa eufemizmów: ${pts} w tej kolejce, miejsce ${rank}, ławka ${bench}, hity ${hits}, forma ${avg}.`,
+   `Community Notes przypina do mikrofonu ${p.manager} tabliczkę: ${pts} pkt GW, #${rank} tej rundy, ${bench} bench points i ${hits} punktów kosztów transferowych.`,
+   `Audyt ${p.manager} kończy się liczbami ${pts}/${rank}/${bench}/${hits} — kolejno punkty GW, miejsce rundy, punkty ławki i koszty hitów. Nie brzmi tak efektownie jak konferencja, za to trudniej z tym dyskutować.`,
+   `Przypis do wypowiedzi ${p.manager}: aktualny wynik ${pts}, ranking kolejki ${rank}, średnia 3 GW ${avg}, ławka sezonu ${bench}, transferowe minusy ${hits}.`,
+   `Czytelnicy sprawdzili ${p.manager} bez filtrów PR: ${pts} pkt w GW${gw}; ${rank}. wynik; ${avg} formy; ${bench} na ławce; ${hits} w hitach.`,
+   `Fakty dla ${p.manager} są krótkie i niewygodne: bieżące ${pts}, pozycja ${rank}, forma ${avg}, zmarnowana ławka ${bench}, koszty ruchów ${hits}.`,
+   `Do akt ${p.manager} trafia zestaw: GW${gw} ${pts} pkt, #${rank} kolejki, ${bench} rezerwowych punktów oraz ${hits} punktów oddanych za transferową twórczość.`,
+   `Weryfikacja ${p.manager}: ${pts} punktów teraz kontra ${avg} średniej formy, do tego ${bench} pkt ławki i ${hits} kosztów. Kontekst jest mniej poetycki niż wypowiedź, ale bardziej użyteczny.`,
+   `Community Notes wystawia ${p.manager} rachunek faktów: ${pts} pkt z tej GW, ${rank}. lokata rundy, ${bench} na ławce i ${hits} w hitach. Rachunek jest płatny w reputacji.`,
+   `Pod konferencją ${p.manager} warto dopisać: ${pts} punktów, miejsce ${rank}, forma ${avg}, bench total ${bench}, hit total ${hits}. Bez tego przemowa jest trochę jak reklama bez drobnego druku.`,
+   `Kontekst liczbowy ${p.manager}: GW${gw} daje ${pts}, tabela rundy pokazuje #${rank}, a historia sezonu dopisuje ${bench} ławkowych i ${hits} transferowych punktów.`,
+   `Dane ${p.manager} nie potrzebują mikrofonu: ${pts} w kolejce, ${rank}. pozycja, ${avg} formy, ${bench} punktów siedzących i ${hits} punktów wydanych.`,
+   `Czytelnicy dorzucają do przemowy ${p.manager} pięć liczb: ${pts}, ${rank}, ${avg}, ${bench}, ${hits}. Oznaczają wynik GW, lokatę, formę, ławkę i hity — czyli dokładnie to, o czym PR mówi najmniej chętnie.`
  ];
- const seed=noteHash(`${p.entry}|${gw}|${quote}|${index}`);
- return `${angle} ${uniqueClosers[seed%uniqueClosers.length]}`;
+ const fact=uniqueFacts[index%uniqueFacts.length];
+
+ const endings=[
+  `Wniosek dla ${p.manager}: następna konferencja będzie oceniana tym samym kalkulatorem, więc warto zadbać, żeby punkty nie kłóciły się z narracją.`,
+  `W przypadku ${p.manager} notatka pozostaje aktywna do następnej GW. FPL bardzo szybko aktualizuje zarówno liczby, jak i poziom kompromitacji.`,
+  `${p.manager} może się z oceną nie zgadzać. Na szczęście Community Notes nie wymaga zgody osoby, której właśnie dopisuje kontekst.`,
+  `Notatka dotycząca ${p.manager} zostaje przypięta, dopóki kolejna GW nie dostarczy nowego materiału dowodowego.`,
+  `Czytelnicy zamykają sprawę ${p.manager} na dziś. Deadline otworzy następną bez pytania o zgodę.`,
+  `Dla ${p.manager} oznacza to jedno: mniej PR-u, więcej punktów, a Community Notes będzie miało mniej roboty.`,
+  `Weryfikacja ${p.manager} zakończona. Następna odbędzie się automatycznie, kiedy FPL dostarczy świeże liczby i świeże powody do śmiechu.`,
+  `Community Notes dziękuje ${p.manager} za materiał i przypomina, że kalkulator nie ma ulubionych menedżerów.`,
+  `Przy ${p.manager} notatka pozostaje częścią dokumentacji tej GW. Kolejna runda może ją zarówno wybielić, jak i zrobić z niej jeszcze większy żart.`,
+  `${p.manager} dostaje kontekst zamiast wyroku. Wyrok tradycyjnie wystawi tabela po następnym weekendzie.`,
+  `Czytelnicy kończą korektę ${p.manager}. Reszta zależy od zawodników i od tego, czy właściciel konta znowu nie wpadnie na genialny pomysł.`,
+  `Notatka pod wypowiedzią ${p.manager} zostaje opublikowana bez konsultacji z działem PR, co prawdopodobnie jest jej największą zaletą.`,
+  `${p.manager} ma tydzień, by sprawić, że następna notatka będzie pochwałą zamiast sprostowaniem.`,
+  `Dla ${p.manager} to tylko kontekst, nie kara. Kara przychodzi zwykle w postaci czerwonej strzałki.`,
+  `Community Notes kończy analizę ${p.manager} i odkłada lupę do następnego deadline'u.`,
+  `Wypowiedź ${p.manager} została uzupełniona. Teraz nawet najbardziej kreatywna interpretacja musi przejść obok liczb.`
+ ];
+ return `${opener} ${fact} ${endings[index%endings.length]}`;
 }
+
 function V39Notes({data}){
  const league=data?.grades||[];
- return <Card title="📝 Community Notes"><p className="sectionLead">Notatka siedzi obok konkretnej konferencji i odnosi się do tego, co naprawdę powiedział dany menedżer.</p>
- {league.map((x,i)=>{const quote=pressQuote(x,data.gw,i,league);return <div className="communityNote" key={`${x.entry}-${data.gw}`}><b>👥 Kontekst do wypowiedzi: {x.manager}</b><p>{contextualCommunityNote(x,quote,data.gw,i,league)}</p><small>Zweryfikowano na podstawie aktualnych danych ligi i treści wypowiedzi.</small></div>})}</Card>
+ return <Card title="📝 Community Notes">
+   <p className="sectionLead">Każdy menedżer ma własny styl notatki, własne zdania i kontekst wyciągnięty z jego konkretnej wypowiedzi.</p>
+   {league.map((x,i)=>{const quote=pressQuote(x,data.gw,i,league);return <div className="communityNote" key={`${x.entry}-${data.gw}`}>
+      <b>👥 Kontekst do wypowiedzi: {x.manager}</b>
+      <p>{contextualCommunityNote(x,quote,data.gw,i,league)}</p>
+      <small>Zweryfikowano na podstawie aktualnych danych ligi oraz treści tej konkretnej konferencji.</small>
+   </div>})}
+ </Card>
 }
 
 function v39Jug(data){return [...(data?.managerProfiles||data?.grades||[])].map(p=>{let bench=shameNum(p.benchSeason),hits=shameNum(p.hitSeason),avg=shameNum(p.avg3),gw=shameNum(p.gwPoints);let score=Math.max(0,Math.round(bench*.55+hits*1.35+Math.max(0,50-avg)*.45+Math.max(0,45-gw)*.15));let why=[];if(bench)why.push(`${bench} pkt na ławce`);if(hits)why.push(`${hits} pkt hitów`);if(avg<45)why.push(`forma ${avg}`);return {...p,jugScore:score,jugWhy:why}}).sort((a,b)=>b.jugScore-a.jugScore)}
@@ -656,7 +848,10 @@ export default function FPLPage(){
      <Card title="🏛️ Muzeum kompromitacji">
        <div className="awardGallery">{data.museum.map((x,i)=><div className="awardBig" key={i}><span>{x.icon}</span><div><b>{x.name}</b><strong>{x.manager}</strong><small>{x.team} • {x.value}</small></div></div>)}</div>
      </Card>
-   </section>}
+        <Card title={data.gw>=38&&data.gwFinished?"🏁 FPLowa Awards — GALA FINAŁOWA":"🏆 FPLowa Awards — stan na dziś"}>
+       <div className="awardGallery">{data.seasonAwards.map((x,i)=><div className="awardBig" key={i}><span>{x.icon}</span><div><b>{x.name}</b><strong>{x.manager}</strong><small>{x.team} • {x.value}</small></div></div>)}</div>
+     </Card>
+</section>}
    {data&&tab==="studio"&&<>
      <PostMatchStudio data={data}/>
      <section className="megaGrid studioExtras">
@@ -687,9 +882,6 @@ export default function FPLPage(){
      </Card>
    </section>}
    {data&&tab==="gala"&&<section className="megaGrid">
-     <Card title={data.gw>=38&&data.gwFinished?"🏁 FPLowa Awards — GALA FINAŁOWA":"🏆 FPLowa Awards — stan na dziś"}>
-       <div className="awardGallery">{data.seasonAwards.map((x,i)=><div className="awardBig" key={i}><span>{x.icon}</span><div><b>{x.name}</b><strong>{x.manager}</strong><small>{x.team} • {x.value}</small></div></div>)}</div>
-     </Card>
      <div className="conferenceNotesLayout">
        <div className="notesSticky"><V39Notes data={data}/></div>
        <Card title="🎙️ Konferencja prasowa">
