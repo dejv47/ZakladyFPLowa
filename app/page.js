@@ -340,20 +340,50 @@ export default function Home() {
       <section className="grid">
         {visible.map(b => (
           <article className="bet" key={b.id}>
-            <div className="betTop">
-              <span className="people">{b.people}</span>
-              <span className="amount">{b.amount}</span>
+            <div className="betHeader">
+              <div>
+                <span className="betLabel">ZAKŁAD #{b.id}</span>
+                <div className="people">{b.people}</div>
+              </div>
+              <div className="betHeaderRight">
+                <span className={b.mode === "manual" ? "modeBadge manualMode" : "modeBadge autoMode"}>
+                  {b.mode === "manual" ? "Ręczny" : "Auto"}
+                </span>
+                <span className="amount">{b.amount}</span>
+              </div>
             </div>
-            <h2>{b.title}</h2>
-            {b.pick && <p className="pick">{b.pick}</p>}
+
+            <div className="betQuestion">
+              <span className="sectionLabel">O CO GRAMY</span>
+              <h2>{b.title}</h2>
+            </div>
+
+            {b.pick && (
+              <div className="pickBox">
+                <span className="sectionLabel">TYPY</span>
+                <p className="pick">{b.pick}</p>
+              </div>
+            )}
 
             <div className="liveBox">
-              <span>AKTUALNIE</span>
-              <strong>{b.liveText}</strong>
-              {b.leader && <em>Prowadzi: {b.leader}</em>}
+              <div className="liveTop">
+                <span className="sectionLabel">AKTUALNY STAN</span>
+                {b.leader && b.leader !== "Remis" && (
+                  <span className="leaderBadge">Prowadzi: {b.leader}</span>
+                )}
+                {b.leader === "Remis" && (
+                  <span className="leaderBadge neutral">Remis</span>
+                )}
+              </div>
+              <strong className="liveValue">{b.liveText}</strong>
             </div>
 
-            {b.note && <p className="note">{b.note}</p>}
+            {b.note && (
+              <div className="noteBox">
+                <span className="sectionLabel">UWAGA</span>
+                <p className="note">{b.note}</p>
+              </div>
+            )}
 
             {b.mode === "manual" && b.manualType && (
               <ManualEditor
@@ -363,11 +393,6 @@ export default function Home() {
                 onSaved={(id, value) => setManual(prev => ({ ...prev, [id]: value }))}
               />
             )}
-
-            <div className="status">
-              <span className={b.mode === "manual" ? "dot manual" : "dot"} />
-              {b.mode === "manual" ? "Ręczne" : "Automatyczne"}
-            </div>
           </article>
         ))}
       </section>

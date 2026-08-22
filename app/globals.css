@@ -351,3 +351,202 @@ body::after {
     display: none;
   }
 }
+
+
+/* v11 — clearer, more intuitive bet cards */
+.grid {
+  gap: 18px;
+}
+
+.bet {
+  padding: 0;
+  overflow: hidden;
+  background:
+    linear-gradient(180deg, rgba(16,33,49,.98), rgba(10,24,36,.98));
+  border: 1px solid rgba(112, 170, 204, .28);
+  border-radius: 18px;
+}
+
+.betHeader {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 16px 18px;
+  border-bottom: 1px solid rgba(112, 170, 204, .18);
+  background: rgba(5, 18, 29, .46);
+}
+
+.betHeaderRight {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.betLabel,
+.sectionLabel {
+  display: block;
+  color: var(--muted);
+  font-size: 10px;
+  line-height: 1.2;
+  letter-spacing: .13em;
+  font-weight: 800;
+}
+
+.people {
+  margin-top: 4px;
+  color: var(--accent2);
+  font-size: 17px;
+  font-weight: 800;
+}
+
+.modeBadge {
+  border-radius: 999px;
+  padding: 5px 8px;
+  font-size: 11px;
+  font-weight: 800;
+  border: 1px solid transparent;
+}
+
+.autoMode {
+  color: #9ee3ff;
+  background: rgba(100,201,255,.08);
+  border-color: rgba(100,201,255,.22);
+}
+
+.manualMode {
+  color: #f7d789;
+  background: rgba(246,198,91,.08);
+  border-color: rgba(246,198,91,.22);
+}
+
+.amount {
+  font-size: 13px;
+  font-weight: 800;
+  padding: 6px 10px;
+}
+
+.betQuestion {
+  padding: 17px 18px 10px;
+}
+
+.betQuestion h2 {
+  margin: 6px 0 0;
+  font-size: 21px;
+  line-height: 1.28;
+}
+
+.pickBox {
+  margin: 0 18px 14px;
+  padding: 11px 12px;
+  border-radius: 12px;
+  background: rgba(255,255,255,.025);
+  border: 1px solid rgba(112, 170, 204, .12);
+}
+
+.pick {
+  margin: 6px 0 0;
+  color: #e4edf4;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.liveBox {
+  margin: 0 18px 14px;
+  padding: 13px 14px;
+  border-radius: 13px;
+  background: rgba(3, 13, 22, .72);
+  border: 1px solid rgba(100,201,255,.24);
+  display: block;
+}
+
+.liveTop {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 7px;
+}
+
+.liveValue {
+  display: block;
+  font-size: 16px;
+  line-height: 1.45;
+  color: #f8fbfd;
+}
+
+.leaderBadge {
+  flex: 0 0 auto;
+  border-radius: 999px;
+  padding: 5px 8px;
+  background: rgba(100,201,255,.11);
+  color: var(--accent2);
+  border: 1px solid rgba(100,201,255,.22);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.leaderBadge.neutral {
+  color: var(--muted);
+  background: rgba(255,255,255,.04);
+  border-color: rgba(255,255,255,.08);
+}
+
+.noteBox {
+  margin: 0 18px 14px;
+  padding: 10px 12px;
+  border-left: 3px solid rgba(246,198,91,.55);
+  background: rgba(246,198,91,.045);
+  border-radius: 8px;
+}
+
+.noteBox .note {
+  margin: 5px 0 0;
+  color: #c5d1da;
+}
+
+.bet .editBtn {
+  margin: 0 18px 16px;
+}
+
+.bet .editor {
+  margin: 0 18px 16px;
+}
+
+@media (max-width: 620px) {
+  .betHeader {
+    padding: 14px;
+  }
+
+  .betHeaderRight {
+    gap: 6px;
+  }
+
+  .people {
+    font-size: 15px;
+  }
+
+  .betQuestion {
+    padding: 15px 14px 9px;
+  }
+
+  .betQuestion h2 {
+    font-size: 19px;
+  }
+
+  .pickBox,
+  .liveBox,
+  .noteBox,
+  .bet .editBtn,
+  .bet .editor {
+    margin-left: 14px;
+    margin-right: 14px;
+  }
+
+  .liveTop {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+}
