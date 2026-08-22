@@ -653,6 +653,9 @@ export default function FPLPage(){
      <Card title="🎙️ Konferencja prasowa">
        {data.grades.map((x,i)=><blockquote key={x.entry}><div className="pressSpeaker"><span>🎙️</span><div><b>{x.manager}</b><small>{x.team}</small></div></div>{pressQuote(x,data.gw,i,data.grades)}<small>{pressReaction(x,data.gw,i,data.grades)}</small></blockquote>)}
      </Card>
+     <V39RivalReplies data={data}/>
+     <V39Notes data={data}/>
+     <V39Jug data={data}/>
    </section>}
  </main>
  </>

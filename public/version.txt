@@ -1,1 +1,1 @@
-v39-three-new-features
+v40-features-visible-in-gala
