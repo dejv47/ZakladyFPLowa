@@ -305,6 +305,10 @@ export default function Home() {
       <div className="sideHero sideHeroPep" aria-hidden="true" />
       <div className="sideHero sideHeroCherki" aria-hidden="true" />
       <main className="shell">
+      <a className="fplFeature" href="/fpl">
+        <div><span>📰 NOWA ZAKŁADKA</span><strong>FPLowa — Podsumowanie kolejki</strong><small>Wyniki ligi, wtopy, kapitanowie i brukowiec FPL</small></div>
+        <b>OTWÓRZ →</b>
+      </a>
       <section className="hero">
         <div>
           <p className="eyebrow">SEZON 2026/27</p>
