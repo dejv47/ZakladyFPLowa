@@ -53,3 +53,9 @@ Zakład „Rayan Cherki minimum 2000 minut w Premier League” jest teraz automa
 Backend pobiera osobę z kadry Manchesteru City, a następnie korzysta z
 `/persons/{id}/matches?competitions=2021&status=FINISHED` i odczytuje
 `aggregations.minutesPlayed`.
+
+
+## v13 — FPL live points fix
+- Punkty zawodników do artykułów są pobierane z `/event/{GW}/live/`.
+- Nie używamy już `bootstrap-static.event_points` do bieżącej kolejki.
+- Wynik GW drużyny jest liczony ze składu live minus koszt transferów.

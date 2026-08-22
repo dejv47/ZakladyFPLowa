@@ -27,8 +27,21 @@ export async function GET() {
       fpl(`/leagues-classic/${LEAGUE_ID}/standings/?page_standings=1`)
     ]);
 
-    const current = boot.events.find(e => e.is_current) || boot.events.find(e => e.is_next) || boot.events.at(-1);
+    const current =
+      boot.events.find(e => e.is_current) ||
+      boot.events.find(e => e.is_next) ||
+      boot.events.find(e => !e.finished) ||
+      boot.events.at(-1);
+
     const gw = current?.id || 1;
+
+    // IMPORTANT: live GW points must come from /event/{gw}/live/.
+    // bootstrap-static is metadata and should not be trusted for live article scoring.
+    const live = await fpl(`/event/${gw}/live/`).catch(() => ({ elements: [] }));
+    const livePoints = Object.fromEntries(
+      (live.elements || []).map(x => [x.id, Number(x.stats?.total_points || 0)])
+    );
+
     const players = Object.fromEntries(boot.elements.map(p => [p.id, p]));
     const teams = Object.fromEntries(boot.teams.map(t => [t.id, t]));
 
@@ -44,8 +57,8 @@ export async function GET() {
         return {
           name: p.web_name || "???",
           club: teams[p.team]?.short_name || teams[p.team]?.name || "?",
-          points: Number(p.event_points||0) * Number(x.multiplier||0),
-          rawPoints: Number(p.event_points||0),
+          points: Number(livePoints[x.element] || 0) * Number(x.multiplier || 0),
+          rawPoints: Number(livePoints[x.element] || 0),
           captain: !!x.is_captain,
           multiplier: x.multiplier,
           position: x.position
@@ -63,7 +76,11 @@ export async function GET() {
         rank: row.rank,
         lastRank: row.last_rank,
         total: row.total,
-        gwPoints: picks?.entry_history?.points ?? row.event_total ?? h?.points ?? 0,
+        gwPoints:
+          squad
+            .filter(x => x.position <= 11)
+            .reduce((sum, x) => sum + Number(x.points || 0), 0)
+          - Number(h?.event_transfers_cost ?? 0),
         benchPoints: h?.points_on_bench ?? bench.reduce((s,x)=>s+x.rawPoints,0),
         transferCost: h?.event_transfers_cost ?? 0,
         transfers: h?.event_transfers ?? 0,
@@ -89,7 +106,7 @@ export async function GET() {
     if(worstGW) articles.push({
       tag:"KOMPROMITACJA",
       title:`Alarm w ${worstGW.team}. Kolejka, o której najlepiej zapomnieć`,
-      body:`${worstGW.manager} uzbierał ${worstGW.gwPoints} pkt, czyli najmniej w naszej lidze. ${worstGW.worst ? `${worstGW.worst.name} z ${worstGW.worst.club} dołożył imponujące ${worstGW.worst.rawPoints} pkt i trudno powiedzieć, żeby uratował projekt.` : ""} ${worstGW.benchPoints ? `Na ławce zostało dodatkowo ${worstGW.benchPoints} pkt — luksus, na który pierwsza jedenastka najwyraźniej mogła tylko popatrzeć.` : ""} Zarząd zapewnia, że trener ma pełne poparcie. Jak wiadomo, takie komunikaty nigdy niczego złego nie zapowiadają.`
+      body:`${worstGW.manager} uzbierał ${worstGW.gwPoints} pkt, czyli najmniej w naszej lidze. ${worstGW.worst && worstGW.worst.rawPoints > 0 ? `${worstGW.worst.name} z ${worstGW.worst.club} dołożył ${worstGW.worst.rawPoints} pkt i trudno powiedzieć, żeby sam uratował projekt.` : ""} ${worstGW.benchPoints ? `Na ławce zostało dodatkowo ${worstGW.benchPoints} pkt — luksus, na który pierwsza jedenastka najwyraźniej mogła tylko popatrzeć.` : ""} Zarząd zapewnia, że trener ma pełne poparcie. Jak wiadomo, takie komunikaty nigdy niczego złego nie zapowiadają.`
     });
     if(benchKing?.benchPoints>0) articles.push({
       tag:"ŁAWKA PREMIUM",
@@ -112,7 +129,7 @@ export async function GET() {
 
     return NextResponse.json({
       ok:true, league:{id:LEAGUE_ID,name:league.league.name}, gw,
-      updatedAt:new Date().toISOString(), standings:details, articles
+      updatedAt:new Date().toISOString(), pointsSource:`/event/${gw}/live/`, standings:details, articles
     }, {headers:{"Cache-Control":"no-store, no-cache, must-revalidate, max-age=0"}});
   } catch(e) {
     return NextResponse.json({ok:false,error:String(e?.message||e)}, {status:500});
