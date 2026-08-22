@@ -614,3 +614,8 @@ body::after {
   backdrop-filter: blur(5px);
   -webkit-backdrop-filter: blur(5px);
 }
+
+.kolejnikNav{display:flex;justify-content:space-between;align-items:center;gap:16px;margin:0 0 18px;padding:10px 0}
+.brandTab{font-weight:900;color:#f7d789;text-decoration:none;font-size:18px}
+.kolejnikTabs{display:flex;gap:8px}.kolejnikTabs a,.kolejnikExternalTab{border:1px solid rgba(112,170,204,.22);background:rgba(8,22,34,.8);color:#c8d3db;border-radius:999px;padding:9px 13px;font-weight:800;text-decoration:none;white-space:nowrap}
+.kolejnikTabs a.active,.kolejnikExternalTab{border-color:rgba(246,198,91,.45);color:#f7d789;background:rgba(246,198,91,.08)}
