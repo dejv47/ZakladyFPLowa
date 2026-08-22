@@ -762,40 +762,119 @@ export async function GET() {
         editorial:Number(editorial.toFixed(1))
       };
 
+      const icon =
+        label === "ELITA" ? "👑" :
+        label === "W FORMIE" ? "🔥" :
+        label === "JESZCZE ŻYJE" ? "😐" :
+        label === "DO ZWOLNIENIA" ? "🚨" : "💀";
+
       return {
         entry:x.entry, team:x.team, manager:x.manager, rank:x.rank, overall:x.overall,
-        gwPoints:x.gwPoints, ...stats, form, label,
+        gwPoints:x.gwPoints, ...stats, form, label, icon,
         comment:profileComment(x, stats)
       };
     });
 
     const hallOfShame = [];
+
     for (const p of managerProfiles) {
-      if (p.worstGW) {
+      if (p.worstGW && p.worstGW.gw > 0) {
         hallOfShame.push({
-          kind:"Najgorszy wynik GW",
+          kind:"💀 Najgorszy wynik GW",
           value:`${p.worstGW.points} pkt (GW${p.worstGW.gw})`,
           manager:p.manager, team:p.team,
-          score:100-p.worstGW.points
+          score:Math.max(0, 100 - p.worstGW.points),
+          raw:p.worstGW.points
         });
       }
-      hallOfShame.push({
-        kind:"Punkty na ławce",
-        value:`${p.benchSeason} pkt`,
-        manager:p.manager, team:p.team,
-        score:p.benchSeason
-      });
-      hallOfShame.push({
-        kind:"Koszt hitów",
-        value:`-${p.hitSeason} pkt`,
-        manager:p.manager, team:p.team,
-        score:p.hitSeason
-      });
+
+      if (p.bestGW && p.bestGW.gw > 0) {
+        hallOfShame.push({
+          kind:"🎢 Największy rollercoaster",
+          value:`${(p.bestGW.points - (p.worstGW?.points ?? p.bestGW.points))} pkt różnicy`,
+          manager:p.manager, team:p.team,
+          score:Math.max(0, p.bestGW.points - (p.worstGW?.points ?? p.bestGW.points)),
+          raw:Math.max(0, p.bestGW.points - (p.worstGW?.points ?? p.bestGW.points))
+        });
+      }
+
+      if (p.benchSeason > 0) {
+        hallOfShame.push({
+          kind:"🪑 Punkty na ławce",
+          value:`${p.benchSeason} pkt`,
+          manager:p.manager, team:p.team,
+          score:p.benchSeason,
+          raw:p.benchSeason
+        });
+      }
+
+      if (p.hitSeason > 0) {
+        hallOfShame.push({
+          kind:"💸 Koszt hitów",
+          value:`-${p.hitSeason} pkt`,
+          manager:p.manager, team:p.team,
+          score:p.hitSeason,
+          raw:p.hitSeason
+        });
+      }
+
+      if (p.avg3 > 0) {
+        hallOfShame.push({
+          kind:"🧊 Najzimniejsza forma 3 GW",
+          value:`${p.avg3} pkt średnio`,
+          manager:p.manager, team:p.team,
+          score:Math.max(0, 100 - p.avg3),
+          raw:p.avg3,
+          lowerIsWorse:true
+        });
+      }
+
+      if (p.editorial > 0) {
+        hallOfShame.push({
+          kind:"🏺 Najgorsza ocena redakcji",
+          value:`${p.editorial}/10`,
+          manager:p.manager, team:p.team,
+          score:Math.max(0, 10 - p.editorial),
+          raw:p.editorial,
+          lowerIsWorse:true
+        });
+      }
+
+      if (p.rank > 0) {
+        hallOfShame.push({
+          kind:"🕳️ Piwnica tabeli",
+          value:`${p.rank}. miejsce`,
+          manager:p.manager, team:p.team,
+          score:p.rank,
+          raw:p.rank
+        });
+      }
     }
 
-    const shameRecords = ["Najgorszy wynik GW","Punkty na ławce","Koszt hitów"]
-      .map(kind => hallOfShame.filter(x=>x.kind===kind).sort((a,b)=>b.score-a.score)[0])
-      .filter(Boolean);
+    const hallKinds = [
+      "💀 Najgorszy wynik GW",
+      "🪑 Punkty na ławce",
+      "💸 Koszt hitów",
+      "🎢 Największy rollercoaster",
+      "🧊 Najzimniejsza forma 3 GW",
+      "🏺 Najgorsza ocena redakcji",
+      "🕳️ Piwnica tabeli"
+    ];
+
+    const shameRecords = hallKinds.map(kind => {
+      const candidates = hallOfShame.filter(x => x.kind === kind);
+      if (!candidates.length) return null;
+
+      if (kind === "🧊 Najzimniejsza forma 3 GW" || kind === "🏺 Najgorsza ocena redakcji") {
+        return candidates.sort((a,b) => a.raw - b.raw)[0];
+      }
+
+      if (kind === "💀 Najgorszy wynik GW") {
+        return candidates.sort((a,b) => a.raw - b.raw)[0];
+      }
+
+      return candidates.sort((a,b) => b.score - a.score)[0];
+    }).filter(Boolean);
 
     const awards = [
       bestGW && {icon:"🏆",name:"Mózg GW",manager:bestGW.manager,team:bestGW.team,value:`${bestGW.gwPoints} pkt`},
@@ -877,6 +956,25 @@ export async function GET() {
       };
     }).sort((a,b)=>b.prob-a.prob);
 
+
+    const rivalryProfiles = details.map(x => ({
+      entry:x.entry,
+      manager:x.manager,
+      team:x.team,
+      matches:rivalries
+        .filter(r => r.a === x.manager || r.b === x.manager)
+        .map(r => {
+          const isA = r.a === x.manager;
+          return {
+            opponent:isA ? r.b : r.a,
+            wins:isA ? r.aWins : r.bWins,
+            losses:isA ? r.bWins : r.aWins,
+            draws:r.draw
+          };
+        })
+        .sort((a,b) => (b.wins-b.losses) - (a.wins-a.losses))
+    }));
+
     const predictions = {
       label: gwFinished ? `Typ redakcji na GW${gw+1}` : `Typ redakcji od teraz w GW${gw}`,
       winner: managerProfiles.slice().sort((a,b)=>b.avg3-a.avg3)[0] || null,
@@ -940,7 +1038,7 @@ export async function GET() {
       standings:details,
       articles:finalArticles,
       awards, breakingNews:breakingNews.slice(0,8), managerProfiles, hallOfShame:shameRecords,
-      watchList, deathMatch, rivalries, virtualOdds, predictions, grades, gwChances, seasonAwards
+      watchList, deathMatch, rivalries, rivalryProfiles, virtualOdds, predictions, grades, gwChances, seasonAwards
     }, {headers:{"Cache-Control":"no-store, no-cache, must-revalidate, max-age=0"}});
   } catch(e) {
     return NextResponse.json({ok:false,error:String(e?.message||e)}, {status:500});

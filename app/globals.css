@@ -585,3 +585,22 @@ body::after {
 .awardBig{display:flex;align-items:center;gap:12px;padding:13px;border:1px solid rgba(246,198,91,.16);background:rgba(246,198,91,.04);border-radius:12px}
 .awardBig>span{font-size:30px}.awardBig>div{display:grid;gap:2px}.awardBig b{color:#f7d789;font-size:11px}.awardBig strong{font-size:15px}.awardBig small{color:var(--muted)}
 @media(max-width:650px){.awardGallery{grid-template-columns:1fr}}
+
+.profileIcon{font-size:28px;margin-bottom:6px}
+.shameRecord{border-left:3px solid rgba(255,110,110,.45);padding-left:12px}
+.rivalryCards{display:grid;gap:10px}
+.rivalryCard{border:1px solid rgba(112,170,204,.18);background:rgba(255,255,255,.025);border-radius:12px;overflow:hidden}
+.rivalryCard summary{list-style:none;display:flex;justify-content:space-between;align-items:center;gap:12px;padding:13px 14px;cursor:pointer}
+.rivalryCard summary::-webkit-details-marker{display:none}
+.rivalryCard summary>div{display:flex;align-items:center;gap:10px}
+.rivalryCard summary>div>span{font-size:24px}
+.rivalryCard summary small{display:block;color:var(--muted)}
+.rivalryCard summary>strong{font-size:11px;color:#f7d789}
+.rivalryBody{border-top:1px solid rgba(112,170,204,.12);padding:8px 14px}
+.rivalryLine{display:grid;grid-template-columns:1fr auto auto;gap:10px;align-items:center;padding:8px 0;border-top:1px solid rgba(112,170,204,.08)}
+.rivalryLine:first-child{border-top:0}
+.rivalryLine small{color:var(--muted)}
+.positive{color:#8ff0b0}.negative{color:#ff9a9a}
+.pressSpeaker{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.pressSpeaker>span{font-size:24px}
+.pressSpeaker small{display:block;color:var(--muted)}
