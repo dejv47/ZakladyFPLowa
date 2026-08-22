@@ -136,10 +136,6 @@ export async function GET() {
       };
     }));
 
-    const sorted=[...details].sort((a,b)=>b.gwPoints-a.gwPoints);
-    const bestGW=sorted[0], worstGW=sorted.at(-1);
-    const benchKing=[...details].sort((a,b)=>b.benchPoints-a.benchPoints)[0];
-    const hitKing=[...details].sort((a,b)=>b.transferCost-a.transferCost)[0];
     const randoms=seeded(details.filter(x=>![bestGW?.entry,worstGW?.entry].includes(x.entry)), gw, 2);
 
     // Build a larger pool of categories, score how relevant each one is
