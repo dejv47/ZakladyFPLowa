@@ -390,6 +390,54 @@ const BRUTAL_CONF_LINES = {
  ]
 };
 
+const EXTREME_CONF_RANTS = {
+ great:[
+  "Dzisiaj mogę się śmiać z reszty ligi, bo przynajmniej przez jeden weekend to nie ja wyglądam jak debil. Jak ktoś chce mi tłumaczyć FPL, niech najpierw przeskoczy mnie w tej kolejce, a dopiero potem otwiera mordę. Moi piłkarze wreszcie zrobili to, za co ich tu kurwa trzymam, zamiast przez dziewięćdziesiąt minut biegać jak banda bezproduktywnych pajaców.",
+  "To jest ten piękny moment, kiedy można wejść na tabelę, zobaczyć rywali niżej i pomyśleć: no, skurwysyny, dzisiaj możecie sobie tylko popatrzeć. Oczywiście za tydzień FPL może mnie kopnąć prosto w jaja, ale dzisiaj nie zamierzam udawać skromnego świętego.",
+  "Wreszcie weekend bez oglądania punktów rywali z miną człowieka, któremu ktoś nasrał do plecaka. Dzisiaj to oni mogą analizować moje punkty i zastanawiać się, gdzie popełnili błąd. Życzę im owocnej analizy i chujowych wniosków.",
+  "Tak, jestem zadowolony. Tak, będę się tym obnosił. Po tylu godzinach grzebania w tym pierdolonym składzie mam prawo przez kilka dni zachowywać się jak zarozumiały kutas, dopóki następna kolejka nie sprowadzi mnie na ziemię."
+ ],
+ good:[
+  "Nie będę robił z tego mistrzostwa świata, ale przynajmniej nie mam ochoty po weekendzie wyrzucić telefonu przez okno. Kilku zawodników zrobiło robotę, kilku jak zwykle udawało, że nie wiedzą, za co dostają pensję, ale ten burdel ostatecznie dowiózł punkty.",
+  "Jest nieźle. Bez wielkiego spuszczania się nad wynikiem, ale też bez publicznego samobiczowania. Najważniejsze, że tym razem moje własne decyzje nie próbowały mnie aktywnie ujebać bardziej niż przeciwnicy.",
+  "Paru zawodników nadal działa mi na nerwy tak bardzo, że najchętniej wyjebałbym ich ze składu jeszcze w tunelu, ale właśnie od tego mam kilka dni przerwy, żeby nie robić transferów jak wkurwiony orangutan z telefonem.",
+  "Dobry wynik daje chwilę spokoju, a spokój w FPL jest kurwa rzadszy niż sensowna decyzja zrobiona minutę przed deadlinem. Zamierzam więc niczego bez potrzeby nie rozpierdalać."
+ ],
+ neutral:[
+  "Co mam powiedzieć? Kolejka była tak nijaka, że nawet porządnie się wkurwić nie ma o co. Kilku punktuje, kilku odpierdala manianę, ranking praktycznie stoi, a ja poświęciłem temu zdecydowanie więcej czasu, niż ten cały cyrk był wart.",
+  "To był punktowy odpowiednik zimnego kebaba o czwartej rano: da się przełknąć, ale człowiek doskonale wie, że nie ma się czym chwalić. Nie będę teraz udawał, że widzę tu jakiś wielki proces, bo gówno widzę.",
+  "Ani sukces, ani katastrofa. Po prostu kolejny weekend, podczas którego jedenastu dorosłych piłkarzy przypomniało mi, że planowanie FPL z tygodniowym wyprzedzeniem jest często równie skuteczne jak rzucanie gównem w tarczę.",
+  "Najbardziej wkurwiające jest właśnie to, że nie wydarzyło się nic konkretnego. Nie mam kogo wychwalać, nie mam nawet kogo spektakularnie zjebać. Taka bezpłciowa kolejka do wypierdolenia z pamięci."
+ ],
+ bad:[
+  "Nie będę pierdolił o pechu i procesie. Zagrałem tę kolejkę jak kretyn, kilku moich piłkarzy dołożyło własną porcję gówna i razem ugotowaliśmy piękny garnek punktowego wpierdolu. Najgorsze, że przed deadlinem człowiek patrzy na te decyzje i jeszcze myśli: ale jestem kurwa sprytny.",
+  "To był festiwal spierdolenia. Zły ruch tu, blank tam, punkty na ławce, a na końcu ja patrzący na ekran jak ostatni baran i zastanawiający się, czemu znowu dałem się nabrać tej pierdolonej grze. Nikt mi przecież pistoletu do głowy przy transferach nie trzymał.",
+  "Mam ochotę wypierdolić pół drużyny, drugą połowę posadzić na ławce, a samemu odebrać sobie uprawnienia menedżerskie. I dokładnie dlatego przez najbliższe dni nie powinienem robić absolutnie nic, bo wkurwiony człowiek w FPL jest maszyną do produkcji minus czterech.",
+  "Jeżeli ktoś szuka winnego, to nie trzeba odpalać VAR-u ani komisji śledczej. Jestem tutaj. To ja kliknąłem te jebane przyciski. Piłkarze byli chujowi, ale ja ich jeszcze elegancko poustawiałem tak, żeby bolało maksymalnie."
+ ],
+ awful:[
+  "To nie była słaba kolejka, tylko jebana katastrofa humanitarna mojego rankingu. Wszystko, czego dotknąłem, zamieniło się w gówno. Kapitan zachowywał się jak statysta, transfery jak sabotażyści, ławka śmiała mi się prosto w ryj, a ja przez cały weekend mogłem tylko patrzeć na ten płonący śmietnik.",
+  "Nie mam żadnej linii obrony. Gdybym zobaczył taki skład u kogoś innego, pierwszy napisałbym mu, że chyba go kompletnie pojebało. Tymczasem to ja jestem autorem tego arcydzieła spierdolenia i jeszcze przed deadlinem byłem z siebie, kurwa, zadowolony.",
+  "To był taki wpierdol, że aplikacja powinna po zakończeniu GW wyświetlić mi numer do opiekuna prawnego zamiast tabeli. Każda decyzja wygląda gorzej od poprzedniej, a kiedy myślę, że znalazłem dno, przypominam sobie o punktach zostawionych na jebanej ławce.",
+  "Chciałbym powiedzieć, że wyciągnę wnioski, ale po czymś takim jedyny sensowny wniosek brzmi: zabrać temu idiocie telefon przed deadlinem. Czyli mnie. Bo najwyraźniej sam jestem największym skurwysynem sabotującym własną drużynę.",
+  "To była orgia blanków, złych decyzji i kompletnego braku godności. Rywale nie musieli nawet dobrze zagrać — wystarczyło, że stali z boku i patrzyli, jak sam napierdalam własny ranking młotkiem. Fenomenalna robota, kurwa.",
+  "Po tej kolejce nie potrzebuję konferencji, tylko przesłuchania. Kto ustawił kapitana? Ja. Kto zostawił punkty na ławce? Ja. Kto zrobił transfer, który wygląda teraz jak jebany żart? Też ja. Zamykamy sprawę, winny przyznał się do wszystkiego."
+ ]
+};
+
+const EXTREME_MANAGER_SHOTS = [
+ "A jeśli któryś rywal teraz się ze mnie śmieje, niech korzysta, póki może. W tej lidze droga od kozaka do kompletnego pajaca zajmuje dokładnie jeden deadline.",
+ "Nie mam zamiaru słuchać mądrości ludzi, którzy sami co tydzień ustawiają skład jakby wybierali numery w totka. Każdy tutaj jest tylko o jedną decyzję od totalnego zesrania się.",
+ "Najbardziej bawi mnie pewność siebie rywali po jednym dobrym wyniku. Spokojnie, kurwa. FPL wszystkich prędzej czy później przeciągnie mordą po asfalcie.",
+ "Tabela jest jedynym miejscem, gdzie można zamknąć ludziom mordy bez dyskusji. Dlatego zamiast gadać, trzeba zacząć zdobywać jebane punkty.",
+ "Nie interesuje mnie, kto miał rację na grupie przed kolejką. Po fakcie każdy nagle jest pierdolonym Nostradamusem fantasy.",
+ "Jeżeli mój differential znowu zrobi dwa punkty, podczas gdy nudny popularny pick zrobi piętnaście, osobiście wystawię sobie certyfikat FPL-owego frajera.",
+ "Każdy transfer wygląda genialnie do pierwszego gwizdka. Potem zaczyna się rzeczywistość i człowiek odkrywa, że właśnie zapłacił punkty za sprowadzenie kolejnego bezużytecznego chuja.",
+ "Mam już dość tłumaczenia decyzji słowem „upside”. Czasem upside oznacza po prostu bardziej wyszukany sposób na wpierdolenie się w minę.",
+ "W tej grze cierpliwość jest cnotą, ale czasami patrzę na któregoś zawodnika i jedyną cnotą byłoby powstrzymanie się przed wypierdoleniem go ze składu jeszcze podczas meczu.",
+ "Następny deadline chcę przeżyć bez nagłego objawienia o 11:59. Moje objawienia mają ostatnio skuteczność pijanego typa rzucającego lotkami tyłem."
+];
+
 const BRUTAL_ENDINGS = [
  "Na następny tydzień plan jest prosty: mniej filozofowania, więcej punktów i przede wszystkim nie odpierdolić czegoś pięć minut przed deadlinem.",
  "Jeżeli znowu zmienię sensowny plan w ostatniej chwili, macie pełne prawo nazwać mnie debilem i przypiąć ten cytat na górze strony.",
@@ -414,6 +462,8 @@ function pressQuote(p,gw,managerIndex,league){
  const middle2=middleSet[(gw+managerIndex+2)%middleSet.length];
  const personal=VOICE_QUOTES[managerIndex % VOICE_QUOTES.length][(gw-1)%4];
  const brutal=BRUTAL_CONF_LINES[mood][(gw*3+managerIndex)%BRUTAL_CONF_LINES[mood].length];
+ const extreme=EXTREME_CONF_RANTS[mood][(gw*7+managerIndex)%EXTREME_CONF_RANTS[mood].length];
+ const extremeShot=EXTREME_MANAGER_SHOTS[(gw*11+managerIndex)%EXTREME_MANAGER_SHOTS.length];
  const brutalEnding=BRUTAL_ENDINGS[(gw*5+managerIndex)%BRUTAL_ENDINGS.length];
 
  const stats=[
@@ -423,18 +473,18 @@ function pressQuote(p,gw,managerIndex,league){
   `Bilans GW${gw} to ${p.gwPoints} punktów i ${rank}. pozycja wśród naszych menedżerów. Do tego koszt hitów w sezonie wynosi ${p.hitSeason}, więc każdy następny minus cztery będzie musiał mieć naprawdę dobre alibi.`
  ][(gw+managerIndex)%4];
 
- return `„${intro} ${moodText} ${brutal} ${stats} ${middle1} ${middle2} ${personal} ${brutalEnding}”`;
+ return `„${intro} ${moodText} ${extreme} ${brutal} ${stats} ${middle1} ${extremeShot} ${middle2} ${personal} ${brutalEnding}”`;
 }
 
 function pressReaction(p,gw,managerIndex,league){
  const mood=conferenceMood(p,league);
  const reactions=[
    {
-    great:`Redakcja: ${p.manager} może dziś kozaczyć. Byle nie zaczął wierzyć, że odkrył kod źródłowy FPL.`,
+    great:`Redakcja: ${p.manager} może dziś kozaczyć jak bezczelny skurwysyn. Byle nie uwierzył, że odkrył kod źródłowy tej pojebanej gry.`,
     good:`Redakcja: solidna robota ${p.manager}. Największym zagrożeniem pozostaje następny własny pomysł.`,
     neutral:`Redakcja: ${p.manager} ani bohater, ani oskarżony. Sprawa wraca za tydzień.`,
-    bad:`Redakcja: ${p.manager} ma tydzień na poprawę, zanim żarty zaczną pisać się całkowicie same.`,
-    awful:`Redakcja: w sprawie ${p.manager} zabezpieczono dowody. Niektóre screeny mogą być drastyczne.`
+    bad:`Redakcja: ${p.manager} ma tydzień na poprawę, bo za chwilę ten punktowy burdel będzie się roastował sam bez żadnej pomocy redakcji.`,
+    awful:`Redakcja: w sprawie ${p.manager} zabezpieczono dowody. Screeny są tak chujowe, że powinny mieć ostrzeżenie przed drastyczną treścią.`
    },
    {
     great:`Redakcja: sąd FPL uniewinnia ${p.manager}. Wyrok nieprawomocny do następnej GW.`,
