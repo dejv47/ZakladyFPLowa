@@ -505,6 +505,34 @@ function pressReaction(p,gw,managerIndex,league){
  return set[mood];
 }
 
+
+function shameNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
+function v39RivalReplies(data){
+ const ps=[...(data?.managerProfiles||data?.grades||[])].sort((a,b)=>shameNum(b.gwPoints)-shameNum(a.gwPoints)),gw=shameNum(data?.gw)||1,out=[];
+ for(let i=0;i<ps.length-1&&out.length<4;i++){const a=ps[i],b=ps[i+1],k=confHash(`beef-${gw}-${a.entry}-${b.entry}`);
+ const t=[
+ `${b.manager}: „${a.manager} zrobił jedną dobrą kolejkę i już pierdoli jakby ligę wygrał. Niech się nacieszy, bo FPL szybko sprowadza takich kozaków na ziemię.”`,
+ `${b.manager}: „Słyszałem konferencję ${a.manager}. Tyle samozachwytu po jednym GW to już nie pewność siebie, tylko choroba. Pogadamy po następnym deadlinie.”`,
+ `${b.manager}: „Nie interesuje mnie, co odpierdala medialnie ${a.manager}. Jak będzie nade mną na koniec sezonu, wtedy może otworzyć mordę szerzej.”`,
+ `${b.manager}: „Gratuluję ${a.manager}. Teraz czekam aż tradycyjnie poprawi działający skład trzema genialnymi transferami i wszystko rozpierdoli.”`,
+ `${b.manager}: „${a.manager} już chodzi jak Mourinho po potrójnej koronie. Spokojnie kurwa, to nadal tylko jedna kolejka fantasy.”`,
+ `${b.manager}: „Ja bym mniej kozaczył. Ta pojebana gra najbardziej lubi kopnąć w jaja dokładnie wtedy, kiedy człowiek zaczyna się uważać za geniusza.”`];
+ out.push({a,b,text:t[k%t.length]})}return out
+}
+function V39RivalReplies({data}){const rows=v39RivalReplies(data);return <Card title="🎙️ Pomeczowe odpowiedzi rywali"><p className="sectionLead">Konferencja się skończyła, ale rywale oczywiście dalej mają coś do powiedzenia.</p>{rows.map((x,i)=><div className="pressReply" key={i}><b>{x.b.manager} odpowiada {x.a.manager}</b><p>{x.text}</p></div>)}</Card>}
+
+function v39Notes(data){const ps=[...(data?.managerProfiles||data?.grades||[])],gw=shameNum(data?.gw)||1;return ps.map(p=>{let t,bench=shameNum(p.benchSeason),hits=shameNum(p.hitSeason),pts=shameNum(p.gwPoints),avg=shameNum(p.avg3),rank=gwRank(p,ps);
+ if(hits>=8)t=`Menedżer opowiada o planie, ale oddał już ${hits} pkt za hity. Czytelnicy uznali, że ten drobny rozpierdol finansowy warto dopisać.`;
+ else if(bench>=20)t=`Wypowiedź pomija ${bench} pkt zostawionych w sezonie na ławce. Dość istotny szczegół jak na człowieka przekonanego o własnym geniuszu.`;
+ else if(rank===1)t=`Kontekst częściowo potwierdza kozaczenie: ${pts} pkt to najlepszy wynik GW${gw}. Nie daje to jednak licencji na pierdolenie głupot do końca sezonu.`;
+ else if(pts<avg)t=`${p.manager} zdobył ${pts} pkt przy średniej ${avg} z ostatnich 3 GW. Opowieść o pełnej kontroli jest więc, delikatnie mówiąc, naciągana.`;
+ else t=`Fakty: ${pts} pkt i ${rank}. wynik GW${gw}. Reszta wypowiedzi pozostaje opinią człowieka emocjonalnie związanego z własnymi transferami.`;
+ return {p,t}})}
+function V39Notes({data}){return <Card title="📝 Community Notes"><p className="sectionLead">Czytelnicy prostują konferencyjne pierdolenie za pomocą danych.</p>{v39Notes(data).map((x,i)=><div className="communityNote" key={i}><b>👥 Kontekst do wypowiedzi: {x.p.manager}</b><p>{x.t}</p><small>Notatka uznana za pomocną przez osoby posiadające kalkulator.</small></div>)}</Card>}
+
+function v39Jug(data){return [...(data?.managerProfiles||data?.grades||[])].map(p=>{let bench=shameNum(p.benchSeason),hits=shameNum(p.hitSeason),avg=shameNum(p.avg3),gw=shameNum(p.gwPoints);let score=Math.max(0,Math.round(bench*.55+hits*1.35+Math.max(0,50-avg)*.45+Math.max(0,45-gw)*.15));let why=[];if(bench)why.push(`${bench} pkt na ławce`);if(hits)why.push(`${hits} pkt hitów`);if(avg<45)why.push(`forma ${avg}`);return {...p,jugScore:score,jugWhy:why}}).sort((a,b)=>b.jugScore-a.jugScore)}
+function V39Jug({data}){const r=v39Jug(data),l=r[0];return <Card title="🏆 Złoty Dzban sezonu"><p className="sectionLead">Całosezonowa tabela kompromitacji — głównie ławka, hity i długotrwała chujowa forma.</p>{l&&<div className="jugLeader"><span>👑 AKTUALNY LIDER DZBANA</span><h3>{l.manager}</h3><strong>{l.jugScore} pkt dzbana</strong><p>{l.jugWhy.join(" • ")||"Podejrzanie czysta kartoteka"}</p></div>}<div className="jugTable">{r.map((x,i)=><div className="jugRow" key={x.entry}><span>#{i+1}</span><div><b>{x.manager}</b><small>{x.team}</small></div><strong>{x.jugScore}</strong></div>)}</div></Card>}
+
 export default function FPLPage(){
 
  const [data,setData]=useState(null),[error,setError]=useState(""),[tab,setTab]=useState("gazeta"),[profile,setProfile]=useState(null);
