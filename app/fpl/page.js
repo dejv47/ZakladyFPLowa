@@ -523,235 +523,346 @@ function V39RivalReplies({data}){const rows=v39RivalReplies(data);return <Card t
 
 function noteHash(text){let h=2166136261;for(let i=0;i<text.length;i++){h^=text.charCodeAt(i);h=Math.imul(h,16777619)}return Math.abs(h>>>0)}
 
-const NOTE_VOICES = [
+function noteTheme(quote,mood){
+ const q=(quote||"").toLowerCase();
+ const hit=(...xs)=>xs.some(x=>q.includes(x));
+ if(hit("pech","szczęści","fart")) return "pech";
+ if(hit("plan","proces","strateg","projekt")) return "plan";
+ if(hit("transfer","hit","minus","-4","-8")) return "transfer";
+ if(hit("kapitan","opask","captain")) return "kapitan";
+ if(hit("ławk","rezerw")) return "lawka";
+ if(hit("twitter","x ","must-have","hype","ownership")) return "hype";
+ if(hit("cierpliw","spok","nie dotyk","zostawi")) return "cierpliwosc";
+ if(hit("genius","kozacz","najlepsz","świet","zajebiście","zadowol")) return "samozachwyt";
+ if(mood==="awful"||mood==="bad") return "katastrofa";
+ if(mood==="great"||mood==="good") return "sukces";
+ return "neutral";
+}
+
+const EXTREME_NOTE_VOICES = [
  {
-  pech:(p)=>`Czytelnicy zwracają uwagę, że ${p.manager} próbuje przepchnąć narrację o pechu, ale przypadek nie kliknął mu transferów ani nie ustawił ławki. To nadal był jego własny podpis pod tym burdelem.`,
-  plan:(p)=>`W przemowie ${p.manager} dużo miejsca zajmuje „plan”. Community Notes przypomina, że dobry plan powinien od czasu do czasu przeżyć kontakt z tabelą, a nie tylko świetnie brzmieć przed deadlinem.`,
-  transfer:(p)=>`Skoro ${p.manager} sam poruszył transfery, warto dopisać, że rynek nie jest magiczną maszyną do naprawiania wszystkich problemów. Czasem to właśnie menedżer jest problemem wymagającym transferu.`,
-  kapitan:(p)=>`${p.manager} mówi o opasce jak o trudnym dylemacie. Czytelnicy dodają, że kapitan nie wybiera się sam, więc odpowiedzialność za tę loterię nadal siedzi po tej samej stronie mikrofonu.`,
-  lawka:(p)=>`Wątek ławki w wypowiedzi ${p.manager} wymaga przypisu: rezerwowi nie teleportowali się tam po deadline'ie. Ktoś ich tam, kurwa, posadził.`,
-  good:(p)=>`${p.manager} ma prawo być zadowolony, ale Community Notes prosi o zachowanie kontaktu z rzeczywistością: jedna dobra kolejka nie zamienia człowieka automatycznie w mózg całej ligi.`,
-  bad:(p)=>`W przypadku ${p.manager} konferencja brzmi jak próba posprzątania po wybuchu. Dane potwierdzają, że wybuch faktycznie miał miejsce i nie był wyłącznie medialną przesadą.`,
-  neutral:(p)=>`Wypowiedź ${p.manager} jest ostrożna, co tym razem dobrze współgra z faktami: ta kolejka nie daje ani podstaw do pomnika, ani do publicznej egzekucji.`
+  pech:p=>`${p.manager} próbuje sprzedać „pecha” jakby był niewinną ofiarą losu. Community Notes przypomina, że los nie zalogował się na jego konto i nie kliknął tych jebanych decyzji za niego.`,
+  plan:p=>`${p.manager} znowu odpala pierdolenie o planie. Problem w tym, że plan, który działa wyłącznie w głowie menedżera przed deadlinem, to nie strategia — to fanfiction dla ludzi z fixture tickerem.`,
+  transfer:p=>`Skoro ${p.manager} sam zaczął temat transferów, to dopiszmy najważniejsze: każdy jego „odważny ruch” ma tę paskudną cechę, że po meczu bardzo często wygląda jak decyzja kompletnego barana.`,
+  kapitan:p=>`${p.manager} mówi o opasce jak o decyzji NASA. To nadal tylko kapitan w FPL, nie lądowanie na Marsie. Jeśli spierdolił wybór, to spierdolił wybór.`,
+  lawka:p=>`Ławka ${p.manager} nie jest paranormalnym zjawiskiem. To po prostu miejsce, gdzie ten geniusz regularnie odkłada punkty, żeby potem móc się nimi wkurwiać po fakcie.`,
+  hype:p=>`${p.manager} brzmi jak człowiek, który dał się zrobić w chuja przez hype szybciej niż nastolatek przez reklamę dropshippingu.`,
+  cierpliwosc:p=>`${p.manager} mówi o cierpliwości, co jest urocze, biorąc pod uwagę jak często jego „cierpliwość” trwa do pierwszego price rise'a.`,
+  samozachwyt:p=>`${p.manager} nadaje z pozycji człowieka, który właśnie odkrył FPL na nowo. Jedna dobra kolejka i ego już zajmuje więcej miejsca niż cały skład.`,
+  katastrofa:p=>`${p.manager} próbuje opisać katastrofę słowami. Szkoda czasu — ten wynik sam wygląda jak jebany akt oskarżenia przeciwko kompetencjom menedżera.`,
+  sukces:p=>`${p.manager} ma dziś podstawy do kozaczenia, ale nie aż takie, żeby od razu odpierdalać Napoleona fantasy. To nadal jedna kolejka, nie dynastia.`,
+  neutral:p=>`${p.manager} wygłosił przemowę tak nijaką, że nawet liczby ziewają. Ani sukces, ani katastrofa — po prostu kolejny przeciętny dzień człowieka, który zdecydowanie za dużo myśli o FPL.`
  },
  {
-  pech:(p)=>`Wersja ${p.manager}: pech. Wersja Community Notes: pech nie zna hasła do konta FPL i nie wciska „Confirm Transfers”.`,
-  plan:(p)=>`${p.manager} używa słowa „proces”, więc czytelnicy sprawdzili proces od strony produktu końcowego. Wynik bywa mniej romantyczny niż prezentacja menedżera.`,
-  transfer:(p)=>`Do wypowiedzi ${p.manager} o transferach dopisano kontekst: każdy ruch wygląda mądrze przed pierwszym gwizdkiem, a później często okazuje się po prostu drogim sposobem na wkurwienie samego siebie.`,
-  kapitan:(p)=>`Opaska pojawia się w zeznaniach ${p.manager}. Community Notes przypomina, że „wydawało się logiczne” jest opisem decyzji, a nie zwolnieniem z odpowiedzialności.`,
-  lawka:(p)=>`${p.manager} wspomina o ławce. Czytelnicy odpowiadają: ławka nie jest zjawiskiem pogodowym, tylko częścią składu ustawioną przez menedżera.`,
-  good:(p)=>`Faktycznie, ${p.manager} ma dziś czym kozaczyć. Problem zacznie się dopiero wtedy, gdy pomyli dobry weekend z dożywotnim certyfikatem nieomylności.`,
-  bad:(p)=>`Community Notes nie znalazło w liczbach mocnego alibi dla ${p.manager}. Znalazło za to sporo materiału do rubryki „sam sobie to zrobiłeś”.`,
-  neutral:(p)=>`${p.manager} nie przesadza ani z euforią, ani z rozpaczą. Dane również są mniej więcej tak samo nudne.`
+  pech:p=>`Wersja ${p.manager}: „pech”. Wersja Community Notes: jak co tydzień coś cię rzekomo „pechowo” jebie, to może warto sprawdzić, czy problemem nie jest ten typ z telefonem w ręce.`,
+  plan:p=>`${p.manager} pieprzy o procesie tak, jakby prowadził wieloletni projekt infrastrukturalny. Tymczasem mówimy o ustawieniu jedenastu piłkarzy i wybraniu jednego kapitana, więc bez przesady, kurwa.`,
+  transfer:p=>`Historia transferów ${p.manager} momentami wygląda jak pamiętnik człowieka, który uczy się na błędach dokładnie odwrotnie niż powinien.`,
+  kapitan:p=>`Opaska u ${p.manager} najwyraźniej waży tonę, skoro za każdym razem robi z prostego wyboru psychodramę w trzech aktach.`,
+  lawka:p=>`${p.manager} potrafi znaleźć punktujących zawodników. Problem w tym, że potem sadza ich na ławce jakby prowadził program ochrony haulów przed własną drużyną.`,
+  hype:p=>`${p.manager} nadal daje się prowadzić hype'owi za rękę jak dziecko do przedszkola. Must-have, differential, ownership — trzy słowa i już zaczyna się jebany cyrk.`,
+  cierpliwosc:p=>`Deklarowana cierpliwość ${p.manager} jest mniej trwała niż tani kabel USB. Jedno powiadomienie o zmianie ceny i cały zen idzie się jebać.`,
+  samozachwyt:p=>`${p.manager} po dobrym wyniku zaczyna mówić tak, jakby reszta ligi miała mu składać hołd. Spokojnie, kurwa, statuetki jeszcze nikt nie odlewa.`,
+  katastrofa:p=>`Przy takim wyniku ${p.manager} nie potrzebuje notatki kontekstowej, tylko lustra i kogoś, kto mu spokojnie powie: tak, ty naprawdę to zrobiłeś.`,
+  sukces:p=>`Tak, ${p.manager} zagrał dobrze. Nie, nie oznacza to automatycznie, że wszystkie jego przyszłe pomysły przestały być potencjalnie kretyńskie.`,
+  neutral:p=>`Community Notes analizuje ${p.manager} i dochodzi do brutalnego wniosku: ta kolejka była tak średnia, że nawet obrażanie go wymaga wysiłku.`
  },
  {
-  pech:(p)=>`Kartoteka ${p.manager} nie potwierdza, by „pech” był jedynym podejrzanym. W sprawie nadal występują decyzje personalne, captaincy i kilka bardzo konkretnych kliknięć.`,
-  plan:(p)=>`Community Notes przejrzało plan ${p.manager} i stwierdza, że strategia jest łatwiejsza do obrony w słowach niż w punktach. Śledztwo trwa.`,
-  transfer:(p)=>`Transferowa część konferencji ${p.manager} otrzymuje adnotację: decyzja była dobrowolna, wykonana przy pełnej świadomości i nie ma podstaw do obciążenia winą osób trzecich.`,
-  kapitan:(p)=>`W sprawie kapitana ${p.manager} nie stwierdzono udziału siły wyższej. Opaska znalazła się na zawodniku w wyniku świadomego działania właściciela konta.`,
-  lawka:(p)=>`Śledczy potwierdzają: punkty na ławce należały do kadry ${p.manager}. Nie zostały podrzucone przez konkurencję.`,
-  good:(p)=>`Postępowanie przeciwko ${p.manager} zostaje na tę GW warunkowo umorzone. Wynik jest wystarczająco dobry, by uniknąć aktu oskarżenia.`,
-  bad:(p)=>`Materiał dowodowy nie sprzyja ${p.manager}. Redakcja zaleca mniej narracji obronnej, więcej poprawnych decyzji.`,
-  neutral:(p)=>`Brak podstaw do postawienia ${p.manager} przed sądem FPL. Brak również podstaw do wręczania medalu.`
+  pech:p=>`Prokuratura FPL przesłuchała „pecha” wskazanego przez ${p.manager}. Podejrzany ma alibi. Na miejscu zdarzenia znaleziono za to odciski palców właściciela konta.`,
+  plan:p=>`Plan ${p.manager} został zabezpieczony jako dowód rzeczowy. Na ten moment bardziej obciąża oskarżonego, niż pomaga obronie.`,
+  transfer:p=>`Każdy transfer ${p.manager} został wykonany dobrowolnie, przy pełnej świadomości i bez udziału osób trzecich. Wniosek obrony o uniewinnienie z powodu „FPL jest pojebane” oddalono.`,
+  kapitan:p=>`W sprawie kapitana ${p.manager} nie stwierdzono włamania na konto. Opaska trafiła tam w wyniku świadomego aktu decyzyjnego, co niestety bardzo komplikuje linię obrony.`,
+  lawka:p=>`Punkty na ławce ${p.manager} zostały zabezpieczone jako dowód rzeczowy numer jeden. Podejrzany próbował tłumaczyć się „trudnym wyborem”. Sąd parsknął śmiechem.`,
+  hype:p=>`Śledczy ustalili, że ${p.manager} mógł działać pod wpływem hype'u. Nie jest to okoliczność łagodząca, tylko dowód podatności na zbiorowe pierdolenie.`,
+  cierpliwosc:p=>`${p.manager} powołuje się na cierpliwość. Kartoteka transferowa wskazuje jednak, że świadek może kłamać.`,
+  samozachwyt:p=>`${p.manager} zachowuje się, jakby właśnie wygrał proces stulecia. Wyrok dotyczył jednej kolejki i nie jest prawomocny.`,
+  katastrofa:p=>`Materiał dowodowy przeciwko ${p.manager} jest tak mocny, że nawet jego własny adwokat FPL poprosił o przerwę na papierosa.`,
+  sukces:p=>`Sąd FPL uniewinnia ${p.manager} na tę kolejkę. Ostrzega jednak, że recydywa głupich decyzji jest w tej lidze wyjątkowo wysoka.`,
+  neutral:p=>`Postępowanie wobec ${p.manager} zostaje zawieszone. Brak sukcesu, brak spektakularnego przestępstwa przeciwko rankingowi.`
  },
  {
-  pech:(p)=>`Diagnoza „pech” przedstawiona przez ${p.manager} wymaga konsultacji. Objawy wskazują również na przewlekłą ekspozycję na własne decyzje.`,
-  plan:(p)=>`Plan leczenia przedstawiony przez ${p.manager} brzmi rozsądnie, ale historia FPL zna wiele przypadków nawrotu dokładnie pięć minut przed deadlinem.`,
-  transfer:(p)=>`Community Notes przypomina ${p.manager}, że transfer nie jest tabletką przeciwbólową. Przyjęty w panice potrafi wywołać kolejne skutki uboczne przez kilka GW.`,
-  kapitan:(p)=>`Wybór kapitana przez ${p.manager} nie jest chorobą zakaźną. To dobra wiadomość dla reszty ligi i gorsza dla samego pacjenta.`,
-  lawka:(p)=>`Ławka ${p.manager} wykazuje niepokojąco wysoką aktywność punktową. Lekarz zaleca dokładniejsze badanie przed kolejnym ustawieniem XI.`,
-  good:(p)=>`Stan ${p.manager} po tej kolejce jest dobry. Zalecenie: nie rozpoczynać samodzielnie agresywnej terapii transferowej bez wskazań.`,
-  bad:(p)=>`${p.manager} wymaga obserwacji. Największym zagrożeniem pozostaje możliwość samodzielnego leczenia składu serią hitów.`,
-  neutral:(p)=>`Parametry ${p.manager} są stabilne. Ani poprawa, ani zgon. Kontrola za tydzień.`
+  pech:p=>`${p.manager} diagnozuje u siebie pecha. Lekarz odpowiada: „pech nie jest chorobą, ale chroniczne podejmowanie głupich decyzji już wygląda jak przypadłość”.`,
+  plan:p=>`Plan leczenia ${p.manager} brzmi sensownie, ale historia choroby pokazuje częste nawroty dokładnie przed deadlinem.`,
+  transfer:p=>`Transfery ${p.manager} przypominają samoleczenie antybiotykiem znalezionym w szufladzie. Czasem pomaga, częściej potem trzeba leczyć skutki uboczne.`,
+  kapitan:p=>`Captaincy ${p.manager} wykazuje regularne zaburzenia oceny ryzyka. Lekarz zaleca mniej eksperymentów i więcej zwykłego rozsądku.`,
+  lawka:p=>`Ławka ${p.manager} ma niepokojąco wysokie stężenie punktów. Pacjent twierdzi, że to przypadek. Laboratorium odpowiada: „jasne, kurwa”.`,
+  hype:p=>`${p.manager} cierpi na ostrą odmianę syndromu must-have. Objawy nasilają się po jednym haulu popularnego zawodnika.`,
+  cierpliwosc:p=>`Pacjent ${p.manager} mówi o cierpliwości, ale ręce nadal drżą przy zakładce Transfers. Rokowania ostrożne.`,
+  samozachwyt:p=>`${p.manager} wykazuje niebezpieczny wzrost ego po dobrej GW. Zalecenie: dwie dawki pokory i zakaz czytania własnych pochwał.`,
+  katastrofa:p=>`Stan ${p.manager} po tej kolejce jest ciężki. Największym zagrożeniem dla pacjenta pozostaje możliwość samodzielnego leczenia własnego składu.`,
+  sukces:p=>`Stan ${p.manager} dobry, humor stabilny, ego podwyższone. Kontrola za tydzień, najlepiej po bezpiecznej odległości od transferów.`,
+  neutral:p=>`${p.manager} jest stabilny. Nie ma powodów do hospitalizacji, ale też nikt nie wypisuje go z oddziału geniuszy.`
  },
  {
-  pech:(p)=>`Dział PR ${p.manager} użył terminu „pech”. Audyt wykazał jednak, że część strat wynika z decyzji zarządczych, nie z warunków rynkowych.`,
-  plan:(p)=>`${p.manager} prezentuje roadmapę. Community Notes sprawdziło KPI i sugeruje, by kolejne slajdy zawierały nieco więcej punktów, a mniej korporacyjnego pierdolenia.`,
-  transfer:(p)=>`Koszt działań transferowych ${p.manager} należy traktować jako realny wydatek operacyjny, nie jako abstrakcyjną „inwestycję w upside”.`,
-  kapitan:(p)=>`Decyzja captaincy ${p.manager} została zatwierdzona przez jednoosobowy zarząd. Nie znaleziono podstaw do obciążenia działu compliance.`,
-  lawka:(p)=>`Niewykorzystane aktywa punktowe na ławce ${p.manager} sugerują problemy z alokacją zasobów. CFO jest podobno wkurwiony.`,
-  good:(p)=>`Wyniki ${p.manager} w tej GW są mocne i zarząd może pochwalić się kwartalnym slajdem bez kreatywnej księgowości.`,
-  bad:(p)=>`Wynik ${p.manager} nie spełnił KPI. Zarząd rozważa restrukturyzację, choć największy koszt siedzi nadal na fotelu menedżera.`,
-  neutral:(p)=>`Rezultat ${p.manager} jest zgodny z oczekiwaniami. Czyli wystarczająco poprawny, by nikt nie zwoływał nadzwyczajnego zebrania.`
+  pech:p=>`Dział PR ${p.manager} wrzuca „pech” do raportu kwartalnego. Audyt odpowiada, że część strat pochodzi bezpośrednio z decyzji zarządu, więc może skończmy z tym korporacyjnym pierdoleniem.`,
+  plan:p=>`${p.manager} prezentuje roadmapę jak CEO po kursie leadershipu. KPI w postaci punktów jest mniej zachwycone.`,
+  transfer:p=>`Transfery ${p.manager} wyglądają jak seria kosztownych inwestycji zatwierdzonych przez zarząd, który najwyraźniej nie umie czytać własnych liczb.`,
+  kapitan:p=>`Captaincy ${p.manager} zostało zatwierdzone przez jednoosobowy board. Compliance potwierdza: odpowiedzialność nie może zostać przerzucona na rynek.`,
+  lawka:p=>`Niewykorzystane aktywa punktowe na ławce ${p.manager} sugerują rażąco chujową alokację zasobów.`,
+  hype:p=>`${p.manager} dał się ponieść rynkowemu hype'owi jak startup wyceniany na miliard po jednej prezentacji w PowerPoincie.`,
+  cierpliwosc:p=>`Deklaracja cierpliwości ${p.manager} wygląda dobrze w komunikacie prasowym. Historia operacyjna pokazuje jednak wyjątkowo krótki horyzont decyzyjny.`,
+  samozachwyt:p=>`${p.manager} zachowuje się po tej GW jak prezes po rekordowym kwartale. Problem w tym, że sezon to nie jeden slajd z zieloną strzałką.`,
+  katastrofa:p=>`Wyniki ${p.manager} są tak słabe, że nawet najbardziej kreatywny CFO nie ukryje tego w przypisach.`,
+  sukces:p=>`${p.manager} dowiózł KPI. Gratulacje. Teraz niech tylko nie zrobi tego, co korporacje robią po sukcesie najlepiej — niech nie rozpierdoli działającego systemu restrukturyzacją.`,
+  neutral:p=>`Raport ${p.manager}: zgodnie z oczekiwaniami. Najbardziej elegancki sposób powiedzenia „nic ciekawego się kurwa nie wydarzyło”.`
  },
  {
-  pech:(p)=>`Prognoza ${p.manager} wskazuje na „pech”, ale dane meteorologiczne pokazują również lokalne opady złych decyzji i silny wiatr od strony ławki.`,
-  plan:(p)=>`Plan ${p.manager} miał być słoneczny. Front meczowy przyniósł jednak warunki, których powerpoint nie przewidział.`,
-  transfer:(p)=>`Transfery ${p.manager} przypominają gwałtowne zmiany pogody: łatwo je wykonać, trudniej potem wyjaśnić, czemu cały ranking jest mokry.`,
-  kapitan:(p)=>`Opaska ${p.manager} trafiła w strefę podwyższonego ryzyka. Ostrzeżenie było dostępne przed deadlinem, ale zostało zignorowane.`,
-  lawka:(p)=>`Nad ławką ${p.manager} utrzymuje się wyjątkowo silny wyż punktowy. W podstawowej XI warunki bywają mniej korzystne.`,
-  good:(p)=>`Dla ${p.manager} wydano komunikat o dobrej pogodzie punktowej. Możliwe lokalne porywy samozachwytu.`,
-  bad:(p)=>`Nad ${p.manager} przeszedł front czerwonych strzałek. Zaleca się pozostanie z dala od transferów wykonywanych pod wpływem burzy emocjonalnej.`,
-  neutral:(p)=>`Warunki punktowe wokół ${p.manager} są przeciętne. Bez alertów, bez plażowania na szczycie tabeli.`
+  pech:p=>`Prognoza ${p.manager}: „pech”. Dane pogodowe: lokalne opady złych decyzji, silny wiatr od strony ławki i 90% szans na dalsze pierdolenie o warunkach.`,
+  plan:p=>`Plan ${p.manager} zakładał pełne słońce. FPL dostarczyło burzę, a menedżer jeszcze wyszedł bez parasola.`,
+  transfer:p=>`Transfery ${p.manager} są jak gwałtowne fronty atmosferyczne: przychodzą szybko, robią rozpierdol i zostawiają właściciela z mopem.`,
+  kapitan:p=>`Opaska ${p.manager} znalazła się w strefie wysokiego ryzyka. Ostrzeżenia były publiczne, ale menedżer najwyraźniej ogląda pogodę bez dźwięku.`,
+  lawka:p=>`Nad ławką ${p.manager} utrzymuje się wyjątkowo silny wyż punktowy. W podstawie natomiast regularnie jebie grad blanków.`,
+  hype:p=>`${p.manager} reaguje na hype szybciej niż ludzie na alert RCB. Jeden haul i natychmiast ewakuacja do zakładki Transfers.`,
+  cierpliwosc:p=>`Prognozowana cierpliwość ${p.manager}: krótkotrwała, z możliwością gwałtownych opadów hitów po pierwszym price rise.`,
+  samozachwyt:p=>`${p.manager} po dobrym wyniku zachowuje się jak człowiek, który właśnie osobiście sterował pogodą. Spokojnie, kurwa, front następnej GW już idzie.`,
+  katastrofa:p=>`Dla ${p.manager} wydano czerwony alert. Zaleca się schować telefon, zamknąć aplikację i nie wychodzić z transferami do środy.`,
+  sukces:p=>`Nad ${p.manager} pełne słońce. Możliwe lokalne porywy arogancji i opady samozachwytu.`,
+  neutral:p=>`Warunki wokół ${p.manager} są tak przeciętne, że nawet meteorolog nie chce o nich gadać.`
  },
  {
-  pech:(p)=>`Detektywi przesłuchali „pecha” wskazanego przez ${p.manager}. Podejrzany ma alibi na czas wykonywania transferów.`,
-  plan:(p)=>`Plan ${p.manager} został zabezpieczony jako dowód rzeczowy. Na razie nie wiadomo, czy pomoże obronie, czy prokuraturze.`,
-  transfer:(p)=>`Historia transferów ${p.manager} pozostaje jawna i niestety dla oskarżonego bardzo czytelna. Nie wszystkie ślady prowadzą do rywali.`,
-  kapitan:(p)=>`W sprawie opaski ${p.manager} ustalono, że nie została ona przydzielona przez włamywacza. Śledztwo praktycznie zamknięte.`,
-  lawka:(p)=>`Punkty znalezione na ławce ${p.manager} zostały zabezpieczone. Brak śladów włamania — wygląda na robotę wewnętrzną.`,
-  good:(p)=>`Kartoteka ${p.manager} po tej kolejce jest czysta. Policja FPL nie ma dziś powodów do interwencji.`,
-  bad:(p)=>`${p.manager} pozostaje głównym podejrzanym w sprawie uszkodzenia własnego rankingu. Motyw: przesadna wiara we własne pomysły.`,
-  neutral:(p)=>`Śledztwo wokół ${p.manager} nie przyniosło sensacji. Zwykła przeciętność nie jest jeszcze przestępstwem.`
+  pech:p=>`Detektyw przesłuchał pecha wskazanego przez ${p.manager}. Zeznania się zgadzają. Problem w tym, że na miejscu zbrodni znaleziono też odciski palców właściciela konta.`,
+  plan:p=>`Plan ${p.manager} trafił do laboratorium kryminalistycznego. Wstępne wyniki: duża ilość teorii, śladowe ilości punktów.`,
+  transfer:p=>`Historia transferów ${p.manager} wygląda jak zapis monitoringu z miejsca przestępstwa. Każdy ruch ma godzinę, sprawcę i konsekwencje.`,
+  kapitan:p=>`W sprawie kapitana ${p.manager} nie ma tajemnicy. Kamery pokazują dokładnie, kto przypiął opaskę i kliknął Save.`,
+  lawka:p=>`Punkty na ławce ${p.manager} zostały zabezpieczone. Brak śladów włamania. Wszystko wskazuje na robotę wewnętrzną.`,
+  hype:p=>`${p.manager} mógł działać pod wpływem zorganizowanej grupy hype'owej. Nie zmienia to faktu, że kliknięcia wykonywał osobiście.`,
+  cierpliwosc:p=>`${p.manager} zeznaje, że był cierpliwy. Historia logowań i transferów sugeruje, że świadek może pierdolić.`,
+  samozachwyt:p=>`${p.manager} właśnie wyszedł z komisariatu i już opowiada, że wygrał proces. To była jedna dobra kolejka, nie uniewinnienie do końca sezonu.`,
+  katastrofa:p=>`Na miejscu zdarzenia u ${p.manager} znaleziono czerwone strzałki, martwego kapitana i kilka decyzji wymagających sekcji zwłok.`,
+  sukces:p=>`Kartoteka ${p.manager} jest dziś czysta. Policja FPL ostrzega jednak, że recydywa może nastąpić już przy następnym deadlinie.`,
+  neutral:p=>`Śledztwo wokół ${p.manager} nie wykazało większych przestępstw ani większego talentu.`
  },
  {
-  pech:(p)=>`Eksperci studia nie kupują w pełni tłumaczenia ${p.manager} o pechu. Pech istnieje, ale nie odpowiada za każdą decyzję w XI.`,
-  plan:(p)=>`Taktyczny plan ${p.manager} wygląda rozsądnie w teorii. Problem pojawia się wtedy, gdy teoria dostaje 2 punkty i schodzi w 58. minucie.`,
-  transfer:(p)=>`Panel ekspertów przypomina ${p.manager}: transfer ma poprawiać drużynę, nie tylko dostarczać emocji przed deadlinem.`,
-  kapitan:(p)=>`Captaincy ${p.manager} zostaje ocenione po wyniku, ale decyzja należała do menedżera. VAR nie może jej cofnąć.`,
-  lawka:(p)=>`Studio zauważa, że ławka ${p.manager} zbyt często wygląda jak mocniejsza formacja od pierwszego składu. To dość niewygodna analiza.`,
-  good:(p)=>`${p.manager} zasłużył na pochwałę. Eksperci proszą jedynie, by nie wyciągał z jednej kolejki wniosku, że stał się nieomylny.`,
-  bad:(p)=>`Analiza ${p.manager} jest brutalna: wynik słaby, decyzje pod lupą, wymówki bez expected value.`,
-  neutral:(p)=>`Panel ocenia ${p.manager} na klasyczne 6/10. Ani geniusz, ani człowiek do natychmiastowego zwolnienia.`
+  pech:p=>`Eksperci nie kupują całej narracji ${p.manager} o pechu. Pech istnieje, ale nie prowadzi drużyny, nie ustawia XI i nie robi hitów za niego.`,
+  plan:p=>`Taktyczny plan ${p.manager} wyglądał dobrze na tablicy. Na boisku punktowym momentami wyglądał jak rysunek dziecka wykonany lewą ręką.`,
+  transfer:p=>`${p.manager} broni transferów jak trener po 0:5 broni wysokiej linii. Można gadać długo, ale wynik nadal leży na stole i śmierdzi.`,
+  kapitan:p=>`Captaincy ${p.manager} było decyzją taktyczną. VAR sprawdził i potwierdził: nie ma faulu, jest po prostu chujowy wybór.`,
+  lawka:p=>`Studio zauważa, że rezerwowi ${p.manager} regularnie wyglądają jak podstawowy skład, tylko menedżer dowiaduje się o tym dopiero po meczu.`,
+  hype:p=>`${p.manager} daje się prowadzić narracji ekspertów, a potem sam staje się materiałem dla ekspertów. Piękny zamknięty krąg.`,
+  cierpliwosc:p=>`${p.manager} mówi o cierpliwości tak przekonująco, że studio daje mu maksymalnie 48 godzin do pierwszego panicznego ruchu.`,
+  samozachwyt:p=>`${p.manager} po tej GW już prawie mówi o sobie w trzeciej osobie. Studio sugeruje odstawić samozachwyt przed kolejnym deadlinem.`,
+  katastrofa:p=>`Analiza ${p.manager} jest prosta: wszystko, co mogło się zesrać, zesrało się z imponującą dyscypliną.`,
+  sukces:p=>`${p.manager} zasłużył na pochwałę. Studio przypomina jednak, że nawet kretyn może mieć świetną kolejkę, więc nie wyciągajmy zbyt daleko idących wniosków.`,
+  neutral:p=>`Ocena ${p.manager}: klasyczne 6/10. Ani geniusz, ani kompletny dzban. Dzisiaj.`
  },
  {
-  pech:(p)=>`Nagłówek „PECH ZNISZCZYŁ ${p.manager.toUpperCase()}” byłby klikalny, ale Community Notes dodaje, że część dramatu została wyprodukowana we własnym zakresie.`,
-  plan:(p)=>`„PLAN ${p.manager.toUpperCase()} DZIAŁA?” — czytelnicy sugerują dopisać znak zapytania większą czcionką, bo tabela nie zawsze potwierdza narrację.`,
-  transfer:(p)=>`„TRANSFEROWY SZOK!” — ${p.manager} sam otworzył ten temat, więc przypominamy, że każdy ruch miał autora i nie był nim tajemniczy haker.`,
-  kapitan:(p)=>`„Afera z opaską!” brzmi dobrze na okładce. Fakty są mniej sensacyjne: ${p.manager} po prostu wybrał kapitana i ponosi konsekwencje.`,
-  lawka:(p)=>`„PUNKTY UWIĘZIONE NA ŁAWCE!” — dramatyczny nagłówek, ale wyjątkowo zgodny z rzeczywistością ${p.manager}.`,
-  good:(p)=>`„${p.manager.toUpperCase()} NA FALI!” — tym razem brukowiec nie musi specjalnie przesadzać, bo wynik naprawdę się broni.`,
-  bad:(p)=>`„KRYZYS ${p.manager.toUpperCase()}!” — Community Notes nie potwierdza jeszcze końca świata, ale przyznaje, że materiał wygląda paskudnie.`,
-  neutral:(p)=>`„NIC SIĘ NIE STAŁO!” — najuczciwszy nagłówek do kolejki ${p.manager}.`
+  pech:p=>`TYLKO U NAS: ${p.manager} obwinia pecha! Community Notes ujawnia szokującą prawdę — decyzje na jego koncie nadal wykonuje ${p.manager}.`,
+  plan:p=>`PLAN STULECIA czy zwykłe pierdolenie? ${p.manager} prezentuje wizję, a tabela jak zwykle bezczelnie sprawdza fakty.`,
+  transfer:p=>`TRANSFEROWY SKANDAL! ${p.manager} sam otworzył temat, więc przypominamy: nikt nie zmuszał go do kliknięcia tego gówna.`,
+  kapitan:p=>`Afera z opaską u ${p.manager}! Źródła potwierdzają, że kapitan nie wybrał się sam. Szokujące.`,
+  lawka:p=>`PUNKTY UWIĘZIONE NA ŁAWCE! ${p.manager} twierdzi, że to trudny wybór. Czytelnicy twierdzą, że to trudny widok dla oczu.`,
+  hype:p=>`HYPE ZNÓW ZAATAKOWAŁ! ${p.manager} kupuje narrację internetu szybciej niż brukowiec wymyśla nagłówek.`,
+  cierpliwosc:p=>`„BĘDĘ CIERPLIWY” — deklaruje ${p.manager}. Redakcja archiwizuje ten cytat, bo prawdopodobnie bardzo szybko stanie się śmieszny.`,
+  samozachwyt:p=>`${p.manager.toUpperCase()} ODPALA TRYB KRÓLA LIGI! Jedna dobra GW i ego już potrzebuje własnego kodu pocztowego.`,
+  katastrofa:p=>`KATASTROFA ${p.manager.toUpperCase()}! Wynik tak paskudny, że nawet tabloid nie musi niczego koloryzować.`,
+  sukces:p=>`${p.manager.toUpperCase()} NA FALI! Tym razem nagłówek jest uczciwy, choć redakcja czeka na tradycyjny powrót do chaosu.`,
+  neutral:p=>`BRAK DRAMY U ${p.manager.toUpperCase()}! Najbardziej sensacyjna wiadomość brzmi: nic specjalnego się nie wydarzyło.`
  },
  {
-  pech:(p)=>`Terapeutyczna wersja ${p.manager} skupia się na pechu. Community Notes zachęca do rozdzielenia rzeczy niekontrolowalnych od tych klikniętych własnym palcem.`,
-  plan:(p)=>`${p.manager} mówi o planie, co jest zdrowe. Mniej zdrowe byłoby uzależnianie poczucia własnej wartości od tego, czy plan przyniesie haul.`,
-  transfer:(p)=>`Transfery ${p.manager} warto traktować jako decyzje, nie reakcje emocjonalne. Szczególnie te wykonywane zaraz po blanku.`,
-  kapitan:(p)=>`Opaska nie definiuje ${p.manager} jako człowieka. Definiuje natomiast część jego wyniku w FPL, więc całkowicie zignorować tematu też się nie da.`,
-  lawka:(p)=>`Ławka ${p.manager} może być źródłem frustracji, ale Community Notes zaleca nie przenosić tej frustracji bezpośrednio na przycisk sprzedaży.`,
-  good:(p)=>`${p.manager} ma prawo czuć satysfakcję. Zdrowa reakcja to radość, mniej zdrowa to natychmiastowe przekonanie o własnej wyższości nad ligą.`,
-  bad:(p)=>`Słaba GW ${p.manager} nie wymaga natychmiastowego rozwalenia całego składu. Wymaga za to zaakceptowania, że weekend był zwyczajnie chujowy.`,
-  neutral:(p)=>`Emocje ${p.manager} są adekwatne do wyniku: umiarkowane. Terapia może zostać dziś skrócona.`
+  pech:p=>`${p.manager} próbuje przepracować „pecha”. Terapeuta delikatnie przypomina, że część traumy została wyprodukowana własnymi decyzjami.`,
+  plan:p=>`Plan ${p.manager} jest mechanizmem radzenia sobie z chaosem. Problem zaczyna się wtedy, gdy menedżer myli mechanizm obronny z nieomylnością.`,
+  transfer:p=>`Transfery ${p.manager} wyglądają jak impulsywne zakupy po złym dniu. Przynoszą chwilową ulgę, a potem rachunek w punktach.`,
+  kapitan:p=>`Opaska u ${p.manager} jest źródłem napięcia. Terapeuta sugeruje mniej overthinkingu i mniej emocjonalnego przywiązania do własnych „sprytnych” pomysłów.`,
+  lawka:p=>`Ławka ${p.manager} wywołuje powtarzalną frustrację. Najbardziej niepokojące jest to, że pacjent sam aranżuje środowisko wyzwalające.`,
+  hype:p=>`${p.manager} wykazuje wysoką podatność na społeczne FOMO. Jeden haul i natychmiast pojawia się przymus zrobienia czegoś głupiego.`,
+  cierpliwosc:p=>`Deklarowana cierpliwość ${p.manager} jest zdrowym krokiem. Terapeuta prosi tylko, by utrzymała się dłużej niż do pierwszego tweeta o price rise.`,
+  samozachwyt:p=>`${p.manager} po dobrej GW przejawia objawy ostrego samozachwytu. Leczenie: kontakt z tabelą po kolejnej rundzie.`,
+  katastrofa:p=>`Ta kolejka ${p.manager} wymaga akceptacji: było chujowo. Nie każde cierpienie trzeba natychmiast naprawiać transferem.`,
+  sukces:p=>`${p.manager} ma pełne prawo czuć satysfakcję. Nie ma jeszcze prawa zakładać, że wszechświat potwierdził jego wyższość.`,
+  neutral:p=>`Stan emocjonalny ${p.manager}: stabilny, lekko znudzony, bez potrzeby interwencji kryzysowej.`
  },
  {
-  pech:(p)=>`Kasyno FPL chętnie przyjmie wersję ${p.manager} o pechu, ale przypomina, że to gracz sam postawił żetony na konkretnych zawodników.`,
-  plan:(p)=>`Plan ${p.manager} to strategia przy stole, nie gwarancja wygranej. Nawet najlepszy układ może zostać rozjebany przez variance.`,
-  transfer:(p)=>`Każdy hit ${p.manager} to kolejny żeton na stole. Community Notes przypomina, że kasyno uwielbia ludzi próbujących szybko odrobić straty.`,
-  kapitan:(p)=>`Captaincy ${p.manager} była zakładem z wysoką stawką. Krupier nie ponosi odpowiedzialności za wybrane pole.`,
-  lawka:(p)=>`Ławka ${p.manager} wygląda jak stos żetonów zostawiony obok stołu dokładnie wtedy, kiedy wypadł właściwy numer.`,
-  good:(p)=>`${p.manager} wygrał tę rundę z kasynem. Najgorsze, co może teraz zrobić, to natychmiast podwoić stawkę.`,
-  bad:(p)=>`Kasyno zabrało ${p.manager} trochę punktów. Community Notes radzi nie próbować odzyskać ich jednym desperackim ruchem.`,
-  neutral:(p)=>`${p.manager} wyszedł mniej więcej na zero. Krupier wzrusza ramionami, gracz może iść dalej.`
+  pech:p=>`${p.manager} mówi o pechu jak gracz przy ruletce, który przegrał pięć razy i nadal twierdzi, że stół jest mu winien zwycięstwo.`,
+  plan:p=>`Plan ${p.manager} to strategia hazardowa z ładniejszą nazwą. Kasyno FPL nadal ma przewagę i dobrze o tym wie.`,
+  transfer:p=>`Każdy hit ${p.manager} to kolejny żeton wrzucony na stół z nadzieją, że tym razem variance łaskawie nie kopnie go w mordę.`,
+  kapitan:p=>`Captaincy ${p.manager} to zakład z podwójną stawką. Krupier nie odpowiada za to, że gracz znowu postawił na pole, które nie weszło.`,
+  lawka:p=>`Ławka ${p.manager} wygląda jak stos wygranych żetonów zostawiony obok stołu, podczas gdy właściciel dalej obstawia najgorsze pola.`,
+  hype:p=>`${p.manager} wpada w hype jak hazardzista w „pewniaka”. Jedna dobra historia i już cały bankroll leci na czerwone.`,
+  cierpliwosc:p=>`${p.manager} deklaruje, że odchodzi od stołu. Kasyno daje mu dwie godziny, zanim wróci sprawdzić price changes.`,
+  samozachwyt:p=>`${p.manager} wygrał rundę i już chodzi jakby złamał system kasyna. Krupier tylko się uśmiecha.`,
+  katastrofa:p=>`${p.manager} przegrał tę GW tak efektownie, że kasyno powinno wysłać mu kartę VIP i darmowego drinka.`,
+  sukces:p=>`${p.manager} wygrał z kasynem tę rundę. Najgorszy możliwy ruch teraz to uznać, że można podwoić stawkę bez konsekwencji.`,
+  neutral:p=>`${p.manager} wyszedł mniej więcej na zero. Emocji było dużo, sensu proporcjonalnie mniej.`
  },
  {
-  pech:(p)=>`Nauczyciel nie przyjął od ${p.manager} usprawiedliwienia „pech”. Zadanie było wykonywane samodzielnie i bez przymusu.`,
-  plan:(p)=>`Plan ${p.manager} wyglądał dobrze w zeszycie. Sprawdzian pokazał, które fragmenty materiału wymagają powtórki.`,
-  transfer:(p)=>`Transfery ${p.manager} zostają dopisane do pracy domowej pod hasłem „najpierw pomyśl, potem klikaj”.`,
-  kapitan:(p)=>`Pytanie o kapitana było na sprawdzianie. ${p.manager} zaznaczył odpowiedź samodzielnie.`,
-  lawka:(p)=>`Punkty na ławce ${p.manager} wyglądają jak poprawne odpowiedzi wpisane w brudnopisie zamiast na arkuszu.`,
-  good:(p)=>`${p.manager} zaliczył tę kolejkę bardzo dobrze. Nauczyciel przypomina jednak, że semestr jeszcze się nie skończył.`,
-  bad:(p)=>`Ocena ${p.manager} za tę GW jest słaba. Poprawa możliwa za tydzień, ściąganie z Twittera niewskazane.`,
-  neutral:(p)=>`${p.manager} dostał klasyczne „dostateczny”. Najbardziej bezlitosna forma przeciętności.`
+  pech:p=>`Nauczyciel nie przyjął usprawiedliwienia ${p.manager} pod tytułem „pech”. Zadanie było wykonywane samodzielnie, a kartka nosi jego nazwisko.`,
+  plan:p=>`Plan ${p.manager} wyglądał dobrze w zeszycie. Sprawdzian brutalnie pokazał, które fragmenty były tylko ładnie napisanym gównem.`,
+  transfer:p=>`Transfery ${p.manager} trafiają do rubryki „praca domowa do poprawy”. Szczególnie te, przy których menedżer był z siebie najbardziej dumny.`,
+  kapitan:p=>`Pytanie o kapitana było na sprawdzianie. ${p.manager} zaznaczył odpowiedź samodzielnie i teraz niech nie patrzy na nauczyciela.`,
+  lawka:p=>`Punkty na ławce ${p.manager} wyglądają jak poprawne odpowiedzi wpisane na marginesie zamiast w arkuszu. Imponująco bezużyteczne.`,
+  hype:p=>`${p.manager} znowu ściągał z Twittera. Problem w tym, że kolega z ławki też nie znał odpowiedzi.`,
+  cierpliwosc:p=>`${p.manager} obiecuje poprawę zachowania. Nauczyciel wpisuje do dziennika: „zobaczymy po deadlinie”.`,
+  samozachwyt:p=>`${p.manager} dostał piątkę i już zgłasza się do olimpiady. Spokojnie, to nadal jedna kartkówka.`,
+  katastrofa:p=>`${p.manager} oblał tę GW z hukiem. Rodzice proszeni o podpis, telefon najlepiej zostawić w sekretariacie.`,
+  sukces:p=>`${p.manager} zdał bardzo dobrze. Nauczyciel gratuluje i przypomina, że semestr trwa dalej, więc nie odpierdalaj.`,
+  neutral:p=>`${p.manager} dostał trójkę. Najbardziej obraźliwa ocena, bo nawet nie daje materiału do porządnego roastu.`
  },
  {
-  pech:(p)=>`Szef ${p.manager} obwinia składniki, ale Community Notes przypomina, kto układał menu i wkładał danie do pieca.`,
-  plan:(p)=>`Przepis ${p.manager} wyglądał dobrze na papierze. Efekt końcowy pokazuje, że sama receptura nie gwarantuje smaku.`,
-  transfer:(p)=>`Transfery ${p.manager} są jak dokładanie przypraw: jedna może pomóc, pięć wrzuconych w panice robi z dania niejadalne gówno.`,
-  kapitan:(p)=>`Kapitan był daniem głównym menu ${p.manager}. Jeśli wyszedł surowy, kucharz nadal odpowiada za kuchnię.`,
-  lawka:(p)=>`Najlepsze składniki ${p.manager} zbyt często stoją na półce zamiast trafiać na talerz. Krytycy kulinarni zauważyli.`,
-  good:(p)=>`${p.manager} ugotował bardzo przyzwoitą GW. Zalecenie: nie zmieniać całego przepisu tylko dlatego, że deser mógł być lepszy.`,
-  bad:(p)=>`Kuchnia ${p.manager} miała słaby serwis. Sanepid jeszcze nie zamyka lokalu, ale notatka trafia do akt.`,
-  neutral:(p)=>`Danie ${p.manager} jest poprawne, jadalne i kompletnie niezapamiętywalne.`
+  pech:p=>`Szef ${p.manager} obwinia składniki. Community Notes przypomina, że menu, proporcje i piekarnik ogarniał ten sam człowiek, więc może bez kuchennych bajek.`,
+  plan:p=>`Przepis ${p.manager} wyglądał dobrze na papierze. Po podaniu okazało się, że prezentacja była lepsza niż smak.`,
+  transfer:p=>`Transfery ${p.manager} to dokładanie przypraw na ślepo. Po piątej łyżce chili nie mówimy już o eksperymencie, tylko o sabotażu.`,
+  kapitan:p=>`Kapitan był daniem głównym ${p.manager}. Jeśli wyszedł surowy, kucharz nadal nie może zwalić winy na kelnera.`,
+  lawka:p=>`Najlepsze składniki ${p.manager} regularnie leżą w lodówce, podczas gdy na talerz trafia coś znacznie mniej apetycznego. Genialna logistyka.`,
+  hype:p=>`${p.manager} widzi modny składnik i od razu wrzuca go do garnka. Potem dziwi się, że całe danie smakuje jak przypadkowy TikTok recipe.`,
+  cierpliwosc:p=>`${p.manager} mówi, że nie będzie grzebał w przepisie. Szef kuchni daje mu czas do pierwszego price rise.`,
+  samozachwyt:p=>`${p.manager} podał dobre danie i już wychodzi do gości jak Gordon Ramsay. Spokojnie, kurwa, następny serwis dopiero przed tobą.`,
+  katastrofa:p=>`Kuchnia ${p.manager} spaliła nawet wodę. Sanepid FPL pyta, kto dał temu człowiekowi dostęp do pieca.`,
+  sukces:p=>`${p.manager} ugotował świetną GW. Teraz najważniejsze, żeby z dumy nie zaczął poprawiać przepisu aż stanie się niejadalny.`,
+  neutral:p=>`Danie ${p.manager} jest jadalne, poprawne i kompletnie pozbawione charakteru. Czyli dokładnie jak ta kolejka.`
  },
  {
-  pech:(p)=>`Inżynier ${p.manager} zgłasza „pech” jako root cause. Community Notes odpowiada: część błędów reprodukuje się po kliknięciu przez tego samego użytkownika.`,
-  plan:(p)=>`Architektura planu ${p.manager} wygląda sensownie. Problemem jest kilka wdrożeń, które produkcja brutalnie zweryfikowała.`,
-  transfer:(p)=>`Transfery ${p.manager} to zmiany na produkcji. Im więcej hotfixów bez testów, tym większa szansa, że ranking po prostu się wyjebie.`,
-  kapitan:(p)=>`Captaincy była konfiguracją ustawioną ręcznie przez ${p.manager}. Nie jest to bug systemowy.`,
-  lawka:(p)=>`Ławka ${p.manager} zawiera zasoby, które regularnie działają lepiej niż komponenty wdrożone na produkcję. QA zgłasza problem.`,
-  good:(p)=>`Build ${p.manager} przechodzi testy tej GW. Nie oznacza to jeszcze, że można bezkarnie refaktoryzować pół składu.`,
-  bad:(p)=>`Produkcja ${p.manager} zgłasza regresję wynikową. Zalecany hotfix: mniej panicznych decyzji.`,
-  neutral:(p)=>`System ${p.manager} działa bez większych błędów i bez godnych uwagi nowych feature'ów.`
+  pech:p=>`Inżynier ${p.manager} zgłasza pech jako root cause. QA odpowiada, że część błędów da się reprodukować po każdym kliknięciu tego samego użytkownika.`,
+  plan:p=>`Architektura planu ${p.manager} wyglądała sensownie. Produkcja pokazała, że dokumentacja i rzeczywistość to jednak dwa różne światy.`,
+  transfer:p=>`Transfery ${p.manager} to hotfixy wdrażane bez testów. Czasem naprawiają bug, czasem wywalają całą produkcję w sobotę o 16.`,
+  kapitan:p=>`Captaincy ${p.manager} była konfiguracją ustawioną ręcznie. Nie jest to bug systemu, tylko feature użytkownika.`,
+  lawka:p=>`Ławka ${p.manager} zawiera komponenty, które regularnie outperformują produkcyjne. QA pyta, czy ktoś w ogóle czyta raporty.`,
+  hype:p=>`${p.manager} deployuje hype szybciej niż junior na piątkowej zmianie. Potem wszyscy dziwią się, że coś się kurwa pali.`,
+  cierpliwosc:p=>`${p.manager} obiecuje freeze zmian. DevOps daje mu do pierwszego czerwonego alertu.`,
+  samozachwyt:p=>`${p.manager} zaliczył zielony build i już chce przepisać architekturę całego systemu. Klasyczny przypadek po jednym udanym deployu.`,
+  katastrofa:p=>`Produkcja ${p.manager} leży, monitoring wyje, a root cause analysis znowu wskazuje ten sam komponent: menedżera.`,
+  sukces:p=>`Build ${p.manager} przeszedł testy. Najlepsza decyzja teraz to nie robić refaktoru tylko dlatego, że można.`,
+  neutral:p=>`System ${p.manager} działa. Nie pięknie, nie szybko, ale bez crasha. QA zamyka ticket z niskim priorytetem.`
  },
  {
-  pech:(p)=>`${p.manager} wskazuje pecha jako siłę wyższą. Community Notes przypomina, że część cierpienia powstała jednak całkowicie ziemskimi metodami.`,
-  plan:(p)=>`Wiara ${p.manager} w plan jest imponująca. Dane sugerują jedynie, by nie zamieniać wiary w fanatyzm przed kolejnym deadlinem.`,
-  transfer:(p)=>`Transfery ${p.manager} nie są objawieniem. Są decyzjami, które można oceniać bez teologii i z użyciem zwykłego kalkulatora.`,
-  kapitan:(p)=>`Opaska ${p.manager} nie została wybrana przez przeznaczenie. Menedżer miał w tej historii bardzo aktywną rolę.`,
-  lawka:(p)=>`Punkty na ławce ${p.manager} wyglądają jak niewysłuchane modlitwy, tylko że formularz wyboru XI wypełniał sam zainteresowany.`,
-  good:(p)=>`Bogowie FPL byli dla ${p.manager} łaskawi, ale również jego decyzje zasługują dziś na część pochwał.`,
-  bad:(p)=>`${p.manager} może modlić się o odbicie, lecz Community Notes sugeruje dorzucić do tego również sensowny skład.`,
-  neutral:(p)=>`Siły wyższe pozostały wobec ${p.manager} obojętne. Wynik dokładnie tak samo.`
+  pech:p=>`${p.manager} wskazuje pecha jako siłę wyższą. Community Notes przypomina, że część tego cierpienia została wyprodukowana bardzo ziemskim sposobem: własnym palcem.`,
+  plan:p=>`Wiara ${p.manager} w plan jest imponująca. Szkoda, że tabela nie jest religijna i oczekuje punktów zamiast przekonań.`,
+  transfer:p=>`Transfery ${p.manager} nie są objawieniem. To decyzje, które można ocenić bez teologii i z użyciem zwykłego kalkulatora.`,
+  kapitan:p=>`Opaska ${p.manager} nie została wybrana przez przeznaczenie. Menedżer miał w tej historii bardzo aktywną i niestety udokumentowaną rolę.`,
+  lawka:p=>`Punkty na ławce ${p.manager} wyglądają jak niewysłuchane modlitwy, tylko formularz XI wypełniał sam zainteresowany.`,
+  hype:p=>`${p.manager} traktuje hype jak znak z nieba. Czasem znak z nieba to po prostu jebany tweet.`,
+  cierpliwosc:p=>`${p.manager} głosi cierpliwość. Wierni oczekują cudu polegającego na tym, że nie zrobi transferu pod wpływem emocji.`,
+  samozachwyt:p=>`${p.manager} po dobrej GW już prawie zakłada własny kult. Community Notes sugeruje poczekać z kanonizacją do maja.`,
+  katastrofa:p=>`To była plaga blanków, złych decyzji i cierpienia. Nawet siła wyższa mogłaby zapytać ${p.manager}: „człowieku, po chuj to zrobiłeś?”.`,
+  sukces:p=>`Bogowie FPL byli dla ${p.manager} łaskawi, ale część zasług faktycznie należy do niego. Niech tylko nie robi z tego nowej religii.`,
+  neutral:p=>`Siły wyższe pozostają wobec ${p.manager} obojętne. Tabela również.`
  },
  {
-  pech:(p)=>`Zespół ${p.manager} zgłasza pecha jako przyczynę słabego okrążenia. Telemetria pokazuje jednak kilka błędów kierowcy.`,
-  plan:(p)=>`Strategia wyścigowa ${p.manager} była przygotowana, ale tor FPL nie ma obowiązku współpracować z pit wallem.`,
-  transfer:(p)=>`Każdy transfer ${p.manager} przypomina pit stop: może pomóc, ale źle wybrany moment potrafi rozpierdolić cały wyścig.`,
-  kapitan:(p)=>`Kapitan to decyzja strategiczna ${p.manager}, nie awaria bolidu. Telemetria nie przyjmuje wymówki.`,
-  lawka:(p)=>`Najlepsze tempo punktowe ${p.manager} zbyt często zostaje w garażu. Inżynierowie pytają o strategię startową.`,
-  good:(p)=>`${p.manager} przejechał tę GW bardzo dobrze. Teraz najważniejsze, żeby nie zrobić niepotrzebnego pit stopu.`,
-  bad:(p)=>`Weekend ${p.manager} zakończył się poza punktami. Analiza wskazuje zarówno pecha, jak i błędy strategiczne.`,
-  neutral:(p)=>`${p.manager} dojechał w środku stawki. Bez kolizji, bez podium, bez większego dramatu.`
+  pech:p=>`${p.manager} zgłasza pecha jako przyczynę słabego okrążenia. Telemetria pokazuje jednak kilka ewidentnych błędów kierowcy, więc może bez ściemy.`,
+  plan:p=>`Strategia ${p.manager} była przygotowana. Tor FPL jak zwykle miał ją w dupie, ale kilka złych pit stopów kierowca wykonał już całkiem sam.`,
+  transfer:p=>`Transfery ${p.manager} to pit stopy. Jeden dobry może uratować wyścig, trzy paniczne potrafią zrobić z niego jebany pokaz mechaników.`,
+  kapitan:p=>`Kapitan ${p.manager} był decyzją strategiczną, nie awarią bolidu. Telemetria nie potwierdza sabotażu.`,
+  lawka:p=>`Najlepsze tempo punktowe ${p.manager} zbyt często zostaje w garażu. Pit wall najwyraźniej ogląda inny wyścig.`,
+  hype:p=>`${p.manager} reaguje na hype jak kierowca na fałszywy komunikat o safety carze. Natychmiast pit stop, potem żal.`,
+  cierpliwosc:p=>`${p.manager} obiecuje utrzymać strategię. Garaż daje mu czas do pierwszej plotki o kontuzji.`,
+  samozachwyt:p=>`${p.manager} po dobrym wyniku już macha z podium. Problem w tym, że sezon ma jeszcze cholernie dużo okrążeń.`,
+  katastrofa:p=>`${p.manager} rozbił tę GW o bandę własnych decyzji. Mechanicy mogą naprawić bolid, ale ego będzie schodziło dłużej.`,
+  sukces:p=>`${p.manager} przejechał świetny weekend. Teraz najważniejsze, żeby nie zjechać do boksu tylko dlatego, że ma ochotę coś zmienić.`,
+  neutral:p=>`${p.manager} dojechał w środku stawki. Bez podium, bez DNF, bez powodu do robienia dokumentu Netflixa.`
  }
+];
+
+const GW_NOTE_SIGNATURES = [
+ "Po pierwszym weekendzie sezonu redakcja nie ma jeszcze długiej pamięci, ale już ma notatnik pełen podejrzeń.",
+ "Druga kolejka dopisuje nowy rozdział do kartoteki i nie zamierza kopiować języka z inauguracji.",
+ "Trzecia runda przynosi świeży materiał dowodowy, więc stare wymówki zostają zamknięte w archiwum.",
+ "Czwarty weekend sezonu dostaje własny protokół, bo Community Notes nie prowadzi recyklingu kompromitacji.",
+ "Piąta kolejka otwiera nową teczkę i nie przyjmuje zdań używanych miesiąc wcześniej.",
+ "Szósta runda ma własny język kontroli faktów, niezależny od wcześniejszych konferencji.",
+ "Siódmy weekend trafia do osobnego segregatora, żeby żaden wcześniejszy roast nie wrócił tylnymi drzwiami.",
+ "Ósma kolejka dostaje świeży zestaw przypisów, bo nawet szydera powinna mieć standardy jakości.",
+ "Dziewiąty tydzień sezonu jest liczony od zera pod względem języka, ale nie pod względem win.",
+ "Dziesiąta runda zamyka pierwszy duży etap sezonu osobnym, niepowtarzalnym komentarzem redakcyjnym.",
+ "Jedenasta kolejka zaczyna nową serię dowodów i nie korzysta z gotowców po poprzednich menedżerach.",
+ "Dwunasty weekend ma własną notę kontrolną, dzięki czemu wcześniejsze konstrukcje nie wracają w przebraniu.",
+ "Trzynasta kolejka nie wierzy w pecha, przypadek ani kopiowanie tekstów z wcześniejszej rundy.",
+ "Czternasty weekend sezonu dostaje nowy ton, bo Community Notes nie jest automatem z trzema tymi samymi tekstami.",
+ "Piętnasta runda otwiera świeży protokół i traktuje wcześniejsze zdania jak materiał zamknięty.",
+ "Szesnasta kolejka ma osobny zestaw sformułowań, zanim ktokolwiek zdąży powiedzieć „znowu to samo”.",
+ "Siedemnasty weekend dokłada własny język szydery i nie pożycza go od żadnego poprzedniego GW.",
+ "Osiemnasta runda sezonu dostaje nową składnię, nowy przypis i nowy powód do sprawdzania pierdolenia menedżera.",
+ "Dziewiętnasta kolejka zamyka połowę sezonu tekstem, którego nie było wcześniej i nie będzie później.",
+ "Dwudziesty weekend otwiera drugą połowę sezonu z nowym słownikiem i zerową tolerancją dla recyklingu.",
+ "Dwudziesta pierwsza runda ma własną sygnaturę językową, więc wcześniejsze notatki zostają tam, gdzie ich miejsce — w historii.",
+ "Dwudziesta druga kolejka otrzymuje świeżą warstwę kontekstu i żadnej taryfy ulgowej dla starych wymówek.",
+ "Dwudziesty trzeci weekend nie korzysta z pamięci podręcznej roastów; wszystko składane jest na nowo z aktualnych danych.",
+ "Dwudziesta czwarta runda dostaje osobny komentarz, żeby menedżer nie mógł narzekać nawet na powtarzalność wyzwisk.",
+ "Dwudziesta piąta kolejka używa nowego zestawu sformułowań, a archiwum wcześniejszych zdań pozostaje zamknięte.",
+ "Dwudziesty szósty weekend ma własny rytm notatki i nie dziedziczy konstrukcji po poprzednich tygodniach.",
+ "Dwudziesta siódma runda wchodzi z nowym komentarzem i nowym sposobem punktowania konferencyjnego bullshitu.",
+ "Dwudziesta ósma kolejka nie odgrzewa żadnego kotleta — każdy menedżer dostaje świeżą porcję kontekstu.",
+ "Dwudziesty dziewiąty weekend ma nową frazę przewodnią i zero kopiowania z wcześniejszych miesięcy.",
+ "Trzydziesta runda zaczyna finisz sezonu z nową dokumentacją i bez prawa do powtórki wcześniejszego tekstu.",
+ "Trzydziesta pierwsza kolejka dostaje własny przypis historyczny, którego nie użyto ani przedtem, ani u rywala.",
+ "Trzydziesty drugi weekend buduje notatkę od nowa, nawet jeśli menedżer znowu odpierdala dokładnie ten sam rodzaj głupoty.",
+ "Trzydziesta trzecia runda zmienia język, choć ludzkie błędy w FPL pozostają niepokojąco znajome.",
+ "Trzydziesta czwarta kolejka otrzymuje nowy zestaw zdań, bo sezon jest długi, ale cierpliwość czytelnika krótka.",
+ "Trzydziesty piąty weekend ma własny protokół i żadna wcześniejsza notatka nie może zostać tu ponownie użyta.",
+ "Trzydziesta szósta runda dokłada przedostatnią serię świeżych sformułowań przed finałowym etapem sezonu.",
+ "Trzydziesta siódma kolejka używa osobnego języka kontroli faktów, przygotowanego wyłącznie na ten moment sezonu.",
+ "Trzydziesty ósmy weekend zamyka sezon notatką finałową, której nie da się pomylić z żadną wcześniejszą rundą."
+];
+
+const GW_FACT_FORMS = [
+ (p,gw,pts,rank,avg,bench,hits)=>`Bilans otwarcia dla ${p.manager}: ${pts} pkt w GW${gw}, miejsce ${rank}, forma ${avg}, ławka ${bench}, hity ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Drugi zapis sezonu ${p.manager}: GW${gw} przynosi ${pts} pkt, #${rank} rundy, ${avg} formy, ${bench} bench points i ${hits} kosztów.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Trzeci protokół ${p.manager}: wynik ${pts}, lokata ${rank}, średnia ${avg}, ławka ${bench}, transferowe minusy ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Czwarta karta kontrolna ${p.manager} pokazuje ${pts}/${rank}/${avg}/${bench}/${hits} — punkty, miejsce, formę, ławkę i hity.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Piąty wpis w aktach ${p.manager}: ${pts} pkt, ${rank}. wynik, ${avg} średniej, ${bench} na rezerwie, ${hits} kosztów.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Szósty raport o ${p.manager}: bieżące ${pts}, pozycja ${rank}, forma ${avg}, ławka ${bench}, hity ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Siódma notatka liczbowa ${p.manager}: GW${gw}=${pts}, rank=${rank}, avg3=${avg}, bench=${bench}, hits=${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Ósmy audyt ${p.manager} zamyka się liczbami ${pts}, ${rank}, ${avg}, ${bench}, ${hits} — i żadna z nich nie potrzebuje PR-u.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dziewiąty zestaw faktów ${p.manager}: ${pts} pkt tej rundy, miejsce ${rank}, forma ${avg}, rezerwa ${bench}, koszty ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dziesiąty wpis ${p.manager}: ${pts} punktów, #${rank}, średnia ${avg}, ławkowe ${bench}, hitowe ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Jedenasty protokół ${p.manager}: GW${gw} kończy się ${pts} pkt, lokatą ${rank}, formą ${avg}, ławką ${bench} i hitami ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dwunasty rachunek ${p.manager}: ${pts} punktów teraz, ${rank}. miejsce, ${avg} formy, ${bench} niewykorzystanych i ${hits} wydanych.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Trzynasty audyt ${p.manager}: ${pts} pkt, ranking rundy ${rank}, avg3 ${avg}, bench ${bench}, hit cost ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Czternasty zapis ${p.manager}: GW${gw} daje ${pts}, tabela rundy #${rank}, forma ${avg}, ławka ${bench}, hity ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Piętnasta karta ${p.manager}: ${pts} pkt, pozycja ${rank}, średnia ${avg}, ${bench} na ławce, ${hits} w hitach.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Szesnasty komplet danych ${p.manager}: ${pts}/${rank}/${avg}/${bench}/${hits}, bez filtra i bez konferencyjnego pudru.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Siedemnasty raport ${p.manager}: GW${gw}=${pts}, miejsce=${rank}, forma=${avg}, ławka=${bench}, hity=${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Osiemnasty rachunek faktów ${p.manager}: ${pts} punktów, #${rank}, ${avg} avg3, ${bench} bench, ${hits} hitów.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dziewiętnasty protokół ${p.manager}: ${pts} w GW${gw}, ${rank}. wynik, forma ${avg}, ławka ${bench}, koszty ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dwudziesty wpis ${p.manager}: ${pts} pkt, lokata ${rank}, średnia ${avg}, rezerwa ${bench}, transferowe ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dwudziesta pierwsza kontrola ${p.manager}: ${pts} punktów, #${rank}, avg3 ${avg}, bench ${bench}, hits ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dwudziesty drugi audyt ${p.manager}: GW${gw} zamyka się ${pts} pkt, miejscem ${rank}, formą ${avg}, ławką ${bench}, hitami ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dwudziesta trzecia notatka ${p.manager}: ${pts}/${rank}/${avg}/${bench}/${hits} — pięć liczb, zero miejsca na bajki.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dwudziesty czwarty protokół ${p.manager}: ${pts} pkt teraz, ${rank}. pozycja, ${avg} formy, ${bench} ławki, ${hits} kosztów.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dwudziesty piąty rachunek ${p.manager}: ${pts} punktów, #${rank}, średnia ${avg}, bench total ${bench}, hit total ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dwudziesty szósty zapis ${p.manager}: GW${gw}=${pts}, ranking=${rank}, forma=${avg}, ławka=${bench}, hity=${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dwudziesty siódmy audyt ${p.manager}: ${pts} pkt, lokata ${rank}, avg3 ${avg}, rezerwa ${bench}, koszty ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dwudziesty ósmy zestaw danych ${p.manager}: ${pts}, ${rank}, ${avg}, ${bench}, ${hits} — bieżący obraz bez marketingu.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Dwudziesta dziewiąta karta ${p.manager}: ${pts} pkt GW, #${rank}, forma ${avg}, ławka ${bench}, hity ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Trzydziesty raport ${p.manager}: ${pts} punktów, miejsce ${rank}, średnia ${avg}, bench ${bench}, hit cost ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Trzydziesty pierwszy protokół ${p.manager}: GW${gw} przynosi ${pts}, #${rank}, avg3 ${avg}, ławkę ${bench}, hity ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Trzydziesta druga kontrola ${p.manager}: ${pts}/${rank}/${avg}/${bench}/${hits}, czyli pełny zestaw faktów tej rundy.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Trzydziesty trzeci audyt ${p.manager}: ${pts} pkt, lokata ${rank}, forma ${avg}, rezerwa ${bench}, koszty ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Trzydziesty czwarty wpis ${p.manager}: GW${gw}=${pts}, miejsce=${rank}, avg3=${avg}, bench=${bench}, hits=${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Trzydziesty piąty rachunek ${p.manager}: ${pts} punktów, #${rank}, ${avg} formy, ${bench} na ławce, ${hits} w hitach.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Trzydziesta szósta karta faktów ${p.manager}: ${pts}/${rank}/${avg}/${bench}/${hits}, bez prawa do kreatywnej księgowości.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Trzydziesty siódmy raport ${p.manager}: ${pts} pkt, miejsce ${rank}, średnia ${avg}, ławka ${bench}, koszty ${hits}.`,
+ (p,gw,pts,rank,avg,bench,hits)=>`Finałowy raport ${p.manager}: GW${gw} kończy się ${pts} pkt, #${rank}, formą ${avg}, ławką ${bench} i hitami ${hits}.`
 ];
 
 function contextualCommunityNote(p,quote,gw,index,league){
  const pts=shameNum(p.gwPoints),avg=shameNum(p.avg3),bench=shameNum(p.benchSeason),hits=shameNum(p.hitSeason),rank=gwRank(p,league);
- const mood=conferenceMood(p,league),q=(quote||"").toLowerCase();
- const voice=NOTE_VOICES[index%NOTE_VOICES.length];
+ const mood=conferenceMood(p,league),theme=noteTheme(quote,mood);
+ const voice=EXTREME_NOTE_VOICES[index%EXTREME_NOTE_VOICES.length];
 
- let key="neutral";
- if(q.includes("pech")) key="pech";
- else if(q.includes("plan")||q.includes("proces")) key="plan";
- else if(q.includes("transfer")) key="transfer";
- else if(q.includes("kapitan")||q.includes("opask")) key="kapitan";
- else if(q.includes("ławk")||q.includes("law")) key="lawka";
- else if(mood==="great"||mood==="good") key="good";
- else if(mood==="bad"||mood==="awful") key="bad";
+ // Manager-specific themed sentence:
+ const opener=voice[theme](p);
 
- const opener=voice[key](p);
+ // GW-specific sentence (38 unique variants across the season):
+ const gwIndex=Math.max(0,Math.min(37,(Number(gw)||1)-1));
+ const seasonSentence=GW_NOTE_SIGNATURES[gwIndex];
 
- // Manager-specific second sentences. No sentence is shared with another manager slot.
- const uniqueFacts=[
-   `${p.manager} ma obecnie ${pts} pkt w GW${gw}, ${rank}. wynik kolejki, ${bench} pkt sezonowo na ławce i ${hits} pkt kosztów hitów. Ten zestaw faktów jest mniej elastyczny niż konferencyjna narracja.`,
-   `Kartoteka ${p.manager}: GW${gw} — ${pts} pkt; pozycja w rundzie — ${rank}; bench waste — ${bench}; hit cost — ${hits}. Czytelnicy proszą, by te liczby leżały obok każdej przyszłej przemowy.`,
-   `Dla porządku w protokole ${p.manager}: ${pts} punktów teraz, ${avg} średnio z trzech GW, ${bench} zostawionych na rezerwie i ${hits} oddanych za dodatkowe ruchy.`,
-   `Bilans liczbowy ${p.manager} nie używa eufemizmów: ${pts} w tej kolejce, miejsce ${rank}, ławka ${bench}, hity ${hits}, forma ${avg}.`,
-   `Community Notes przypina do mikrofonu ${p.manager} tabliczkę: ${pts} pkt GW, #${rank} tej rundy, ${bench} bench points i ${hits} punktów kosztów transferowych.`,
-   `Audyt ${p.manager} kończy się liczbami ${pts}/${rank}/${bench}/${hits} — kolejno punkty GW, miejsce rundy, punkty ławki i koszty hitów. Nie brzmi tak efektownie jak konferencja, za to trudniej z tym dyskutować.`,
-   `Przypis do wypowiedzi ${p.manager}: aktualny wynik ${pts}, ranking kolejki ${rank}, średnia 3 GW ${avg}, ławka sezonu ${bench}, transferowe minusy ${hits}.`,
-   `Czytelnicy sprawdzili ${p.manager} bez filtrów PR: ${pts} pkt w GW${gw}; ${rank}. wynik; ${avg} formy; ${bench} na ławce; ${hits} w hitach.`,
-   `Fakty dla ${p.manager} są krótkie i niewygodne: bieżące ${pts}, pozycja ${rank}, forma ${avg}, zmarnowana ławka ${bench}, koszty ruchów ${hits}.`,
-   `Do akt ${p.manager} trafia zestaw: GW${gw} ${pts} pkt, #${rank} kolejki, ${bench} rezerwowych punktów oraz ${hits} punktów oddanych za transferową twórczość.`,
-   `Weryfikacja ${p.manager}: ${pts} punktów teraz kontra ${avg} średniej formy, do tego ${bench} pkt ławki i ${hits} kosztów. Kontekst jest mniej poetycki niż wypowiedź, ale bardziej użyteczny.`,
-   `Community Notes wystawia ${p.manager} rachunek faktów: ${pts} pkt z tej GW, ${rank}. lokata rundy, ${bench} na ławce i ${hits} w hitach. Rachunek jest płatny w reputacji.`,
-   `Pod konferencją ${p.manager} warto dopisać: ${pts} punktów, miejsce ${rank}, forma ${avg}, bench total ${bench}, hit total ${hits}. Bez tego przemowa jest trochę jak reklama bez drobnego druku.`,
-   `Kontekst liczbowy ${p.manager}: GW${gw} daje ${pts}, tabela rundy pokazuje #${rank}, a historia sezonu dopisuje ${bench} ławkowych i ${hits} transferowych punktów.`,
-   `Dane ${p.manager} nie potrzebują mikrofonu: ${pts} w kolejce, ${rank}. pozycja, ${avg} formy, ${bench} punktów siedzących i ${hits} punktów wydanych.`,
-   `Czytelnicy dorzucają do przemowy ${p.manager} pięć liczb: ${pts}, ${rank}, ${avg}, ${bench}, ${hits}. Oznaczają wynik GW, lokatę, formę, ławkę i hity — czyli dokładnie to, o czym PR mówi najmniej chętnie.`
- ];
- const fact=uniqueFacts[index%uniqueFacts.length];
+ // GW-specific fact syntax, also 38 unique structures:
+ const fact=GW_FACT_FORMS[gwIndex](p,gw,pts,rank,avg,bench,hits);
 
- const endings=[
-  `Wniosek dla ${p.manager}: następna konferencja będzie oceniana tym samym kalkulatorem, więc warto zadbać, żeby punkty nie kłóciły się z narracją.`,
-  `W przypadku ${p.manager} notatka pozostaje aktywna do następnej GW. FPL bardzo szybko aktualizuje zarówno liczby, jak i poziom kompromitacji.`,
-  `${p.manager} może się z oceną nie zgadzać. Na szczęście Community Notes nie wymaga zgody osoby, której właśnie dopisuje kontekst.`,
-  `Notatka dotycząca ${p.manager} zostaje przypięta, dopóki kolejna GW nie dostarczy nowego materiału dowodowego.`,
-  `Czytelnicy zamykają sprawę ${p.manager} na dziś. Deadline otworzy następną bez pytania o zgodę.`,
-  `Dla ${p.manager} oznacza to jedno: mniej PR-u, więcej punktów, a Community Notes będzie miało mniej roboty.`,
-  `Weryfikacja ${p.manager} zakończona. Następna odbędzie się automatycznie, kiedy FPL dostarczy świeże liczby i świeże powody do śmiechu.`,
-  `Community Notes dziękuje ${p.manager} za materiał i przypomina, że kalkulator nie ma ulubionych menedżerów.`,
-  `Przy ${p.manager} notatka pozostaje częścią dokumentacji tej GW. Kolejna runda może ją zarówno wybielić, jak i zrobić z niej jeszcze większy żart.`,
-  `${p.manager} dostaje kontekst zamiast wyroku. Wyrok tradycyjnie wystawi tabela po następnym weekendzie.`,
-  `Czytelnicy kończą korektę ${p.manager}. Reszta zależy od zawodników i od tego, czy właściciel konta znowu nie wpadnie na genialny pomysł.`,
-  `Notatka pod wypowiedzią ${p.manager} zostaje opublikowana bez konsultacji z działem PR, co prawdopodobnie jest jej największą zaletą.`,
-  `${p.manager} ma tydzień, by sprawić, że następna notatka będzie pochwałą zamiast sprostowaniem.`,
-  `Dla ${p.manager} to tylko kontekst, nie kara. Kara przychodzi zwykle w postaci czerwonej strzałki.`,
-  `Community Notes kończy analizę ${p.manager} i odkłada lupę do następnego deadline'u.`,
-  `Wypowiedź ${p.manager} została uzupełniona. Teraz nawet najbardziej kreatywna interpretacja musi przejść obok liczb.`
- ];
- return `${opener} ${fact} ${endings[index%endings.length]}`;
+ // A final identity sentence includes manager, team and GW.
+ // This guarantees a complete note can never be identical for another manager
+ // or for this manager in another round.
+ const closer=`Notatka ${p.manager} / ${p.team} zostaje zamknięta wyłącznie dla GW${gw}; ten konkretny komentarz nie jest ponownie używany w żadnej innej rundzie sezonu.`;
+
+ return `${opener} ${seasonSentence} ${fact} ${closer}`;
 }
 
 function V39Notes({data}){
  const league=data?.grades||[];
- return <Card title="📝 Community Notes">
-   <p className="sectionLead">Każdy menedżer ma własny styl notatki, własne zdania i kontekst wyciągnięty z jego konkretnej wypowiedzi.</p>
+ return <Card title="📝 Community Notes — brutalna weryfikacja">
+   <p className="sectionLead">Każda notatka analizuje konkretną treść konferencji i odpowiada dokładnie na jej motyw: pech, plan, transfery, kapitana, ławkę, hype, cierpliwość, samozachwyt albo katastrofę.</p>
    {league.map((x,i)=>{const quote=pressQuote(x,data.gw,i,league);return <div className="communityNote" key={`${x.entry}-${data.gw}`}>
-      <b>👥 Kontekst do wypowiedzi: {x.manager}</b>
+      <b>👥 Czytelnicy prostują wypowiedź: {x.manager}</b>
       <p>{contextualCommunityNote(x,quote,data.gw,i,league)}</p>
-      <small>Zweryfikowano na podstawie aktualnych danych ligi oraz treści tej konkretnej konferencji.</small>
+      <small>Zweryfikowano na podstawie aktualnych danych ligi i dokładnej treści tej konferencji.</small>
    </div>})}
  </Card>
 }
