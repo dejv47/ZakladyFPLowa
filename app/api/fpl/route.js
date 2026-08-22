@@ -692,27 +692,57 @@ export async function GET() {
         actual:captainActual, optimal:captainOptimal, lost:captainLoss
       });
 
-      // What if manager never touched GW1 squad:
-      // same initial 15 players, auto-select top 11 raw points each GW,
-      // best scorer used as captain. This is a fun counterfactual, not exact FPL autosub simulation.
-      const initial = new Set((x.initialSquadIds || []).map(Number));
-      let untouched = 0;
-      for (let event=1; event<=Number(gw); event++) {
+      // What if manager literally did nothing after GW1?
+      //
+      // IMPORTANT:
+      // - GW1 is ALWAYS the manager's official real GW1 score.
+      //   There can be no "manager impact" yet because the baseline starts after GW1.
+      // - From GW2 onward we freeze the exact GW1 starting XI + captaincy multipliers.
+      //   No transfers, no captain changes, no bench changes.
+      //
+      // This makes GW1 difference exactly 0 and gives the comparison its intended meaning.
+      const gw1PickObj = (x.historicalPicks || []).find(z => Number(z.gw) === 1);
+      const gw1Picks = gw1PickObj?.picks || [];
+
+      const realGw1 = Number(
+        (x.history || []).find(h => Number(h.gw) === 1)?.points ?? x.gwPoints ?? 0
+      );
+
+      let untouched = realGw1;
+
+      for (let event = 2; event <= Number(gw); event++) {
         const archive = event === Number(gw) ? live : oldGwLives[event - 1];
-        const pts = (archive?.elements || [])
-          .filter(el => initial.has(Number(el.id)))
-          .map(el => Number(el.stats?.total_points || 0))
-          .sort((a,b)=>b-a);
-        const xi = pts.slice(0,11);
-        const base = xi.reduce((s,v)=>s+v,0);
-        const capBonus = xi.length ? Math.max(...xi) : 0;
-        untouched += base + capBonus;
+        const eventPoints = Object.fromEntries(
+          (archive?.elements || []).map(el => [
+            Number(el.id),
+            Number(el.stats?.total_points || 0)
+          ])
+        );
+
+        // Freeze GW1's starting XI/captain exactly as selected.
+        // multipliers preserve C/TC when applicable.
+        const frozenGwScore = gw1Picks
+          .filter(p => Number(p.position) <= 11)
+          .reduce(
+            (sum, p) =>
+              sum +
+              Number(eventPoints[Number(p.element)] || 0) *
+                Number(p.multiplier || 0),
+            0
+          );
+
+        untouched += frozenGwScore;
       }
+
+      const actual = Number(x.overall || 0);
+
       noTouchStats.push({
-        entry:x.entry, manager:x.manager, team:x.team,
-        actual:Number(x.overall||0),
+        entry:x.entry,
+        manager:x.manager,
+        team:x.team,
+        actual,
         untouched,
-        managerImpact:Number(x.overall||0)-untouched
+        managerImpact:Number(actual - untouched)
       });
     }
 

@@ -6,79 +6,169 @@ import { BetsTab } from "./BetsTab";
 function managerKey(p){
  return `${p.manager}__${p.team}`.toLowerCase().replace(/\s+/g,"_");
 }
-
-function hashText(s){
+function confHash(s){
  let h=2166136261;
  for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)}
  return h>>>0;
 }
-function seededPick(arr,seed,used=new Set()){
- if(!arr?.length) return "";
- let idx=seed%arr.length;
- for(let i=0;i<arr.length;i++){
-   const v=arr[(idx+i)%arr.length];
-   if(!used.has(v)){used.add(v);return v}
+function confPick(arr, seed){ return arr[Math.abs(seed)%arr.length]; }
+
+function conferenceMood(p, league){
+ const pts=Number(p.gwPoints||0);
+ const scores=(league||[]).map(x=>Number(x.gwPoints||0)).sort((a,b)=>a-b);
+ const avg=scores.length?scores.reduce((a,b)=>a+b,0)/scores.length:pts;
+ const rank=[...(league||[])].sort((a,b)=>Number(b.gwPoints||0)-Number(a.gwPoints||0))
+   .findIndex(x=>x.entry===p.entry)+1;
+ const n=Math.max(scores.length,1);
+ if(rank===1 || pts>=avg+12) return "great";
+ if(rank>0 && rank<=Math.max(2,Math.ceil(n*.25))) return "good";
+ if(rank>=Math.max(1,Math.ceil(n*.75)) || pts<=avg-12) return "bad";
+ if(rank===n || pts<=avg-20) return "awful";
+ return "neutral";
+}
+
+const CONF_BANK={
+ great:{
+  open:[
+   "{M} wszedł po GW{GW} jak właściciel ligi, a nie jej uczestnik. {PTS} punktów daje dziś pełne prawo do bezczelnego uśmiechu.",
+   "W siedzibie {T} po GW{GW} nie było konferencji kryzysowej. Było raczej kontrolowane chwalenie się wynikiem {PTS} pkt.",
+   "{M} pojawił się przed mikrofonami po GW{GW} w nastroju człowieka, któremu tym razem FPL nie zdążyło napluć do kawy.",
+   "Po GW{GW} {M} miał {PTS} powodów punktowych, żeby przez kilka minut udawać, że ta gra jest banalnie prosta.",
+   "{T} właśnie zaliczyło kolejkę, po której nawet najwięksi hejterzy muszą na moment zamknąć mordę: {PTS} pkt."
+  ],
+  body:[
+   "„Nie będę udawał skromnego. Dzisiaj decyzje siadły i wreszcie to ja patrzę na cudze czerwone strzałki jak na program rozrywkowy.”",
+   "„Kapitan, skład i cierpliwość wreszcie nie działały przeciwko mnie. Aż dziwnie grać w FPL bez poczucia, że ktoś cię właśnie okradł.”",
+   "„To była dobra robota, ale nie zamierzam teraz kupować pięciu differentiali tylko dlatego, że przez jeden weekend poczułem się jak geniusz.”",
+   "„Najbardziej cieszy mnie, że tym razem plan przetrwał kontakt z rzeczywistością. W tej grze to prawie wydarzenie historyczne.”",
+   "„Mogę dziś kozaczyć, ale deadline szybko leczy z pychy. Dlatego celebracja kończy się zanim zacznę wierzyć we własne tweety.”"
+  ],
+  end:[
+   "„Za tydzień chcę potwierdzenia, nie pomnika. Jedna świetna GW nie daje immunitetu na kolejne głupoty.”",
+   "„Nie ruszam połowy składu po sukcesie. Brzmi oczywiście, ale znam siebie, więc wolę powiedzieć to publicznie.”",
+   "„Dzisiaj piwo za wynik, jutro znowu analiza. FPL bardzo szybko zmienia bohatera w mema.”",
+   "„Niech rywale się martwią. Ja pierwszy raz od dawna nie muszę.”"
+  ]
+ },
+ good:{
+  open:[
+   "{M} po GW{GW} wyglądał na zadowolonego, ale jeszcze nie na tyle, żeby zamawiać mural pod stadionem {T}. Wynik: {PTS} pkt.",
+   "{T} wyszło z GW{GW} z {PTS} punktami i bez potrzeby wzywania egzorcysty do aplikacji FPL.",
+   "Po solidnej GW{GW} {M} usiadł przed mikrofonem spokojnie. {PTS} pkt to nie orgazm, ale zdecydowanie nie powód do płaczu.",
+   "{M} przyjął gratulacje za GW{GW} z ostrożnością człowieka, który wie, że następny deadline już ostrzy nóż.",
+   "W {T} panuje umiarkowany optymizm: {PTS} pkt, kilka trafionych decyzji i wyjątkowo mało powodów, żeby wyjebać telefon przez okno."
+  ],
+  body:[
+   "„Było dobrze. Nie idealnie, ale w FPL człowiek szybko uczy się szanować weekend, po którym nie musi usuwać aplikacji.”",
+   "„Kilka decyzji siadło, kilka można było zrobić lepiej. Najważniejsze, że nie muszę dziś wymyślać teorii o pechu.”",
+   "„Nie wygrałem świata, ale też nie zrobiłem z siebie idioty. W naszej lidze to całkiem wartościowy kompromis.”",
+   "„Forma idzie w dobrą stronę. Teraz trzeba tylko nie zepsuć jej transferem wykonanym z nudów.”",
+   "„Jest zielona energia. Nie będę jej zabijał panicznym -8 tylko dlatego, że ktoś strzelił dwa gole w sobotę.”"
+  ],
+  end:[
+   "„Bierzemy punkty i spierdalmy z konferencji zanim ktoś zapyta o ławkę.”",
+   "„Następna GW ma być kontynuacją, nie eksperymentem medycznym na własnym składzie.”",
+   "„Jest dobrze, więc największym zagrożeniem dla {T} jestem teraz prawdopodobnie ja sam.”",
+   "„Bez fajerwerków. Wystarczy, że tabela zaczyna wyglądać trochę mniej obraźliwie.”"
+  ]
+ },
+ neutral:{
+  open:[
+   "GW{GW} nie dała {M} ani powodów do parady, ani podstaw do emigracji. {PTS} punktów i klasyczne FPL-owe „meh”.",
+   "{M} przyszedł po GW{GW} z wynikiem {PTS} pkt. Dokładnie takim, przy którym nie wiesz, czy pić za sukces, czy z rozczarowania.",
+   "W {T} po GW{GW} atmosfera była jak wynik: ani dobrze, ani tragicznie, po prostu człowiek patrzy i wzrusza ramionami.",
+   "{PTS} punktów w GW{GW} zostawiło {M} w najbardziej irytującym miejscu FPL — bez katastrofy, ale też bez czym się pochwalić.",
+   "Konferencja {T} po GW{GW} zaczęła się od słowa „średnio”. Redakcja uznała, że tym razem analiza może się na tym właściwie zakończyć."
+  ],
+  body:[
+   "„Nie było tragedii, ale jeśli chcemy coś ugrać, samo niebycie tragicznym to trochę chujowy plan.”",
+   "„Część składu zrobiła swoje, reszta wyglądała jak statyści. Czyli standardowy weekend fantasy.”",
+   "„Nie będę robił rewolucji po przeciętnej kolejce. To właśnie rewolucje po przeciętnych kolejkach robią z ludzi późniejszych pacjentów.”",
+   "„Wynik nie boli, ale też nie daje satysfakcji. To taki remis 0:0 z FPL, którego nikt nie będzie wspominał.”",
+   "„Mam kilka rzeczy do poprawy, ale żadna nie wymaga od razu detonowania wildcarda.”"
+  ],
+  end:[
+   "„Zapominamy o tej kolejce. Ani do muzeum, ani do gabloty.”",
+   "„Następnym razem chcę dać redakcji powód do chwalenia albo przynajmniej ciekawszego wyśmiewania.”",
+   "„Punkty dopisane. Emocje można było zostawić w domu.”",
+   "„Niech GW{GW} zostanie tam, gdzie jej miejsce: w historii, najlepiej bez powtórki.”"
+  ]
+ },
+ bad:{
+  open:[
+   "{M} wszedł po GW{GW} z miną człowieka, który już wie, że pierwsze pytanie będzie o te jebane {PTS} punktów.",
+   "W {T} po GW{GW} nikt nie mówił o pechu. Przy {PTS} pkt pech byłby wręcz zbyt uprzejmym określeniem.",
+   "Konferencję po GW{GW} rozpoczęto bez muzyki. {M} uznał, że wynik {PTS} pkt sam w sobie jest wystarczająco smutnym soundtrackiem.",
+   "{M} po GW{GW} wyglądał, jakby właśnie zobaczył własną ławkę, kapitana i transfery jednocześnie. {PTS} pkt nie poprawiało humoru.",
+   "{T} zaliczyło kolejkę z kategorii „proszę usunąć historię przeglądania”. {M}: {PTS} punktów i sporo materiału do aktu oskarżenia."
+  ],
+  body:[
+   "„Nie będę pierdolił o procesie. Zagrałem słabo i kilka decyzji zasługuje na natychmiastowe przesłuchanie.”",
+   "„Najgorsze jest to, że przed deadlinem wszystko wydawało mi się logiczne. To trochę przerażające.”",
+   "„Jeżeli mój następny pomysł będzie równie genialny, liczę, że ktoś fizycznie odsunie mnie od klawiatury.”",
+   "„Nie będę karał całego składu za własną głupotę. Najpierw wypadałoby ukarać menedżera.”",
+   "„Ta kolejka pokazała, że można analizować przez tydzień i nadal dojść do spektakularnie złej odpowiedzi.”"
+  ],
+  end:[
+   "„Nie robię panicznych transferów. Powtarzam to teraz głównie po to, żebym sam to, kurwa, usłyszał.”",
+   "„Za tydzień chcę punktów, nie kolejnej konferencji terapeutycznej.”",
+   "„GW{GW} idzie do kosza. Oby razem z częścią moich pomysłów.”",
+   "„Kibice {T} mają prawo być wkurwieni. Ja też jestem, tylko niestety na siebie.”"
+  ]
+ },
+ awful:{
+  open:[
+   "Po GW{GW} {M} wszedł do sali, ale wynik {PTS} pkt wszedł tam pierwszy i od razu zaczął go napierdalać krzesłem.",
+   "{T} właśnie rozegrało fantasy odpowiednik pożaru śmietnika. {PTS} punktów i nawet śmietnik prosi o nieporównywanie.",
+   "Przy {PTS} punktach w GW{GW} konferencja {M} była formalnością. Akt oskarżenia zdążyła wcześniej napisać tabela.",
+   "{M} po GW{GW} nie szukał wymówek. Przy {PTS} pkt nawet wymówki odmówiły występu z powodu wstydu.",
+   "To nie była słaba GW{GW}. To był zamach na ranking {T}, a głównym podejrzanym pozostaje jego własny menedżer."
+  ],
+  body:[
+   "„To było gówno. Nie 'poniżej oczekiwań', nie 'trudny weekend'. Gówno. Możemy przejść do następnego pytania.”",
+   "„Jeżeli ktoś chce zobaczyć, jak nie prowadzić drużyny fantasy, chętnie udostępnię historię decyzji. Materiał jest kompletny.”",
+   "„Mój kapitan, transfery i ławka stworzyli dziś koalicję przeciwko mnie. Niestety wszystkich wybrałem osobiście.”",
+   "„Nie mam prawa narzekać na pecha, kiedy sam podałem FPL nabity pistolet i poprosiłem, żeby strzeliło mi w stopę.”",
+   "„Najrozsądniejszym ruchem po tej kolejce może być niedotykanie niczego, łącznie z aplikacją.”"
+  ],
+  end:[
+   "„Przepraszam kibiców {T}. Następna kolejka nie może być gorsza, chociaż po tym weekendzie boję się wypowiadać takie zdania.”",
+   "„Jeśli zobaczycie ode mnie -16 przed kolejną GW, zgłoście konto jako przejęte.”",
+   "„Zamykamy temat, gasimy światło i udajemy, że GW{GW} była błędem serwera.”",
+   "„Dzisiaj nie ma planu naprawczego. Najpierw trzeba ustalić, co dokładnie tu, kurwa, eksplodowało.”"
+  ]
  }
- return arr[idx];
-}
-function uniqSentence(s, p, gw, n){
- // Identity tag is deliberately woven into the sentence, so two managers/GWs
- // can never receive an identical full sentence even if a phrase template collides.
- return s.replaceAll("{M}",p.manager).replaceAll("{T}",p.team).replaceAll("{GW}",String(gw))
-   .replaceAll("{FORM}",String(p.avg3 ?? "—")).replaceAll("{BENCH}",String(p.benchSeason ?? 0))
-   .replaceAll("{HITS}",String(p.hitSeason ?? 0)).replaceAll("{RANK}",String(p.rank ?? "—"));
+};
+
+function renderConf(t,p,gw){
+ return t.replaceAll("{M}",p.manager).replaceAll("{T}",p.team)
+  .replaceAll("{GW}",String(gw)).replaceAll("{PTS}",String(p.gwPoints??0));
 }
 
-const PRESS_OPEN=[
- "{M} wszedł na konferencję po GW{GW} z miną człowieka, który właśnie odkrył, że jego genialny plan dla {T} był genialny głównie przed deadline'em.",
- "Po GW{GW} {M} nie próbował nawet sprzedawać bajki o procesie: w {T} proces chwilami przypominał wrzucenie tostera do wanny i oczekiwanie clean sheeta.",
- "{M} zaczął konferencję {T} od stwierdzenia, że GW{GW} była bardzo pouczająca. Redakcja tłumaczy: dostał po ryju od FPL i teraz udaje filozofa.",
- "Sala ucichła, kiedy {M} pojawił się po GW{GW}. Przy formie {FORM} nawet mikrofony wyglądały, jakby nie chciały zadawać trudnych pytań ekipie {T}.",
- "Konferencja {T} po GW{GW} zaczęła się bez prezentacji PowerPoint. {M} uznał najwyraźniej, że wystarczająco dużo fikcji było już na boisku."
-];
-const PRESS_DATA=[
- "„Mam formę {FORM}, ławkę {BENCH} i {HITS} punktów oddanych za hity. Jeżeli ktoś z tych liczb potrafi ulepić historię o pełnej kontroli, to niech od razu pisze fantastykę.”",
- "„Pozycja {RANK} nie jest dekoracją. {M} może sobie opowiadać o expected points, ale {T} potrzebuje prawdziwych punktów, a nie jebanych slajdów.”",
- "„Ławka kosztowała mnie już {BENCH}. To nie jest rezerwa, tylko prywatny magazyn punktów, których z jakiegoś powodu nie pozwalam używać {T}.”",
- "„Hity: {HITS}. Każde -4 wygląda niewinnie osobno, a razem zaczynają przypominać abonament na podejmowanie chujowych decyzji.”",
- "„Forma {FORM} mówi wystarczająco dużo. Jeśli następny transfer ma być lekarstwem, najpierw sprawdzę, czy przypadkiem to ja nie jestem chorobą {T}.”"
-];
-const PRESS_PLAN=[
- "„Przed następnym deadline'em {M} ma jedną zasadę: żadnego transferu pod wpływem jednego gola, jednego tweeta i jednego typa z flagą Brazylii w nazwie konta.”",
- "„W {T} kończymy z ruchem dla samego ruchu. Jak zawodnik blanknie raz, nie będę go wypierdalał jak wściekły ochroniarz z dyskoteki.”",
- "„Następny plan {M} jest banalny: kapitan ma zdobywać punkty, ławka ma przestać szydzić, a ja mam nie odpierdolić niczego pięć minut przed deadlinem.”",
- "„{T} nie potrzebuje rewolucji. Potrzebuje, żebym przez tydzień nie zachowywał się jak człowiek, który dostał nieograniczony budżet w Football Managerze.”",
- "„Jeśli w GW{GW} czegoś się nauczyłem, to tego, że differential bez punktów jest po prostu drogim sposobem na pokazanie wszystkim, jaki jesteś wyjątkowy.”"
-];
-const PRESS_END=[
- "„Jeżeli za tydzień znowu tu usiądę po katastrofie, przynajmniej nie będę pierdolił, że wszystko przebiega zgodnie z planem {M}.”",
- "„Kibice {T} zasługują na spokój. Niestety ich menedżerem nadal jest {M}, więc nie obiecuję cudów.”",
- "„Nie proszę o cierpliwość. Proszę tylko, żebyście z wyzwiskami poczekali do ostatniego meczu GW{GW}, bo może ktoś jeszcze uratuje mi dupę.”",
- "„Wnioski są wyciągnięte. Czy właściwe? To już, kurwa, zupełnie inna dyscyplina.”",
- "„Do następnej kolejki {M} zamyka laboratorium. {T} spróbuje przez chwilę zachowywać się jak normalna drużyna fantasy.”"
-];
-
-function pressQuote(p,gw){
- const seed=hashText(`${managerKey(p)}|conference|${gw}`);
- const used=new Set();
- const pools=[PRESS_OPEN,PRESS_DATA,PRESS_PLAN,PRESS_END];
- const parts=pools.map((pool,i)=>uniqSentence(seededPick(pool,seed+i*7919,used),p,gw,i));
- // Add a deterministic identity sentence. This makes the whole conference
- // season-specific even when the same structural template returns months later.
- const stamp=`„To jest konferencja ${p.manager}, menedżera ${p.team}, po GW${gw}; za tydzień nie zamierzam powtarzać ani tej wymówki, ani tego samego błędu.”`;
- return `${parts.join(" ")} ${stamp}`;
+function pressQuote(p,gw,managerIndex,league){
+ const mood=conferenceMood(p,league);
+ const bank=CONF_BANK[mood];
+ // Seed contains manager + GW + result. Therefore a manager receives a different
+ // combination every gameweek and the tone follows the actual GW performance.
+ const seed=confHash(`${managerKey(p)}|${gw}|${p.gwPoints}|${mood}`);
+ const a=confPick(bank.open, seed + managerIndex*17 + gw*31);
+ const b=confPick(bank.body, seed + managerIndex*43 + gw*67);
+ const c=confPick(bank.end, seed + managerIndex*89 + gw*101);
+ const unique=`Ta wypowiedź należy do ${p.manager} po GW${gw}; bilans kolejki to ${p.gwPoints} pkt, miejsce w tej GW: ${[...league].sort((x,y)=>Number(y.gwPoints||0)-Number(x.gwPoints||0)).findIndex(x=>x.entry===p.entry)+1}.`;
+ return `„${renderConf(a,p,gw)} ${renderConf(b,p,gw)} ${renderConf(c,p,gw)}” ${unique}`;
 }
 
-function pressReaction(p,gw){
- const seed=hashText(`${managerKey(p)}|reaction|${gw}`);
- const pool=[
-  "Redakcja po GW{GW}: {M} z {T} przynajmniej nie próbował zamienić katastrofy w TED Talk. To już jakiś postęp.",
-  "Werdykt studia po GW{GW}: słowa {M} brzmią rozsądnie, co w przypadku {T} oznacza, że następny deadline zapowiada się wyjątkowo niebezpiecznie.",
-  "Komentarz redakcji: {M} obiecał mniej chaosu w {T}. Bukmacherzy odmówili wystawienia kursu, bo uznali rynek za zbyt absurdalny.",
-  "Po wystąpieniu {M} jedno jest pewne: {T} ma plan. Nie jest jeszcze pewne, czy plan wie, że istnieje.",
-  "Redakcja ocenia konferencję {M} na mocne „zobaczymy”. W {T} piękne przemowy punktów jeszcze nie dawały."
- ];
- return uniqSentence(pool[seed%pool.length],p,gw,0);
+function pressReaction(p,gw,managerIndex,league){
+ const mood=conferenceMood(p,league);
+ const reactions={
+  great:["Redakcja: tym razem bez ironii — to była zajebista kolejka.","Redakcja: pełne prawo do kozaczenia, przynajmniej do następnego deadline'u.","Redakcja: rywale mogą przewinąć ten fragment. Będzie bolało."],
+  good:["Redakcja: solidna robota. Bez pomnika, ale i bez policyjnej taśmy wokół składu.","Redakcja: zielona strzałka smakuje najlepiej bez panicznych transferów na deser.","Redakcja: było dobrze. Teraz najtrudniejsze — niczego nie spierdolić."],
+  neutral:["Redakcja: kolejka tak średnia, że nawet szyderstwo nie chce się rozgrzać.","Redakcja: nikt nie umarł, nikt nie został bohaterem. Gramy dalej.","Redakcja: wynik do zapomnienia, ale przynajmniej nie do aktu oskarżenia."],
+  bad:["Redakcja: czerwone światło. Menedżer przynajmniej zauważył, że sam stoi na torach.","Redakcja: było słabo i żaden wykres tego nie wypudruje.","Redakcja: terapia zakończona. Teraz poprosimy o punkty."],
+  awful:["Redakcja: komisja śledcza zostaje powołana ze skutkiem natychmiastowym.","Redakcja: nie kopiujcie tego w domu. Ani w FPL. Zwłaszcza w FPL.","Redakcja: tę kolejkę należy zabezpieczyć w gablocie z napisem „dowody”."]
+ };
+ const arr=reactions[mood];
+ return `${arr[(confHash(managerKey(p)+gw)+managerIndex)%arr.length]} [${p.manager} • GW${gw}]`;
 }
 
 export default function FPLPage(){
@@ -159,7 +249,7 @@ export default function FPLPage(){
      <Card title="©️ Captain Roulette">
        {data.captainRanking.map((x,i)=><div className="record" key={x.entry}><b>#{i+1} {x.manager}</b><strong>{x.actual} pkt z kapitanów</strong><small>stracone vs idealny wybór: {x.lost}</small></div>)}
      </Card>
-     <Card title="💀 Co gdybyś nic nie robił?">
+     <Card title="💀 Co gdybyś nic nie robił?"><small>GW1 jest punktem startowym — różnica w GW1 zawsze wynosi 0. Od GW2 porównujemy z zamrożonym składem i kapitanem z GW1.</small>
        {data.noTouchRanking.map(x=><div className="record" key={x.entry}><b>{x.manager}</b><strong>Obecnie {x.actual} • GW1 bez zmian {x.untouched}</strong><small className={x.managerImpact>=0?"positive":"negative"}>wkład menedżera: {x.managerImpact>0?"+":""}{x.managerImpact}</small></div>)}
      </Card>
      <Card title="📅 Manager / Fraud of the Month">
@@ -199,7 +289,7 @@ export default function FPLPage(){
        <div className="awardGallery">{data.seasonAwards.map((x,i)=><div className="awardBig" key={i}><span>{x.icon}</span><div><b>{x.name}</b><strong>{x.manager}</strong><small>{x.team} • {x.value}</small></div></div>)}</div>
      </Card>
      <Card title="🎙️ Konferencja prasowa">
-       {data.grades.map((x,i)=><blockquote key={x.entry}><div className="pressSpeaker"><span>🎙️</span><div><b>{x.manager}</b><small>{x.team}</small></div></div>{pressQuote(x,data.gw)}<small>{pressReaction(x,data.gw)}</small></blockquote>)}
+       {data.grades.map((x,i)=><blockquote key={x.entry}><div className="pressSpeaker"><span>🎙️</span><div><b>{x.manager}</b><small>{x.team}</small></div></div>{pressQuote(x,data.gw,i,data.grades)}<small>{pressReaction(x,data.gw,i,data.grades)}</small></blockquote>)}
      </Card>
    </section>}
  </main>
