@@ -507,225 +507,229 @@ export async function GET() {
     const profileComment = (x, stats) => {
       const {avg3, benchSeason, hitSeason, bestGW, worstGW, editorial} = stats;
       const hs = canonicalHistoryFor(x);
-      const last3 = hs.slice(-3);
-      const trend =
-        last3.length >= 3
-          ? last3[2].points - last3[0].points
-          : 0;
-      const spread =
-        bestGW && worstGW ? bestGW.points - worstGW.points : 0;
+      const finishedHs = hs.filter(h => h.gw < gw || gwFinished);
+      const last3 = finishedHs.slice(-3);
+      const trend = last3.length >= 3 ? last3[2].points - last3[0].points : 0;
+      const spread = bestGW && worstGW ? bestGW.points - worstGW.points : 0;
 
+      // deterministic but highly varied: manager + team + GW + salt
       const pick = (arr, salt=0) =>
-        arr[(Number(gw) * 13 + x.entry * 7 + salt * 17 + x.team.length) % arr.length];
+        arr[(Number(gw)*101 + Number(x.entry)*37 + x.team.length*13 + salt*17) % arr.length];
 
-      const introElite = [
-        `${x.manager} na razie prowadzi ten projekt jak człowiek, który naprawdę przeczytał instrukcję do FPL.`,
-        `${x.manager} wygląda jak ktoś, kto wie, co robi, co w tej lidze samo w sobie jest podejrzane.`,
-        `${x.manager} ma sezon pod kontrolą i irytuje tym wszystkich dookoła.`,
-        `${x.manager} na ten moment bardziej przypomina dyrektora sportowego niż uczestnika zbiorowego eksperymentu.`,
-        `${x.manager} jest w tej rzadkiej sytuacji, w której redakcja musi przyznać: kurwa, to działa.`,
-        `${x.manager} nie daje nam wystarczająco dużo powodów do wyśmiewania, co jest wręcz bezczelne.`,
-        `${x.manager} zachowuje się, jakby miał plan. Co gorsza, wyniki zaczynają ten plan potwierdzać.`,
-        `${x.manager} zbudował coś, co nie wygląda jak przypadkowy generator jedenastki. Szokujące.`
+      const openers = editorial >= 8 ? [
+        `${x.manager} wygląda, jakby faktycznie czytał zasady tej gry zamiast klikać ludzi po kolorze koszulki.`,
+        `${x.manager} na razie prowadzi drużynę z irytującą kompetencją.`,
+        `${x.manager} robi rzeczy poprawnie tak często, że zaczyna to być podejrzane.`,
+        `${x.manager} zachowuje się jak człowiek z planem, a najgorsze jest to, że tabela ten plan potwierdza.`,
+        `${x.manager} jest dziś tym typem, którego wszyscy chcieliby wyśmiać, ale wyniki niestety nie pozwalają.`,
+        `${x.manager} ma formę człowieka, który po deadline'ie nie musi sprawdzać Twittera z drżącą ręką.`,
+        `${x.manager} wygląda jak ktoś, kto przypadkiem zatrudnił kompetentny sztab.`,
+        `${x.manager} jest jednym z nielicznych, przy których redakcja musi używać słowa „dobrze” bez ironii.`,
+        `${x.manager} zarządza tym projektem tak, jakby miał dostęp do wersji FPL bez głupich decyzji.`,
+        `${x.manager} na razie daje mniej contentu do roastu niż rywale, co samo w sobie jest sukcesem.`
+      ] : editorial >= 6.5 ? [
+        `${x.manager} trzyma solidny poziom i unika większych pożarów.`,
+        `${x.manager} robi wystarczająco dużo dobrze, żeby nie stać się stałym klientem Prokuratury FPL.`,
+        `${x.manager} nie błyszczy bez przerwy, ale też nie podpala sobie rankingu co weekend.`,
+        `${x.manager} wygląda rozsądnie, choć w tej grze rozsądek ma termin ważności do następnego deadline'u.`,
+        `${x.manager} jest w dobrej strefie: może się wymądrzać, ale jeszcze nie powinien drukować autobiografii.`,
+        `${x.manager} prowadzi drużynę bez większego chaosu, co w tej lidze jest niemal ekstrawagancją.`,
+        `${x.manager} ma sezon na plus i nie wygląda, jakby każda kolejka była nowym eksperymentem.`,
+        `${x.manager} spokojnie zbiera punkty i chwilowo nie daje powodów do odebrania mu klawiatury.`,
+        `${x.manager} utrzymuje się po właściwej stronie granicy między planem a przypadkiem.`,
+        `${x.manager} robi swoje i czeka, aż inni sami się wywrócą. Strategia prosta, ale skuteczna.`
+      ] : editorial >= 5 ? [
+        `${x.manager} siedzi dokładnie w środku strefy „mogło być gorzej, mogło być lepiej”.`,
+        `${x.manager} prezentuje profesjonalną przeciętność.`,
+        `${x.manager} prowadzi sezon jak człowiek jadący 90 na tempomacie po pustej autostradzie.`,
+        `${x.manager} nie jest jeszcze bohaterem, ale też nie wymaga interwencji komisji.`,
+        `${x.manager} balansuje między „mam plan” a „zobaczymy co się stanie”.`,
+        `${x.manager} jest wystarczająco dobry, żeby żyć, i wystarczająco słaby, żeby redakcja miała materiał.`,
+        `${x.manager} ma sezon w kolorze beżowym: nic nie eksploduje, nic nie zachwyca.`,
+        `${x.manager} utrzymuje się na powierzchni dzięki mieszance rozsądku i cudzych błędów.`,
+        `${x.manager} jest definicją ligowego środka — ani szampan, ani nekrolog.`,
+        `${x.manager} robi tyle, żeby nie było wstydu, ale za mało, żeby ktoś robił screeny z jego składu.`
+      ] : editorial >= 3.5 ? [
+        `${x.manager} konsekwentnie flirtuje z katastrofą.`,
+        `${x.manager} podejmuje wystarczająco dużo złych decyzji, żeby mówić już o stylu.`,
+        `${x.manager} prowadzi ten projekt jak człowiek, który dostał połowę instrukcji.`,
+        `${x.manager} jest na etapie, gdzie auto-pick zaczyna wyglądać jak konsultant.`,
+        `${x.manager} zmierza w złą stronę z imponującą konsekwencją.`,
+        `${x.manager} ma więcej czerwonych flag niż sensownych argumentów.`,
+        `${x.manager} regularnie mówi sobie „tym razem będzie inaczej” i regularnie dostaje odpowiedź od FPL.`,
+        `${x.manager} wygląda jak trener po trzeciej konferencji z rzędu zaczynającej się od „musimy wyciągnąć wnioski”.`,
+        `${x.manager} zaczyna zamieniać pecha w powtarzalny proces.`,
+        `${x.manager} ma drużynę, która bardziej przypomina listę problemów niż projekt sportowy.`
+      ] : [
+        `${x.manager} prowadzi sezon jak zgłoszenie do Hall of Shame.`,
+        `${x.manager} nie tyle zarządza drużyną, co kataloguje katastrofy.`,
+        `${x.manager} wygląda, jakby ktoś mu powiedział, że najniższy wynik wygrywa.`,
+        `${x.manager} stworzył projekt, który powinien mieć ostrzeżenie „nie próbujcie tego w domu”.`,
+        `${x.manager} jest już tak głęboko w gównie, że zaczyna urządzać tam salon.`,
+        `${x.manager} zbudował sobie prywatny escape room bez wyjścia.`,
+        `${x.manager} udowadnia, że pełna informacja nie chroni przed głupimi decyzjami.`,
+        `${x.manager} ma sezon, od którego własne punkty próbują się odciąć.`,
+        `${x.manager} prowadzi ekipę jak człowiek testujący wytrzymałość psychiczną samego siebie.`,
+        `${x.manager} zrobił z FPL eksperyment społeczny, tylko nikt nie podpisał zgody.`
       ];
 
-      const introGood = [
-        `${x.manager} jest w niezłej formie i na razie trzyma się z dala od pełnej kompromitacji.`,
-        `${x.manager} robi wystarczająco dużo dobrze, żeby redakcja musiała szukać bardziej subtelnych powodów do szydery.`,
-        `${x.manager} wygląda solidnie, choć słowo „solidnie” w FPL zwykle obowiązuje do najbliższego deadline'u.`,
-        `${x.manager} ma sensowny sezon i nie rozdaje punktów rywalom za darmo. Jeszcze.`,
-        `${x.manager} nie zachwyca, ale też nie daje powodów, żeby dzwonić po karetkę dla rankingu.`,
-        `${x.manager} prowadzi drużynę bez wielkich fajerwerków, ale też bez regularnego podpalania własnego domu.`,
-        `${x.manager} jest w strefie, w której można się jeszcze wymądrzać bez ryzyka natychmiastowego wyśmiania.`,
-        `${x.manager} trzyma rozsądny poziom. Redakcja zapisuje ten fakt z wyraźnym rozczarowaniem.`
+      const formLines = avg3 >= 70 ? [
+        `Ostatnie trzy GW to ${avg3.toFixed(1)} średnio. Rywale mogą już składać oficjalne skargi.`,
+        `Forma z 3 GW wynosi ${avg3.toFixed(1)}. To jest regularne wpierdalanie punktów reszcie ligi.`,
+        `${avg3.toFixed(1)} średnio z trzech. Na tym etapie farta trzeba już nazywać formą.`,
+        `Trzy ostatnie kolejki dają średnio ${avg3.toFixed(1)}. Redakcja nie lubi tego przyznawać, ale wygląda to legitnie.`,
+        `Forma 3 GW: ${avg3.toFixed(1)}. Ktoś tu najwyraźniej znalazł przycisk „dobry wynik”.`,
+        `${avg3.toFixed(1)} z ostatnich trzech GW to tempo, które zaczyna wkurwiać otoczenie.`
+      ] : avg3 >= 55 ? [
+        `Średnia 3 GW to ${avg3.toFixed(1)}. Stabilnie i bez większego burdelu.`,
+        `${avg3.toFixed(1)} z trzech ostatnich kolejek. Nie ma fajerwerków, ale straż pożarna też nie jest potrzebna.`,
+        `Forma trzyma ${avg3.toFixed(1)} średnio. Można udawać, że wszystko było zaplanowane.`,
+        `Ostatnie trzy GW: ${avg3.toFixed(1)}. Przyzwoicie, czyli nudno dla redakcji.`,
+        `${avg3.toFixed(1)} średnio. Taki wynik nie daje memów, ale daje spokój.`,
+        `Forma jest zdrowa: ${avg3.toFixed(1)} średnio z trzech.`
+      ] : avg3 <= 30 ? [
+        `Ostatnie trzy GW to ${avg3.toFixed(1)} średnio. To już nie kryzys, to abonament.`,
+        `${avg3.toFixed(1)} z trzech ostatnich kolejek. Ranking cierpi, menedżer prawdopodobnie też.`,
+        `Forma 3 GW: ${avg3.toFixed(1)}. Słowo „słabo” zaczyna być zbyt delikatne.`,
+        `Ostatnie trzy kolejki dają ${avg3.toFixed(1)} średnio. To kontrolowane nurkowanie bez butli.`,
+        `${avg3.toFixed(1)} średnio. FPL wysłało już zaproszenie do programu pomocowego.`,
+        `Forma z trzech GW to ${avg3.toFixed(1)}. Tu już nie trzeba analiz, tylko egzorcyzmu.`
+      ] : [
+        `Ostatnie trzy GW: ${avg3.toFixed(1)} średnio. Żyje, ale aparatura pika.`,
+        `Forma 3 GW to ${avg3.toFixed(1)}. Za mało na dumę, za dużo na nekrolog.`,
+        `${avg3.toFixed(1)} średnio. Sporo miejsca na poprawę i jeszcze więcej na kolejne błędy.`,
+        `Ostatnie trzy kolejki wyglądają na ${avg3.toFixed(1)} średnio — klasyczne „musimy pracować dalej”.`,
+        `Forma wynosi ${avg3.toFixed(1)}. Ani tragedia, ani coś, czym człowiek się chwali.`,
+        `${avg3.toFixed(1)} średnio z trzech. Taki wynik istnieje głównie po to, żeby denerwować właściciela.`
       ];
 
-      const introAverage = [
-        `${x.manager} jest dokładnie tam, gdzie kończy się geniusz, a zaczyna „jakoś to będzie”.`,
-        `${x.manager} prezentuje piękną przeciętność — nie za dobrze, nie za źle, idealnie do zapomnienia.`,
-        `${x.manager} prowadzi sezon jak kierowca na tempomacie: jedzie, ale trudno powiedzieć dokąd.`,
-        `${x.manager} nie jest ani bohaterem, ani frajerem. To też jakieś osiągnięcie.`,
-        `${x.manager} balansuje między rozsądkiem a odjebaniem czegoś głupiego i na razie remisuje.`,
-        `${x.manager} robi wystarczająco dużo, żeby nie zginąć w tabeli, ale za mało, żeby ktoś był pod wrażeniem.`,
-        `${x.manager} ma sezon, który można opisać jednym słowem: „meh”.`,
-        `${x.manager} utrzymuje się na powierzchni głównie dzięki temu, że inni też potrafią się skompromitować.`
+      const benchLines = benchSeason >= 70 ? [
+        `Ławka zebrała już ${benchSeason} pkt. To jest druga drużyna, która regularnie wygląda lepiej od pierwszej.`,
+        `${benchSeason} pkt na ławce. Rezerwowi powinni mieć własnego menedżera.`,
+        `Na rezerwie zmarnowano ${benchSeason} pkt. To już infrastruktura do cierpienia.`,
+        `${benchSeason} pkt poza XI. Gdyby za marnowanie punktów dawali medale, byłoby podium.`,
+        `Ławka ma ${benchSeason} pkt. To nie przypadek, tylko alternatywna rzeczywistość, w której skład jest dobry.`,
+        `${benchSeason} pkt na ławce to dowód, że talent w drużynie istnieje. Problem siedzi wyżej.`
+      ] : benchSeason >= 35 ? [
+        `Na ławce zostało ${benchSeason} pkt. Jeszcze nie tragedia narodowa, ale już lokalny skandal.`,
+        `${benchSeason} pkt rezerwowych. Kilka razy można mówić o pechu, potem zaczyna się rozmowa o kompetencjach.`,
+        `Ławka ma ${benchSeason} pkt. Część z nich pewnie wraca do menedżera w snach.`,
+        `${benchSeason} pkt poza składem. Wystarczająco, żeby bolało.`,
+        `Rezerwa kosztowała ${benchSeason} pkt. Nie jest dobrze, ale jest content.`,
+        `${benchSeason} pkt na ławce — wynik wystarczający do kilku porządnych „kurwa”.`
+      ] : [
+        `Ławka kosztowała tylko ${benchSeason} pkt. Albo dobre decyzje, albo słabi rezerwowi.`,
+        `Na rezerwie zostało ${benchSeason} pkt. Przynajmniej tutaj nie ma wielkiego przestępstwa.`,
+        `${benchSeason} pkt na ławce. Czysto, schludnie, podejrzanie rozsądnie.`,
+        `Ławka: ${benchSeason} pkt. Redakcja nie ma dziś podstaw do aktu oskarżenia.`,
+        `Tylko ${benchSeason} pkt poza XI. Ktoś najwyraźniej umie czytać fixtures.`,
+        `Rezerwa nie robi większych szkód: ${benchSeason} pkt.`
       ];
 
-      const introBad = [
-        `${x.manager} podejmuje tyle średnich decyzji, że zaczyna to wyglądać jak świadoma filozofia.`,
-        `${x.manager} regularnie testuje, ile złych pomysłów zmieści się w jednej drużynie.`,
-        `${x.manager} prowadzi ten projekt jak człowiek, który nie dostał pełnego briefu.`,
-        `${x.manager} jest niebezpiecznie blisko momentu, w którym auto-pick zaczyna wyglądać jak upgrade.`,
-        `${x.manager} buduje sezon z konsekwencją godną człowieka uparcie idącego w złą stronę.`,
-        `${x.manager} ma więcej znaków zapytania niż punktów do dumy.`,
-        `${x.manager} wygląda jak trener, który na konferencji powie „musimy wyciągnąć wnioski” i nie wyciągnie żadnych.`,
-        `${x.manager} od kilku kolejek próbuje udowodnić, że można być pechowym tak często, aż przestaje to być pech.`
+      const hitLines = hitSeason >= 24 ? [
+        `Na hity poszło ${hitSeason} pkt. To już nie transfery, tylko subskrypcja na minusy.`,
+        `${hitSeason} pkt wydane za dodatkowe ruchy. Dział sportowy działa jak hazardzista.`,
+        `Koszt hitów: -${hitSeason}. Rywale dziękują za dotacje.`,
+        `${hitSeason} pkt oddane za transfery. To jest podatek od własnej niecierpliwości.`,
+        `Hity zabrały ${hitSeason} pkt. W normalnym klubie ktoś już oddawałby kartę wejściową.`,
+        `Transferowe minusy: ${hitSeason}. Księgowość odmówiła komentarza.`
+      ] : hitSeason >= 8 ? [
+        `Hity kosztowały ${hitSeason} pkt. Jeszcze da się bronić, ale teczka już istnieje.`,
+        `${hitSeason} pkt wydane na dodatkowe ruchy. Hazard kontrolowany, ale hazard.`,
+        `Koszt hitów: ${hitSeason}. Czasem warto, czasem człowiek płaci za własny błąd dwa razy.`,
+        `${hitSeason} pkt poszło na transfery. Redakcja obserwuje rachunek.`,
+        `Hity zabrały ${hitSeason} pkt. Nie dramat, ale każdy minus ma smak porażki.`,
+        `Transferowe -${hitSeason}. Jeszcze nie kryminał, bardziej wykroczenie.`
+      ] : [
+        `Hity kosztowały tylko ${hitSeason} pkt. Dyscyplina albo strach przed transferami.`,
+        `${hitSeason} pkt na minusie za transfery. Rozsądnie jak na tę ligę.`,
+        `Koszt hitów: ${hitSeason}. Przynajmniej nie rozdaje punktów hurtowo.`,
+        `Transferowe minusy są małe: ${hitSeason}. Dział księgowy chwilowo spokojny.`,
+        `Hity: ${hitSeason}. Menedżer nie robi z deadline'u kasyna.`,
+        `Tylko ${hitSeason} pkt kosztów transferowych. Dziwnie odpowiedzialnie.`
       ];
 
-      const introDead = [
-        `${x.manager} prowadzi ten sezon jakby Hall of Shame był głównym celem.`,
-        `${x.manager} nie tyle zarządza drużyną, co dokumentuje kolejne stadia katastrofy.`,
-        `${x.manager} wygląda jak człowiek, któremu ktoś powiedział, że najniższy wynik wygrywa.`,
-        `${x.manager} prowadzi projekt sportowy, który powinien mieć tabliczkę „nie próbujcie tego w domu”.`,
-        `${x.manager} jest na etapie sezonu, w którym nawet redakcja zaczyna czuć lekkie współczucie. Lekkie.`,
-        `${x.manager} zbudował sobie prywatny escape room, tylko że nie ma z niego wyjścia i nazywa się FPL.`,
-        `${x.manager} regularnie udowadnia, że można podejmować złe decyzje również z pełną informacją.`,
-        `${x.manager} ma sezon tak brzydki, że nawet jego własne punkty chcą się od niego odciąć.`
+      const trendLines = trend >= 20 ? [
+        `Trend rośnie o ${trend} pkt. Ktoś tu chyba ogarnął, gdzie był problem.`,
+        `+${trend} pkt między skrajnymi GW z ostatnich trzech. Kryzys się cofa.`,
+        `Forma idzie w górę: +${trend}. Redakcja odkłada nekrolog.`,
+        `Trend +${trend}. To już wygląda jak odbicie, nie przypadek.`,
+        `Ostatnie kolejki pokazują +${trend}. Wreszcie coś działa.`,
+        `Kierunek: w górę o ${trend} pkt. Rzadki widok.`
+      ] : trend <= -20 ? [
+        `Trend leci o ${Math.abs(trend)} pkt w dół. Winda zerwała linę.`,
+        `Spadek formy: ${Math.abs(trend)} pkt. Ktoś powinien sprawdzić panel sterowania.`,
+        `${trend} pkt trendu. To nie korekta, to zjazd.`,
+        `Forma spada o ${Math.abs(trend)}. Właściciel ma pełne prawo panikować.`,
+        `Trend ${trend}. Rywale oglądają z popcornem.`,
+        `Ostatnie GW zabierają ${Math.abs(trend)} pkt jakości. Niepokojąco konsekwentnie.`
+      ] : [
+        `Trend jest płaski. Ani rakieta, ani katastrofa.`,
+        `Forma nie robi gwałtownych ruchów. Nuda, ale bezpieczna.`,
+        `Trend nie krzyczy ani „geniusz”, ani „ratunku”.`,
+        `Ostatnie wyniki są stabilne. Redakcja ziewa, menedżer może spać.`,
+        `Brak wielkiego trendu. Wszystko stoi, czyli przynajmniej nie spada.`,
+        `Krzywa formy jest spokojna. Na razie.`
       ];
 
-      const intro =
-        editorial >= 8 ? pick(introElite,1) :
-        editorial >= 6.5 ? pick(introGood,2) :
-        editorial >= 5 ? pick(introAverage,3) :
-        editorial >= 3.5 ? pick(introBad,4) :
-        pick(introDead,5);
+      const rankLines = x.rank === 1 ? [
+        `Jest liderem ligi, więc każdy głupi ruch może być teraz sprzedany jako „odważna strategia”.`,
+        `Pierwsze miejsce daje pełne prawo do bycia nieznośnym.`,
+        `Siedzi na szczycie i może udawać, że wszystko było częścią wizji.`,
+        `Lider tabeli. Dopóki nim jest, roast boli trochę mniej.`,
+        `Numer jeden. Reszta może tylko szukać haka.`,
+        `Pierwszy w lidze — najwyższy punkt do ewentualnego spektakularnego upadku.`
+      ] : x.rank === details.length ? [
+        `Jest ostatni. Tabela nie sugeruje problemu, tylko go drukuje.`,
+        `Zamyka stawkę. Przynajmniej nie musi patrzeć, kto jest za nim.`,
+        `Ostatnie miejsce daje stabilność, której nie daje nic innego.`,
+        `Jest na dnie i pełni funkcję punktu odniesienia dla reszty.`,
+        `Kończy tabelę. Każdy ruch w górę będzie teraz sukcesem.`,
+        `Ostatni. Nawet scrollowanie tabeli jest krótkie.`
+      ] : x.rank <= 3 ? [
+        `Top 3 pozwala na lekkie kozaczenie.`,
+        `Czołówka ligi. Teraz trzeba tylko tego nie spierdolić.`,
+        `Miejsce ${x.rank}. wygląda dobrze. Historia zna jednak wielu bohaterów początku sezonu.`,
+        `Jest wysoko i skutecznie unika Hall of Shame.`,
+        `Top 3. Rywale patrzą, redakcja czeka na potknięcie.`,
+        `Pozycja ${x.rank}. daje komfort i fałszywe poczucie bezpieczeństwa.`
+      ] : [
+        `Miejsce ${x.rank}. — jeszcze jest gdzie spaść i gdzie awansować.`,
+        `Pozycja ${x.rank}. nie jest ani triumfem, ani katastrofą.`,
+        `Siedzi na ${x.rank}. miejscu i obserwuje chaos z bezpiecznej odległości.`,
+        `Ranking #${x.rank}. Wciąż wszystko można zepsuć.`,
+        `Miejsce ${x.rank}. daje wystarczająco dużo nadziei, żeby bolało.`,
+        `Jest ${x.rank}. — klasyczna pozycja do opowiadania, że sezon jest długi.`
+      ];
 
-      const lines = [intro];
+      const ending = typeof teamNameRoasts === "function"
+        ? teamNameRoasts(x.team, 90 + x.entry + gw)
+        : pick([
+            `${x.team} ma jeszcze czas, żeby udowodnić, że ten sezon nie jest przypadkiem.`,
+            `Redakcja pozostaje w gotowości do kolejnego roastu ${x.team}.`,
+            `${x.team} dostanie następną ocenę po kolejnej porcji decyzji.`,
+            `Na razie werdykt jest taki: obserwujemy i nie ufamy.`,
+            `Projekt trwa. Zdrowy rozsądek również, choć w ograniczonym zakresie.`,
+            `Do następnego deadline'u wszystko może się zmienić. Zwłaszcza na gorsze.`
+          ], 99);
 
-      if (avg3 >= 70) {
-        lines.push(pick([
-          `Ostatnie trzy GW to średnio ${avg3.toFixed(1)} pkt. Forma jest tak dobra, że rywale mogą już zacząć narzekać na farta.`,
-          `${avg3.toFixed(1)} średnio z ostatnich trzech kolejek. To nie seria, to regularne wkładanie ludziom kija w szprychy.`,
-          `Forma 3 GW: ${avg3.toFixed(1)}. Jeżeli to potrwa dłużej, reszta ligi będzie musiała zacząć kombinować zamiast tylko przeklinać.`,
-          `Ostatnie trzy kolejki są bezczelnie dobre: ${avg3.toFixed(1)} średnio. Redakcja nie lubi tego przyznawać.`
-        ],10));
-      } else if (avg3 >= 55) {
-        lines.push(pick([
-          `Średnia z trzech ostatnich GW to ${avg3.toFixed(1)} — stabilnie, sensownie i irytująco przyzwoicie.`,
-          `${avg3.toFixed(1)} średnio z ostatnich trzech. Nie ma pożaru, więc straż pożarna może zostać w remizie.`,
-          `Forma z 3 GW wynosi ${avg3.toFixed(1)}. To poziom, przy którym można już udawać, że wszystko było zaplanowane.`,
-          `Ostatnie trzy GW: ${avg3.toFixed(1)} średnio. Bez wielkiego show, ale też bez regularnego wpierdolu.`
-        ],11));
-      } else if (avg3 <= 30) {
-        lines.push(pick([
-          `Ostatnie trzy GW to średnio ${avg3.toFixed(1)} pkt. To nie spadek formy, to kontrolowane nurkowanie bez butli.`,
-          `${avg3.toFixed(1)} średnio z ostatnich trzech kolejek. Ranking cierpi, właściciel prawdopodobnie też.`,
-          `Forma 3 GW: ${avg3.toFixed(1)}. Nawet słowo „kryzys” zaczyna brzmieć zbyt łagodnie.`,
-          `Ostatnie trzy kolejki dają ${avg3.toFixed(1)} średnio. To już nie pech, tylko abonament na cierpienie.`
-        ],12));
-      } else if (avg3 < 45) {
-        lines.push(pick([
-          `Forma z ostatnich trzech GW to ${avg3.toFixed(1)}. Niby żyje, ale aparatura już pika.`,
-          `${avg3.toFixed(1)} średnio z trzech GW. Wynik wystarczający, żeby nie umrzeć, za słaby, żeby być z siebie dumnym.`,
-          `Ostatnie trzy kolejki: ${avg3.toFixed(1)} średnio. Dużo miejsca na poprawę i jeszcze więcej na kolejne błędy.`,
-          `Średnia 3 GW wynosi ${avg3.toFixed(1)}. Na konferencji prasowej padłoby klasyczne „musimy pracować dalej”.`
-        ],13));
-      }
-
-      if (trend >= 20) {
-        lines.push(pick([
-          `Trend jest wyraźnie w górę — różnica między pierwszą a trzecią z ostatnich GW to +${trend} pkt.`,
-          `Forma rośnie szybko: +${trend} pkt między skrajnymi kolejkami z ostatnich trzech. Ktoś tu chyba w końcu ogarnął zasady.`,
-          `Widać progres: +${trend} pkt na przestrzeni ostatnich trzech GW. Redakcja odkłada nekrolog.`,
-          `Ostatnie GW pokazują odbicie o ${trend} pkt. Kryzys może i nie minął, ale przynajmniej przestał się śmiać.`
-        ],20));
-      } else if (trend <= -20) {
-        lines.push(pick([
-          `Trend jest jak winda po zerwaniu liny: ${trend} pkt między pierwszą a trzecią z ostatnich GW.`,
-          `Forma leci w dół o ${Math.abs(trend)} pkt. Ktoś powinien sprawdzić, czy menedżer nie ustawia składu przez przypadek.`,
-          `Ostatnie trzy kolejki pokazują spadek o ${Math.abs(trend)} pkt. To jest moment, w którym zaczyna się szukanie winnych.`,
-          `Trend: ${trend}. Rywale patrzą z zainteresowaniem, właściciel raczej z przerażeniem.`
-        ],21));
-      }
-
-      if (benchSeason >= 70) {
-        lines.push(pick([
-          `Na ławce zostawił już ${benchSeason} pkt. To nie rezerwa, tylko druga drużyna, która regularnie gra lepiej od pierwszej.`,
-          `${benchSeason} pkt na ławce w sezonie. Rezerwowi powinni dostać własnego menedżera i osobną tabelę.`,
-          `Ławka uzbierała ${benchSeason} pkt. Menedżer najwyraźniej traktuje najlepsze wyniki jak dekorację.`,
-          `${benchSeason} pkt poza składem. Gdyby za marnowanie punktów były odznaczenia, byłby order państwowy.`
-        ],30));
-      } else if (benchSeason >= 35) {
-        lines.push(pick([
-          `Ławka zabrała już ${benchSeason} pkt. Jeszcze nie tragedia narodowa, ale materiał na kilka porządnych przekleństw.`,
-          `${benchSeason} pkt zostało na ławce w tym sezonie. Kilka razy można mówić o pechu, potem zaczyna się rozmowa o kompetencjach.`,
-          `Rezerwowi mają już ${benchSeason} pkt. Sztab powinien rozważyć odwrócenie kolejności nazwisk przy ustalaniu składu.`,
-          `Ławka: ${benchSeason} pkt. Nie jest dramatycznie, ale wystarczająco, żeby człowiek pamiętał te błędy przed snem.`
-        ],31));
-      } else if (benchSeason <= 10) {
-        lines.push(pick([
-          `Tylko ${benchSeason} pkt zostawionych na ławce. Albo dobre decyzje, albo beznadziejni rezerwowi — redakcja nie rozstrzyga.`,
-          `Ławka kosztowała zaledwie ${benchSeason} pkt. Przynajmniej tutaj menedżer nie prowadzi programu rozdawnictwa.`,
-          `${benchSeason} pkt na ławce to bardzo mało. Nie wiadomo, czy to skill, ale dziś udajemy, że tak.`,
-          `Zarządzanie ławką wygląda czysto: tylko ${benchSeason} pkt straty. Rzadki widok w tej lidze.`
-        ],32));
-      }
-
-      if (hitSeason >= 24) {
-        lines.push(pick([
-          `Na hity wydał już ${hitSeason} pkt. To nie transfery, tylko stały podatek od własnej niecierpliwości.`,
-          `${hitSeason} pkt oddane za transfery. Dział sportowy działa jak fundusz inwestycyjny zarządzany przez hazardzistę.`,
-          `Hity kosztowały ${hitSeason} pkt. Menedżer płaci za możliwość zmieniania zdania częściej niż powinien.`,
-          `Transferowy rachunek to -${hitSeason}. Rywale dziękują za regularne dotacje.`
-        ],40));
-      } else if (hitSeason >= 8) {
-        lines.push(pick([
-          `Koszt hitów to ${hitSeason} pkt. Jeszcze da się to obronić, ale prokuratura ma już teczkę.`,
-          `${hitSeason} pkt wydane na transfery. Niby niedużo, ale każdy minus smakuje gorzej, gdy nowy zawodnik blankuje.`,
-          `Hity kosztowały ${hitSeason} pkt. Transferowy hazard jeszcze nie wymknął się spod kontroli, ale już zna adres.`,
-          `Na ruchy ponad limit poszło ${hitSeason} pkt. Rozsądek bywał obecny, tylko nie zawsze w deadline day.`
-        ],41));
-      } else if (hitSeason == 0) {
-        lines.push(pick([
-          `Zero punktów wydanych na hity. Człowiek albo jest cierpliwy, albo boi się przycisku transferów.`,
-          `Nie oddał jeszcze ani punktu za dodatkowe transfery. Dyscyplina finansowa jak w klubie prowadzonym przez księgowego.`,
-          `Hity: 0. W tej lidze to prawie objaw dojrzałości emocjonalnej.`,
-          `Ani jednego punktu na minusie za transfery. Redakcja sprawdziła dwa razy, bo brzmi podejrzanie.`
-        ],42));
-      }
-
-      if (spread >= 50) {
-        lines.push(pick([
-          `Różnica między najlepszą a najgorszą GW to aż ${spread} pkt. Stabilność godna rynku kryptowalut.`,
-          `Rozrzut sezonu wynosi ${spread} pkt. Jednego tygodnia Guardiola, następnego tydzień później człowiek pyta, gdzie jest przycisk „delete team”.`,
-          `${spread} pkt różnicy między szczytem a dnem. Ta drużyna ma więcej osobowości niż powinna.`,
-          `Best vs worst GW: ${spread} pkt różnicy. Rollercoaster jest tańszy i zwykle trwa krócej.`
-        ],50));
-      } else if (spread <= 20 && hs.length >= 3) {
-        lines.push(pick([
-          `Rozrzut między najlepszą i najgorszą GW to tylko ${spread} pkt. Stabilnie aż do bólu.`,
-          `Tylko ${spread} pkt różnicy między najlepszą a najgorszą kolejką. Mało dramatu, mało contentu dla redakcji.`,
-          `Wyniki są wyjątkowo równe — spread ${spread} pkt. Człowiek może spokojnie planować cierpienie.`,
-          `Stabilność: ${spread} pkt między topem i dołem. Nuda, ale taka zdrowa.`
-        ],51));
-      }
-
-      if (x.rank == 1) {
-        lines.push(pick([
-          `Jest liderem ligi, więc wszystkie głupie decyzje automatycznie zaczynają wyglądać jak „odważne zagrania”.`,
-          `Pierwsze miejsce daje prawo do bycia nieznośnym. Redakcja potwierdza, że przywilej jest już aktywny.`,
-          `Siedzi na szczycie i może bezkarnie udawać, że każdy transfer był częścią większej wizji.`,
-          `Lider tabeli. Dopóki nim jest, każdy roast brzmi trochę ciszej, co nas wyjątkowo wkurwia.`
-        ],60));
-      } else if (x.rank == details.length) {
-        lines.push(pick([
-          `Jest ostatni. Tabela nie sugeruje problemu — ona go drukuje wielkimi literami.`,
-          `Ostatnie miejsce daje jedną przewagę: nie trzeba sprawdzać, kto jest za tobą.`,
-          `Zamyka tabelę. Przynajmniej widok z dołu jest stały i człowiek się nie gubi.`,
-          `Jest na końcu stawki i na razie pełni funkcję naturalnego punktu odniesienia dla wszystkich innych.`
-        ],61));
-      } else if (x.rank <= 3) {
-        lines.push(pick([
-          `Top 3 daje podstawy do lekkiego kozaczenia, ale historia FPL zna wielu bohaterów września.`,
-          `Jest w czołówce i na razie skutecznie unika roli bohatera Hall of Shame.`,
-          `Pozycja ${x.rank}. wygląda dobrze. Teraz najtrudniejsza część: nie spierdolić tego.`,
-          `Czołówka ligi. Redakcja czeka cierpliwie na pierwszy naprawdę spektakularny samobój.`
-        ],62));
-      }
-
-      // Name-aware ending, if engine is available from v20.
-      if (typeof teamNameRoasts === "function") {
-        lines.push(teamNameRoasts(x.team, 90 + x.entry));
-      }
-
-      return lines.join(" ");
+      return [
+        pick(openers,1),
+        pick(formLines,2),
+        pick(benchLines,3),
+        pick(hitLines,4),
+        pick(trendLines,5),
+        pick(rankLines,6),
+        ending
+      ].join(" ");
     };
 
     const managerProfiles = details.map(x => {
-      const hs = canonicalHistoryFor(x);
+      const allHs = canonicalHistoryFor(x);
+      const hs = allHs.filter(h => h.gw < gw || gwFinished);
       const last3 = hs.slice(-3);
-      const avg3 = last3.length ? last3.reduce((a,z)=>a+z.points,0)/last3.length : x.gwPoints;
-      const avg = hs.length ? hs.reduce((a,z)=>a+z.points,0)/hs.length : x.gwPoints;
+      const avg3 = last3.length ? last3.reduce((a,z)=>a+z.points,0)/last3.length : 0;
+      const avg = hs.length ? hs.reduce((a,z)=>a+z.points,0)/hs.length : 0;
       const bestGW = hs.length ? [...hs].sort((a,b)=>b.points-a.points)[0] : null;
       const worstGW = hs.length ? [...hs].sort((a,b)=>a.points-b.points)[0] : null;
       const benchSeason = hs.reduce((a,z)=>a+Number(z.bench||0),0);
@@ -895,12 +899,35 @@ export async function GET() {
       chance:Number((100*liveExp[i]/liveSum).toFixed(1))
     })).sort((a,b)=>b.chance-a.chance);
 
+    const byRank = [...managerProfiles].sort((a,b)=>a.rank-b.rank);
+    const byBench = [...managerProfiles].sort((a,b)=>b.benchSeason-a.benchSeason);
+    const byHits = [...managerProfiles].sort((a,b)=>b.hitSeason-a.hitSeason);
+    const byEditorial = [...managerProfiles].sort((a,b)=>b.editorial-a.editorial);
+    const byBadEditorial = [...managerProfiles].sort((a,b)=>a.editorial-b.editorial);
+    const byForm = [...managerProfiles].sort((a,b)=>b.avg3-a.avg3);
+    const byBadForm = [...managerProfiles].sort((a,b)=>a.avg3-b.avg3);
+    const byAverage = [...managerProfiles].sort((a,b)=>b.avg-a.avg);
+    const byConsistency = [...managerProfiles].sort((a,b)=>{
+      const as=(a.bestGW?.points??0)-(a.worstGW?.points??0);
+      const bs=(b.bestGW?.points??0)-(b.worstGW?.points??0);
+      return as-bs;
+    });
+
     const seasonAwards = [
-      managerProfiles.slice().sort((a,b)=>a.rank-b.rank)[0] && {name:"👑 MVP sezonu",p:managerProfiles.slice().sort((a,b)=>a.rank-b.rank)[0]},
-      managerProfiles.slice().sort((a,b)=>b.benchSeason-a.benchSeason)[0] && {name:"🪑 Król ławki",p:managerProfiles.slice().sort((a,b)=>b.benchSeason-a.benchSeason)[0]},
-      managerProfiles.slice().sort((a,b)=>b.hitSeason-a.hitSeason)[0] && {name:"💸 Transferowy kryminalista",p:managerProfiles.slice().sort((a,b)=>b.hitSeason-a.hitSeason)[0]},
-      managerProfiles.slice().sort((a,b)=>a.editorial-b.editorial)[0] && {name:"🏺 Złoty Dzban",p:managerProfiles.slice().sort((a,b)=>a.editorial-b.editorial)[0]}
-    ].filter(Boolean).map(x=>({name:x.name,manager:x.p.manager,team:x.p.team,score:x.p.editorial}));
+      byRank[0] && {icon:"👑",name:"MVP sezonu",p:byRank[0],value:`#${byRank[0].rank} • ${byRank[0].overall} pkt`},
+      byEditorial[0] && {icon:"🧠",name:"Mózg sezonu",p:byEditorial[0],value:`ocena ${byEditorial[0].editorial}/10`},
+      byBadEditorial[0] && {icon:"🏺",name:"Złoty Dzban",p:byBadEditorial[0],value:`ocena ${byBadEditorial[0].editorial}/10`},
+      byBench[0] && {icon:"🪑",name:"Król ławki",p:byBench[0],value:`${byBench[0].benchSeason} pkt na ławce`},
+      byHits[0] && {icon:"💸",name:"Transferowy kryminalista",p:byHits[0],value:`-${byHits[0].hitSeason} pkt w hitach`},
+      byForm[0] && {icon:"🔥",name:"Najgorętsza forma",p:byForm[0],value:`${byForm[0].avg3} średnio / 3 GW`},
+      byBadForm[0] && {icon:"🧊",name:"Lodówka sezonu",p:byBadForm[0],value:`${byBadForm[0].avg3} średnio / 3 GW`},
+      byAverage[0] && {icon:"📈",name:"Najwyższa średnia",p:byAverage[0],value:`${byAverage[0].avg} pkt / GW`},
+      byConsistency[0] && {icon:"🧱",name:"Mr. Stabilność",p:byConsistency[0],value:`spread ${(byConsistency[0].bestGW?.points??0)-(byConsistency[0].worstGW?.points??0)} pkt`},
+      byRank.at(-1) && {icon:"🪦",name:"Piwnica tabeli",p:byRank.at(-1),value:`#${byRank.at(-1).rank} • ${byRank.at(-1).overall} pkt`}
+    ].filter(Boolean).map(x=>({
+      icon:x.icon,name:x.name,manager:x.p.manager,team:x.p.team,
+      score:x.p.editorial,value:x.value
+    }));
 
     return NextResponse.json({
       ok:true, league:{id:LEAGUE_ID,name:league.league.name}, gw,

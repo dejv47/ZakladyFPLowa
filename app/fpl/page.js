@@ -2,6 +2,89 @@
 import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 
+function pressQuote(p, gw){
+ const seed = (p.entry*97 + gw*31 + p.team.length*11) >>> 0;
+ const pick=(arr,s=0)=>arr[(seed+s*13)%arr.length];
+
+ const starts = p.editorial>=7 ? [
+  "Nie zamierzam przepraszać za dobre decyzje.",
+  "Wynik mówi sam za siebie, ja nie muszę.",
+  "Plan był jasny od początku.",
+  "Nie interesuje mnie, co pisze prasa.",
+  "Mamy swoje liczby i im ufamy.",
+  "Wiedzieliśmy, gdzie są przewagi.",
+  "Nie było tu żadnego przypadku.",
+  "Zespół odpowiedział na boisku."
+ ] : p.editorial>=5 ? [
+  "Było kilka dobrych decyzji i kilka, o których nie chcę rozmawiać.",
+  "Nie wszystko zagrało tak, jak planowaliśmy.",
+  "Musimy zachować spokój.",
+  "Sezon jest długi, a Twitter krótko pamięta.",
+  "Nie będę oceniał wszystkiego po jednej kolejce.",
+  "Są elementy do poprawy, ale nie ma paniki.",
+  "Widzimy progres, nawet jeśli tabela czasem go nie widzi.",
+  "Nie podejmowaliśmy decyzji pod wpływem emocji. Chyba."
+ ] : [
+  "Nie będę komentował decyzji personalnych.",
+  "Musimy wyciągnąć wnioski.",
+  "To była trudna kolejka.",
+  "Biorę odpowiedzialność, ale nie całą.",
+  "Nie wszystko da się przewidzieć.",
+  "Zawodnicy dali z siebie tyle, ile mogli. Problem w tym, że niewiele.",
+  "Nie będę odpowiadał na pytania o przyszłość.",
+  "Potrzebujemy reakcji w następnej kolejce."
+ ];
+
+ const middles = p.benchSeason>=35 ? [
+  `Ławka? Tak, widziałem te ${p.benchSeason} punktów. Następne pytanie.`,
+  `Nie uważam, że ${p.benchSeason} punktów na ławce to problem systemowy.`,
+  "Dobór ławki był świadomy. Wynik niestety też.",
+  "Nie będę robił zmian tylko dlatego, że rezerwowi wyglądają lepiej."
+ ] : p.hitSeason>=8 ? [
+  `Transfery kosztowały nas ${p.hitSeason} punktów, ale projekt wymaga odwagi.`,
+  "Hity były częścią planu. Plan być może wymaga korekty.",
+  "Nie boimy się minusowych punktów, bo najwyraźniej powinniśmy.",
+  "Rynek transferowy jest trudny. Szczególnie dla nas."
+ ] : [
+  "Skupiamy się na procesie, nie na memach.",
+  "Najważniejsza jest reakcja zespołu.",
+  "Nie będziemy zmieniać wszystkiego po jednym weekendzie.",
+  "Zaufanie do projektu pozostaje pełne."
+ ];
+
+ const ends = [
+  "Do zobaczenia po następnym deadline'ie.",
+  "Teraz najważniejsze, żeby nie odjebać czegoś jeszcze głupszego.",
+  "Pracujemy dalej.",
+  "Nie czytam komentarzy. Podobno.",
+  "Następne pytanie.",
+  "Konferencja zakończona.",
+  "Resztę pokaże tabela.",
+  "Wrócimy silniejsi albo przynajmniej z nowym kapitanem."
+ ];
+
+ return `„${pick(starts,1)} ${pick(middles,2)} ${pick(ends,3)}”`;
+}
+
+function pressReaction(p, gw){
+ const seed=(p.entry*53+gw*19+p.manager.length*7)>>>0;
+ const lines=[
+  `${p.manager} brzmi jak człowiek, który sam sobie nie wierzy.`,
+  `Redakcja zanotowała wypowiedź i odłożyła ją do teczki „klasyczne pierdolenie pomeczowe”.`,
+  `Piękne słowa. Szkoda, że punkty nie czytają konferencji.`,
+  `PR działa lepiej niż część decyzji kadrowych.`,
+  `Brzmi profesjonalnie, dopóki człowiek nie spojrzy na liczby.`,
+  `Zarząd popiera trenera. Wiemy, co to zwykle znaczy.`,
+  `Redakcja pozostaje sceptyczna i lekko rozbawiona.`,
+  `Wszystko brzmi świetnie. Teraz poprosimy jeszcze o dobry wynik.`,
+  `To była konferencja z gatunku „dużo słów, mało punktów”.`,
+  `Kibice proszą o mniej narracji, więcej punktów.`,
+  `Dział komunikacji uratował więcej niż kapitan w tej kolejce.`,
+  `Po tej wypowiedzi sytuacja nie jest jaśniejsza, ale przynajmniej jest śmieszniej.`
+ ];
+ return lines[seed%lines.length];
+}
+
 export default function FPLPage(){
  const [data,setData]=useState(null),[error,setError]=useState(""),[tab,setTab]=useState("gazeta"),[profile,setProfile]=useState(null);
  async function load(){
@@ -37,7 +120,14 @@ export default function FPLPage(){
    {data&&tab==="profile"&&<><section className="profileGrid">{data.grades.map(x=><button className="profileCard" key={x.entry} onClick={()=>setProfile(x.entry)}><span>{x.label}</span><h3>{x.manager}</h3><p>{x.team}</p><b>{x.editorial}/10</b><small>{x.form}</small></button>)}</section>{profileData&&<Profile p={profileData} close={()=>setProfile(null)}/>}</>}
    {data&&tab==="historia"&&<section className="megaGrid"><Card title="🏅 Hall of Shame">{data.hallOfShame.map((x,i)=><div className="record" key={i}><b>{x.kind}</b><strong>{x.manager} — {x.value}</strong><small>{x.team}</small></div>)}</Card><Card title="📊 Power Ranking — forma 3 GW">{[...data.managerProfiles].sort((a,b)=>b.avg3-a.avg3).map((x,i)=><div className="chance" key={x.entry}><span>#{i+1} {x.manager} • {x.form}</span><b>{x.avg3}</b></div>)}</Card></section>}
    {data&&tab==="rywalizacja"&&<section className="megaGrid"><Card title="🥊 Bilans head-to-head">{data.rivalries.map((r,i)=><div className="rival" key={i}><b>{r.a}</b><strong>{r.aWins}–{r.bWins}</strong><b>{r.b}</b><small>remisy: {r.draw}</small></div>)}</Card><Card title="⭐ Oceny redakcji">{[...data.grades].sort((a,b)=>b.editorial-a.editorial).map(x=><div className="grade" key={x.entry}><b>{x.manager}: {x.editorial}/10 — {x.label}</b><p>{x.comment}</p></div>)}</Card></section>}
-   {data&&tab==="gala"&&<section className="megaGrid"><Card title={data.gw>=38&&data.gwFinished?"🏁 FPLowa Awards — GALA FINAŁOWA":"🏆 FPLowa Awards — stan na dziś"}>{data.seasonAwards.map((x,i)=><div className="record" key={i}><b>{x.name}</b><strong>{x.manager}</strong><small>{x.team} • ocena {x.score}/10</small></div>)}</Card><Card title="🗣️ Konferencja prasowa">{data.grades.slice(0,4).map(x=><blockquote key={x.entry}>„{x.editorial>=6?"Plan był dobry i będziemy go kontynuować.":"Musimy wyciągnąć wnioski, ale nie będę komentował decyzji kadrowych."}” — {x.manager}<small>Redakcja: {x.comment}</small></blockquote>)}</Card></section>}
+   {data&&tab==="gala"&&<section className="megaGrid">
+     <Card title={data.gw>=38&&data.gwFinished?"🏁 FPLowa Awards — GALA FINAŁOWA":"🏆 FPLowa Awards — stan na dziś"}>
+       <div className="awardGallery">{data.seasonAwards.map((x,i)=><div className="awardBig" key={i}><span>{x.icon}</span><div><b>{x.name}</b><strong>{x.manager}</strong><small>{x.team} • {x.value}</small></div></div>)}</div>
+     </Card>
+     <Card title="🎙️ Konferencja prasowa">
+       {data.grades.map(x=><blockquote key={x.entry}>{pressQuote(x,data.gw)}<small><b>Redakcja:</b> {pressReaction(x,data.gw)}</small></blockquote>)}
+     </Card>
+   </section>}
  </main>
 }
 function Card({title,children}){return <section className="megaCard"><h2>{title}</h2>{children}</section>}
