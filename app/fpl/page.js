@@ -37,7 +37,7 @@ export default function FPLPage(){
        {data ? (data.gwFinished ? " • WYDANIE KOŃCOWE" : " • LIVE") : ""}
      </span>
      <h1>📰 PODSUMOWANIE KOLEJKI</h1>
-     <p>Najważniejsze wydarzenia, katastrofy kadrowe i decyzje, po których normalny dyrektor sportowy straciłby dostęp do hasła.</p>
+     <p>Siedem kategorii, realne dane z kolejki i redakcja, która nie ma zamiaru nikogo oszczędzać.</p>
      {data?.updatedAt && <small className="fplUpdated">Automatyczna aktualizacja: {new Date(data.updatedAt).toLocaleString("pl-PL")}</small>}
      </div>
    </section>

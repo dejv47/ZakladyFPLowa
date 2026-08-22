@@ -122,76 +122,151 @@ export async function GET() {
     const hitKing=[...details].sort((a,b)=>b.transferCost-a.transferCost)[0];
     const randoms=seeded(details.filter(x=>![bestGW?.entry,worstGW?.entry].includes(x.entry)), gw, 2);
 
-    const articles=[];
+    const articles = [];
+    const finishWord = gwFinished ? "po zakończeniu kolejki" : "na ten moment";
 
-    const finishWord = gwFinished ? "po końcowym gwizdku kolejki" : "na ten moment";
+    // Deterministic variation within a GW: text does not change randomly on every refresh,
+    // but a new GW gets a different wording.
+    const variants = (arr, salt = 0) => arr[(gw + salt) % arr.length];
+
+    const scoreRoasts = [
+      "wynik wygląda jak efekt ustawiania składu po sześciu piwach",
+      "to jest FPL-owy odpowiednik wejścia na boisko w klapkach",
+      "zarządzanie tym składem przypomina małpę napierdalającą losowe przyciski",
+      "projekt sportowy wygląda, jakby dyrektora wybrano w konkursie z paczki chipsów",
+      "to nie był pech — to była pełnoprawna produkcja gówna na skalę przemysłową"
+    ];
+
+    const captainRoasts = [
+      "opaska została wykorzystana z gracją człowieka, który próbuje otworzyć konserwę młotkiem",
+      "wybór kapitana wygląda jak decyzja podjęta przez kompletnego dzbana pięć sekund przed deadline'em",
+      "literka C najwyraźniej oznaczała tutaj „chujowy pomysł”",
+      "kapitan był tak trafiony, jakby wybierał go niewidomy dartem",
+      "opaska zrobiła więcej szkody psychicznej właścicielowi niż pożytku punktowego"
+    ];
+
+    const benchRoasts = [
+      "ławka urządziła właścicielowi publiczne upokorzenie",
+      "rezerwowi mogą spokojnie założyć grupę „bez tego debila” i sami ustalać skład",
+      "punkty na ławce leżały jak pieniądze na ulicy, a menedżer postanowił je ominąć",
+      "pierwsza jedenastka patrzyła, jak rezerwowi robią robotę, i nawet nie było jej głupio",
+      "to jest sztuka: mieć punkty w drużynie i specjalnie ich nie użyć"
+    ];
 
     if (bestGW) {
       articles.push({
-        tag: gwFinished ? "KRÓL KOLEJKI" : "NA RAZIE KRÓL",
-        title: `${bestGW.team} rozjeżdża konkurencję. Reszta ligi może już odpalać wymówki`,
+        tag: gwFinished ? "KRÓL TEGO BURDELU" : "NA RAZIE KRÓL",
+        title: `${bestGW.team} rozjebało konkurencję. Rywale zaczynają produkcję wymówek`,
         body:
-          `${bestGW.manager} ma ${bestGW.gwPoints} pkt ${finishWord} i prowadzi w klasyfikacji tej GW. ` +
-          `${bestGW.best ? `Największy syf rywalom zrobił ${bestGW.best.name} z ${bestGW.best.club}, który dorzucił ${bestGW.best.rawPoints} pkt.` : ""} ` +
-          `${bestGW.captain ? (bestGW.captainHasPlayed ? `Kapitan ${bestGW.captain.name} (${bestGW.captain.club}) dostarczył ${bestGW.captain.points} pkt po mnożniku, więc tym razem opaska nie została założona przez kompletnego debila.` : `Kapitan ${bestGW.captain.name} (${bestGW.captain.club}) jeszcze nie zagrał, więc redakcja wstrzymuje się z gratulacjami i wyzwiskami.`) : ""} ` +
-          `Właściciel drużyny prawdopodobnie już uważa się za połączenie Guardioli, Monchiego i Nostradamusa. Spokojnie, mistrzu — jedna dobra kolejka nie kasuje miesięcy podejmowania decyzji jak człowiek, który pierwszy raz zobaczył piłkę nożną wczoraj wieczorem.`
+          `${bestGW.manager} ma ${bestGW.gwPoints} pkt ${finishWord} i jest najlepszy w tej GW. ` +
+          `${bestGW.best ? `${bestGW.best.name} z ${bestGW.best.club} zrobił ${bestGW.best.rawPoints} pkt i był głównym powodem, dla którego reszta ligi ma dziś kwaśne miny.` : ""} ` +
+          `${bestGW.captain ? (bestGW.captainHasPlayed ? `Kapitan ${bestGW.captain.name} (${bestGW.captain.club}) dowiózł ${bestGW.captain.points} pkt po mnożniku. Tym razem menedżer nie zjebał najważniejszej decyzji weekendu.` : `Kapitan ${bestGW.captain.name} (${bestGW.captain.club}) jeszcze nie grał, więc z otwieraniem szampana lepiej się wstrzymać.`) : ""} ` +
+          `Teraz ${bestGW.manager} zapewne chodzi po domu jak Guardiola po zdobyciu mistrzostwa i udaje, że wszystko było częścią wielkiego planu.`
       });
     }
 
     if (worstGW) {
       articles.push({
         tag: "KOMPROMITACJA KOLEJKI",
-        title: `${worstGW.team} zagrało w FPL tak, jakby skład ustalał pijany losomat`,
+        title: `${worstGW.team}: ktoś powinien odebrać menedżerowi hasło do FPL`,
         body:
-          `${worstGW.manager} uzbierał ${worstGW.gwPoints} pkt ${finishWord}, czyli najgorszy wynik w naszej lidze. ` +
-          `${worstGW.captain ? (worstGW.captainHasPlayed ? `Opaska trafiła do ${worstGW.captain.name} z ${worstGW.captain.club} i dała ${worstGW.captain.points} pkt. Jeśli to był plan, to plan był gówniany.` : `Kapitan ${worstGW.captain.name} (${worstGW.captain.club}) jeszcze nie wyszedł na boisko, więc tej katastrofy nie da się jeszcze uczciwie zwalić na niego.`) : ""} ` +
-          `${worstGW.benchPoints > 0 ? `Na ławce zostało jeszcze ${worstGW.benchPoints} pkt, więc nawet rezerwowi mieli prawo patrzeć na pierwszą jedenastkę z pogardą.` : ""} ` +
-          `Zarząd zapewnia, że sytuacja jest pod kontrolą. Patrząc na wynik, jedyną rzeczą pod kontrolą jest chyba poziom kompromitacji, bo skład wygląda jak ustawiony przez typa, który wszedł do FPL przez przypadek, szukając wyników Ekstraklasy.`
+          `${worstGW.manager} ma ${worstGW.gwPoints} pkt ${finishWord}, czyli najmniej w całej lidze. ${variants(scoreRoasts, 1)}. ` +
+          `${worstGW.captain ? (worstGW.captainHasPlayed ? `${worstGW.captain.name} z ${worstGW.captain.club} jako kapitan dał ${worstGW.captain.points} pkt. ${variants(captainRoasts, 2)}.` : `Kapitan ${worstGW.captain.name} (${worstGW.captain.club}) jeszcze nie grał, więc istnieje cień szansy, że ten pierdolnik da się jeszcze trochę posprzątać.`) : ""} ` +
+          `${worstGW.benchPoints > 0 ? `Do tego ${worstGW.benchPoints} pkt kisi się na ławce. ${variants(benchRoasts, 3)}.` : ""} ` +
+          `Zarząd oficjalnie milczy, prawdopodobnie ze wstydu.`
       });
     }
 
     if (benchKing?.benchPoints > 0) {
       articles.push({
         tag: "ŁAWKA HAŃBY",
-        title: `${benchKing.team} trzyma punkty na ławce jak skarb narodowy`,
+        title: `${benchKing.team} zostawiło ${benchKing.benchPoints} pkt na ławce. No kurwa, brawo`,
         body:
-          `${benchKing.manager} zostawił ${benchKing.benchPoints} pkt poza podstawowym składem. To nie jest zarządzanie ławką, tylko magazynowanie cierpienia. ` +
-          `${benchKing.best ? `${benchKing.best.name} (${benchKing.best.club}) zrobił ${benchKing.best.rawPoints} pkt i przynajmniej próbował ratować ten cyrk.` : ""} ` +
-          `Jeśli rezerwowi mają WhatsAppa, to po tej kolejce powinni założyć osobną grupę bez menedżera i ustalać skład sami.`
+          `${benchKing.manager} zgromadził ${benchKing.benchPoints} pkt na rezerwie, czyli stworzył całkiem niezły wynik dla drużyny, której postanowił nie wystawić. ` +
+          `${variants(benchRoasts, 4)}. ` +
+          `${benchKing.best ? `W podstawie honor ratował ${benchKing.best.name} z ${benchKing.best.club}, zdobywając ${benchKing.best.rawPoints} pkt.` : ""} ` +
+          `Sztab szkoleniowy podobno analizuje nowatorską koncepcję: w następnej kolejce wystawić tych, którzy zdobywają punkty.`
       });
     }
 
     if (hitKing?.transferCost > 0) {
       articles.push({
-        tag: "DYREKTOR SPORTOWY Z TEMU",
-        title: `${hitKing.team} zapłaciło ${hitKing.transferCost} pkt za transfery. Chelsea pyta o CV`,
+        tag: "TRANSFEROWY KRETYŃSKI MASTERPLAN",
+        title: `${hitKing.team} samo sobie odjęło ${hitKing.transferCost} pkt. Geniusz kurwa`,
         body:
-          `${hitKing.manager} wykonał ${hitKing.transfers} transferów i oddał ${hitKing.transferCost} pkt w hitach. ` +
-          `To piękna koncepcja: najpierw samemu ukraść sobie punkty, a potem liczyć, że nowi zawodnicy oddadzą je z odsetkami. ` +
-          `Efekt to ${hitKing.gwPoints} pkt w GW. Gdyby za chaos przyznawano bonusy, byłby to absolutny haul.`
+          `${hitKing.manager} zrobił ${hitKing.transfers} transferów i zapłacił za tę rewolucję ${hitKing.transferCost} pkt. ` +
+          `To strategia godna dyrektora sportowego z Temu: najpierw rozpierdolić własny dorobek, a potem modlić się, żeby nowe nabytki go odzyskały. ` +
+          `Bilans GW wynosi ${hitKing.gwPoints} pkt. Chelsea podobno chciała zatrudnić autora tego planu, ale nawet oni uznali, że to przesada.`
       });
     }
 
-    randoms.forEach((x,i)=>{
-      const c=x.captain;
+    // 5. Captain disaster — only managers whose captain's real fixture has started.
+    const captainCandidates = details
+      .filter(x => x.captain && x.captainHasPlayed)
+      .sort((a,b) => (a.captain?.points ?? 0) - (b.captain?.points ?? 0));
+    const captainDisaster = captainCandidates[0];
+
+    if (captainDisaster) {
+      articles.push({
+        tag: "KAPITAN Z DUPY",
+        title: `${captainDisaster.team} zaufało ${captainDisaster.captain.name}. I po chuj?`,
+        body:
+          `${captainDisaster.manager} dał opaskę ${captainDisaster.captain.name} z ${captainDisaster.captain.club}, a ten po mnożniku przyniósł ${captainDisaster.captain.points} pkt. ` +
+          `${variants(captainRoasts, 5)}. ` +
+          `${captainDisaster.best && captainDisaster.best.name !== captainDisaster.captain.name ? `Najlepszy zawodnik tej ekipy, ${captainDisaster.best.name} (${captainDisaster.best.club}), zrobił ${captainDisaster.best.rawPoints} pkt bez żadnej pieprzonej opaski.` : ""} ` +
+          `Po deadline'ie każdy jest mądry, ale tutaj nawet przed deadline'em można było mieć podejrzenia.`
+      });
+    }
+
+    // 6. Biggest rank fall / rise drama.
+    const fallers = details
+      .filter(x => Number.isFinite(x.lastRank) && Number.isFinite(x.rank) && x.rank > x.lastRank)
+      .sort((a,b) => (b.rank-b.lastRank) - (a.rank-a.lastRank));
+    const biggestFaller = fallers[0];
+
+    if (biggestFaller) {
+      const drop = biggestFaller.rank - biggestFaller.lastRank;
+      articles.push({
+        tag: "W DÓŁ JAK KAMIEŃ",
+        title: `${biggestFaller.team} spada o ${drop} ${drop === 1 ? "miejsce" : "miejsca"}. Winda działa, tylko kurwa w dół`,
+        body:
+          `${biggestFaller.manager} zjechał z ${biggestFaller.lastRank}. na ${biggestFaller.rank}. miejsce i uzbierał ${biggestFaller.gwPoints} pkt. ` +
+          `${biggestFaller.best ? `${biggestFaller.best.name} z ${biggestFaller.best.club} próbował ratować sytuację wynikiem ${biggestFaller.best.rawPoints} pkt, ale jeden strażak nie ugasi całego płonącego śmietnika.` : ""} ` +
+          `${biggestFaller.benchPoints > 0 ? `Na ławce zostało jeszcze ${biggestFaller.benchPoints} pkt, bo najwyraźniej sam spadek w tabeli był zbyt mało bolesny.` : ""} ` +
+          `Jeżeli tempo się utrzyma, następny raport trzeba będzie pisać z piwnicy tabeli.`
+      });
+    }
+
+    // 7. Random roast — choose one stable manager per GW, but wording varies by GW.
+    const randomPool = details.filter(x =>
+      ![bestGW?.entry, worstGW?.entry, benchKing?.entry, hitKing?.entry, captainDisaster?.entry, biggestFaller?.entry]
+        .includes(x.entry)
+    );
+    const randomVictim = seeded(randomPool.length ? randomPool : details, gw + 17, 1)[0];
+
+    if (randomVictim) {
+      const c = randomVictim.captain;
       const movement =
-        x.lastRank > x.rank
-          ? `awansował z ${x.lastRank}. na ${x.rank}. miejsce`
-          : x.lastRank < x.rank
-          ? `spadł z ${x.lastRank}. na ${x.rank}. miejsce`
-          : `tkwi na ${x.rank}. miejscu jak korek w odpływie`;
+        randomVictim.lastRank > randomVictim.rank
+          ? `awansował z ${randomVictim.lastRank}. na ${randomVictim.rank}. miejsce`
+          : randomVictim.lastRank < randomVictim.rank
+          ? `spadł z ${randomVictim.lastRank}. na ${randomVictim.rank}. miejsce`
+          : `siedzi na ${randomVictim.rank}. miejscu i udaje, że wszystko idzie zgodnie z planem`;
 
       articles.push({
-        tag:i===0 ? "REDAKCJA OBŚMIEWA" : "POD LUPĄ",
-        title:`${x.team}: projekt sportowy istnieje, ale dowodów wciąż mało`,
+        tag: "LOSOWY OPIERDOL REDAKCJI",
+        title: `${randomVictim.team} trafia dziś pod ostrzał. Bez konkretnego powodu też by się należało`,
         body:
-          `${x.manager} zdobył ${x.gwPoints} pkt i ${movement}. ` +
-          `${c ? (x.captainHasPlayed ? `Kapitanem został ${c.name} z ${c.club}; po opasce przyniósł ${c.points} pkt. ${c.points <= 4 ? "Kapitan roku — jeśli rok trwał trzy minuty i był wyjątkowo smutny." : "Tym razem opaska nie wygląda jak akt samosabotażu."}` : `Kapitan ${c.name} (${c.club}) jeszcze nie grał. Na razie jedynym jego wkładem w kolejkę jest zajmowanie miejsca obok literki C.`) : ""} ` +
-          `${x.best ? `Najlepszym zawodnikiem był ${x.best.name} (${x.best.club}) z ${x.best.rawPoints} pkt.` : ""} ` +
-          `${x.benchPoints > 0 ? `Na ławce zostało ${x.benchPoints} pkt, bo najwyraźniej celem gry było utrudnić sobie życie.` : "Ławka przynajmniej nie śmieje się dziś najgłośniej."} ` +
-          `Redakcja pozostaje przy stanowisku, że ten skład powinien być objęty nadzorem dorosłego.`
+          `${randomVictim.manager} ma ${randomVictim.gwPoints} pkt i ${movement}. ` +
+          `${c ? (randomVictim.captainHasPlayed ? `Kapitan ${c.name} (${c.club}) dał ${c.points} pkt po mnożniku. ${c.points <= 4 ? variants(captainRoasts, 6) : "Przynajmniej tutaj nie udało się wszystkiego spierdolić."}` : `${c.name} (${c.club}) czeka jeszcze na swój mecz, więc opaska nadal może uratować albo kompletnie dojebać tę kolejkę.`) : ""} ` +
+          `${randomVictim.best ? `Najlepszy był ${randomVictim.best.name} z ${randomVictim.best.club} — ${randomVictim.best.rawPoints} pkt.` : "Żaden zawodnik z rozegranym meczem nie zrobił jeszcze niczego, czym warto się chwalić."} ` +
+          `${randomVictim.benchPoints > 0 ? `Ławka ma ${randomVictim.benchPoints} pkt, czyli tradycyjnie część drużyny zarządzana przez menedżera najmniej aktywnie radzi sobie całkiem nieźle.` : ""} ` +
+          `Redakcja będzie obserwować dalszy rozwój tego burdelu z należytą pogardą.`
       });
-    });
+    }
+
+    // Always cap at seven categories/articles.
+    const finalArticles = articles.slice(0, 7);
 
     return NextResponse.json({
       ok:true, league:{id:LEAGUE_ID,name:league.league.name}, gw,
@@ -202,7 +277,7 @@ export async function GET() {
       pointsSource:`/event/${gw}/live/`,
       fixtureSource:`/fixtures/?event=${gw}`,
       standings:details,
-      articles
+      articles:finalArticles
     }, {headers:{"Cache-Control":"no-store, no-cache, must-revalidate, max-age=0"}});
   } catch(e) {
     return NextResponse.json({ok:false,error:String(e?.message||e)}, {status:500});
