@@ -868,8 +868,11 @@ export async function GET() {
       const avg = hs.length ? hs.reduce((a,z)=>a+z.points,0)/hs.length : 0;
       const bestGW = hs.length ? [...hs].sort((a,b)=>b.points-a.points)[0] : null;
       const worstGW = hs.length ? [...hs].sort((a,b)=>a.points-b.points)[0] : null;
-      const benchSeason = hs.reduce((a,z)=>a+Number(z.bench||0),0);
-      const hitSeason = hs.reduce((a,z)=>a+Number(z.cost||0),0);
+      // Season totals must include the CURRENT GW too. FPL exposes points_on_bench
+      // and transfer cost during the live GW, so hiding them until the event is marked
+      // finished made profile totals look wrong.
+      const benchSeason = allHs.reduce((a,z)=>a+Number(z.bench||0),0);
+      const hitSeason = allHs.reduce((a,z)=>a+Number(z.cost||0),0);
 
       const form = last3.map(z =>
         z.points >= 70 ? "🔥" :
@@ -1204,7 +1207,6 @@ export async function GET() {
     const seasonAwards = [
       byRank[0] && {icon:"👑",name:"MVP sezonu",p:byRank[0],value:`#${byRank[0].rank} • ${byRank[0].overall} pkt`},
       byEditorial[0] && {icon:"🧠",name:"Mózg sezonu",p:byEditorial[0],value:`ocena ${byEditorial[0].editorial}/10`},
-      byBadEditorial[0] && {icon:"🏺",name:"Złoty Dzban",p:byBadEditorial[0],value:`ocena ${byBadEditorial[0].editorial}/10`},
       byBench[0] && {icon:"🪑",name:"Król ławki",p:byBench[0],value:`${byBench[0].benchSeason} pkt na ławce`},
       byHits[0] && {icon:"💸",name:"Transferowy kryminalista",p:byHits[0],value:`-${byHits[0].hitSeason} pkt w hitach`},
       byForm[0] && {icon:"🔥",name:"Najgorętsza forma",p:byForm[0],value:`${byForm[0].avg3} średnio / 3 GW`},
@@ -1219,6 +1221,17 @@ export async function GET() {
       score:x.p.editorial,value:x.value
     }));
 
+    const combinedMuseumAwards = [
+      ...seasonAwards,
+      ...museum.filter(m => !seasonAwards.some(a =>
+        a.manager === m.manager &&
+        (a.name === m.name ||
+         (a.name.includes("ławki") && m.name.includes("ławce")) ||
+         (a.name.includes("Transferowy") && m.name.includes("hity")) ||
+         (a.name.includes("kapitan") && m.name.includes("kapitan")))
+      ))
+    ];
+
     return NextResponse.json({
       ok:true, league:{id:LEAGUE_ID,name:league.league.name}, gw,
       updatedAt:new Date().toISOString(),
@@ -1232,9 +1245,20 @@ export async function GET() {
       awards, breakingNews:breakingNews.slice(0,8), managerProfiles, hallOfShame:shameRecords,
       watchList, deathMatch, rivalries, rivalryProfiles, virtualOdds, predictions, grades, gwChances, seasonAwards,
       monthlyAwards, transferIQRanking, bestTransferSeason, worstTransferSeason,
-      captainRanking, captainFraud, noTouchRanking, museum
+      captainRanking, captainFraud, noTouchRanking, museum, combinedMuseumAwards
     }, {headers:{"Cache-Control":"no-store, no-cache, must-revalidate, max-age=0"}});
   } catch(e) {
+    const combinedMuseumAwards = [
+      ...seasonAwards,
+      ...museum.filter(m => !seasonAwards.some(a =>
+        a.manager === m.manager &&
+        (a.name === m.name ||
+         (a.name.includes("ławki") && m.name.includes("ławce")) ||
+         (a.name.includes("Transferowy") && m.name.includes("hity")) ||
+         (a.name.includes("kapitan") && m.name.includes("kapitan")))
+      ))
+    ];
+
     return NextResponse.json({ok:false,error:String(e?.message||e)}, {status:500});
   }
 }

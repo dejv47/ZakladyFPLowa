@@ -465,6 +465,26 @@ function pressQuote(p,gw,managerIndex,league){
  const extreme=EXTREME_CONF_RANTS[mood][(gw*7+managerIndex)%EXTREME_CONF_RANTS[mood].length];
  const extremeShot=EXTREME_MANAGER_SHOTS[(gw*11+managerIndex)%EXTREME_MANAGER_SHOTS.length];
  const brutalEnding=BRUTAL_ENDINGS[(gw*5+managerIndex)%BRUTAL_ENDINGS.length];
+ const normalizedManager=(p.manager||"").toLowerCase();
+ const isMalinowski=normalizedManager.includes("łukasz malinowski")||normalizedManager.includes("lukasz malinowski");
+ const isKoszela=normalizedManager.includes("patryk koszela");
+ const isCichon=normalizedManager.includes("jan cichoń")||normalizedManager.includes("jan cichon");
+ const arrogance=isMalinowski
+   ? `Powiem wprost: większość tej ligi może sobie analizować moje ruchy dopiero wtedy, kiedy nauczy się grać na moim poziomie. Jak jestem nad nimi, to dlatego, że jestem lepszy; jak akurat nie jestem, to tylko chwilowa anomalia, którą zaraz naprawię.`
+   : "";
+ const feud=isKoszela
+   ? [
+      `A skoro już pytacie o Jana Cichonia: jego największym differentialem jest pewność siebie kompletnie nieproporcjonalna do tego, co pokazuje tabela. Lubi gadać, więc niech gada — ja wolę patrzeć, jak potem tłumaczy wynik.`,
+      `Jan Cichoń podobno znowu ma coś do powiedzenia. Świetnie. Jak skończy układać teorię o mojej drużynie, może wreszcie znajdzie pięć minut, żeby naprawić własny burdel.`,
+      `Nie mam konfliktu z Janem Cichoniem. Konflikt sugerowałby wyrównany poziom. Ja po prostu regularnie przypominam mu, że mikrofon nie daje punktów.`
+     ][(gw-1)%3]
+   : isCichon
+   ? [
+      `Koszela może sobie urządzać konferencje zwycięstwa nawet po przeciętnej kolejce. Patryk zawsze był mocniejszy w narracji niż w zachowywaniu ciszy, kiedy wypadałoby ją zachować.`,
+      `Jeżeli Patryk Koszela chce mnie zaczepiać, niech najpierw upewni się, że jego skład nie wygląda jak lista przypadkowych nazwisk wyciągniętych z kapelusza pięć minut przed deadlinem.`,
+      `Koszela dużo mówi o innych. To wygodne, bo wtedy przez chwilę nikt nie pyta go o jego własne decyzje. Ja chętnie będę pytał.`
+     ][(gw-1)%3]
+   : "";
 
  const stats=[
   `W tej kolejce mam ${p.gwPoints} pkt i ${rank}. wynik w naszej lidze. Średnia z ostatnich trzech GW to ${p.avg3}, więc przynajmniej wiadomo, czy dzisiejszy wynik jest trendem, czy jednorazowym wybrykiem.`,
@@ -473,7 +493,7 @@ function pressQuote(p,gw,managerIndex,league){
   `Bilans GW${gw} to ${p.gwPoints} punktów i ${rank}. pozycja wśród naszych menedżerów. Do tego koszt hitów w sezonie wynosi ${p.hitSeason}, więc każdy następny minus cztery będzie musiał mieć naprawdę dobre alibi.`
  ][(gw+managerIndex)%4];
 
- return `„${intro} ${moodText} ${extreme} ${brutal} ${stats} ${middle1} ${extremeShot} ${middle2} ${personal} ${brutalEnding}”`;
+ return `„${intro} ${moodText} ${arrogance} ${feud} ${extreme} ${brutal} ${stats} ${middle1} ${extremeShot} ${middle2} ${personal} ${brutalEnding}”`;
 }
 
 function pressReaction(p,gw,managerIndex,league){
@@ -508,16 +528,42 @@ function pressReaction(p,gw,managerIndex,league){
 
 function shameNum(v){const n=Number(v);return Number.isFinite(n)?n:0}
 function v39RivalReplies(data){
- const ps=[...(data?.managerProfiles||data?.grades||[])].sort((a,b)=>shameNum(b.gwPoints)-shameNum(a.gwPoints)),gw=shameNum(data?.gw)||1,out=[];
- for(let i=0;i<ps.length-1&&out.length<4;i++){const a=ps[i],b=ps[i+1],k=confHash(`beef-${gw}-${a.entry}-${b.entry}`);
- const t=[
- `${b.manager}: „${a.manager} zrobił jedną dobrą kolejkę i już pierdoli jakby ligę wygrał. Niech się nacieszy, bo FPL szybko sprowadza takich kozaków na ziemię.”`,
- `${b.manager}: „Słyszałem konferencję ${a.manager}. Tyle samozachwytu po jednym GW to już nie pewność siebie, tylko choroba. Pogadamy po następnym deadlinie.”`,
- `${b.manager}: „Nie interesuje mnie, co odpierdala medialnie ${a.manager}. Jak będzie nade mną na koniec sezonu, wtedy może otworzyć mordę szerzej.”`,
- `${b.manager}: „Gratuluję ${a.manager}. Teraz czekam aż tradycyjnie poprawi działający skład trzema genialnymi transferami i wszystko rozpierdoli.”`,
- `${b.manager}: „${a.manager} już chodzi jak Mourinho po potrójnej koronie. Spokojnie kurwa, to nadal tylko jedna kolejka fantasy.”`,
- `${b.manager}: „Ja bym mniej kozaczył. Ta pojebana gra najbardziej lubi kopnąć w jaja dokładnie wtedy, kiedy człowiek zaczyna się uważać za geniusza.”`];
- out.push({a,b,text:t[k%t.length]})}return out
+ const ps=[...(data?.managerProfiles||data?.grades||[])].sort((a,b)=>shameNum(b.gwPoints)-shameNum(a.gwPoints));
+ const gw=shameNum(data?.gw)||1,out=[];
+ const norm=x=>(x?.manager||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+ const koszela=ps.find(x=>norm(x).includes("patryk koszela"));
+ const cichon=ps.find(x=>norm(x).includes("jan cichon"));
+ if(koszela&&cichon){
+   const kc=[
+    `${cichon.manager}: „Koszela znowu odpalił mikrofon? Niech najpierw sprawdzi tabelę, bo jego konferencje mają ostatnio więcej jakości niż jego decyzje w FPL.”`,
+    `${cichon.manager}: „Patryk uwielbia komentować mój skład. Ja też lubię fantastykę, ale nie aż tak, żeby brać jego porady transferowe na serio.”`,
+    `${cichon.manager}: „Koszela może mnie zaczepiać co tydzień. Przynajmniej ma wtedy jakieś zajęcie między jednym spieprzonym pomysłem a drugim.”`,
+    `${cichon.manager}: „Patryk ma talent do mówienia z miną mistrza nawet wtedy, gdy jego skład właśnie dostał w mordę od rzeczywistości. Szanuję konsekwencję.”`
+   ];
+   const ck=[
+    `${koszela.manager}: „Cichoń gada o mnie częściej niż o własnej drużynie. Rozumiem — moja jest po prostu ciekawsza, ale niech chłop spróbuje kiedyś skupić się na swoim bałaganie.”`,
+    `${koszela.manager}: „Jan może sobie robić analizę moich ruchów. Jak skończy, niech przeanalizuje, czemu jego własne genialne pomysły tak często kończą się jak mokry karton.”`,
+    `${koszela.manager}: „Cichoń ma wielkie zdanie na każdy temat. Szkoda, że FPL nie daje punktów za objętość pierdolenia, bo wtedy naprawdę byłby groźny.”`,
+    `${koszela.manager}: „Jan znowu szczeka? Spokojnie. Tabela ma lepszy knebel niż ja i zwykle zakłada go dokładnie wtedy, kiedy Cichoń najbardziej się rozpędzi.”`
+   ];
+   out.push({a:koszela,b:cichon,text:kc[(gw-1)%kc.length]});
+   out.push({a:cichon,b:koszela,text:ck[(gw-1)%ck.length]});
+ }
+ for(let i=0;i<ps.length-1&&out.length<6;i++){
+   const a=ps[i],b=ps[i+1];
+   if((a===koszela&&b===cichon)||(a===cichon&&b===koszela)) continue;
+   const k=confHash(`beef-${gw}-${a.entry}-${b.entry}`);
+   const t=[
+    `${b.manager}: „${a.manager} zrobił jedną dobrą kolejkę i już pierdoli jakby ligę wygrał. Niech się nacieszy, bo FPL szybko sprowadza takich kozaków na ziemię.”`,
+    `${b.manager}: „Słyszałem konferencję ${a.manager}. Tyle samozachwytu po jednym GW to już nie pewność siebie, tylko choroba. Pogadamy po następnym deadlinie.”`,
+    `${b.manager}: „Nie interesuje mnie, co odpierdala medialnie ${a.manager}. Jak będzie nade mną na koniec sezonu, wtedy może otworzyć mordę szerzej.”`,
+    `${b.manager}: „Gratuluję ${a.manager}. Teraz czekam aż tradycyjnie poprawi działający skład trzema genialnymi transferami i wszystko rozpierdoli.”`,
+    `${b.manager}: „${a.manager} już chodzi jak Mourinho po potrójnej koronie. Spokojnie kurwa, to nadal tylko jedna kolejka fantasy.”`,
+    `${b.manager}: „Ja bym mniej kozaczył. Ta pojebana gra najbardziej lubi kopnąć w jaja dokładnie wtedy, kiedy człowiek zaczyna się uważać za geniusza.”`
+   ];
+   out.push({a,b,text:t[k%t.length]});
+ }
+ return out;
 }
 function V39RivalReplies({data}){const rows=v39RivalReplies(data);return <Card title="🎙️ Pomeczowe odpowiedzi rywali"><p className="sectionLead">Konferencja się skończyła, ale rywale oczywiście dalej mają coś do powiedzenia.</p>{rows.map((x,i)=><div className="pressReply" key={i}><b>{x.b.manager} odpowiada {x.a.manager}</b><p>{x.text}</p></div>)}</Card>}
 
@@ -1034,7 +1080,7 @@ export default function FPLPage(){
    <section className="newspaperHero"><div><span className="paperKicker">FPLowa • GW {data?.gw??"—"} {data?(data.gwFinished?"• WYDANIE KOŃCOWE":"• LIVE"):""}</span><h1>📰 FPLOWA</h1><p>Brukowiec, centrum dowodzenia i kronika kompromitacji Waszej ligi.</p>{data?.updatedAt&&<small className="fplUpdated">Aktualizacja: {new Date(data.updatedAt).toLocaleString("pl-PL")}</small>}</div></section>
    <div className="fplTabs">
      <button className={tab==="zaklady"?"active":""} onClick={()=>setTab("zaklady")}>🎲 Zakłady</button>
-     {[["gazeta","📰 Gazeta"],["live","⚡ Live"],["profile","👤 Profile"],["historia","🏛️ Hall of Shame"],["analityka","🧠 Analityka"],["muzeum","🏛️ Muzeum"],["studio","📺 Studio"],["rywalizacja","🥊 Rivalry"],["gala","🏆 Awards"]].map(([k,l])=><button key={k} className={tab===k?"active":""} onClick={()=>setTab(k)}>{l}</button>)}
+     {[["gazeta","📰 Gazeta"],["live","⚡ Live"],["profile","👤 Profile"],["historia","🏛️ Hall of Shame"],["analityka","🧠 Analityka"],["muzeum","🏛️ Muzeum"],["studio","📺 Studio"],["rywalizacja","🥊 Rivalry"],["gala","🎙️ Media"]].map(([k,l])=><button key={k} className={tab===k?"active":""} onClick={()=>setTab(k)}>{l}</button>)}
    </div>
    {error&&<div className="error">{error}</div>}{!data&&!error&&<div className="loading">Redakcja zbiera materiały...</div>}
    {tab==="zaklady"&&<BetsTab/>}
@@ -1053,7 +1099,7 @@ export default function FPLPage(){
      <Card title="💰 Wirtualne kursy na mistrza"><small>Tylko zabawowa symulacja, bez prawdziwych zakładów.</small>{data.virtualOdds.map(x=><div className="chance" key={x.manager}><span>{x.manager} • {x.prob}%</span><b>{x.odds}</b></div>)}</Card>
    </section>}
    {data&&tab==="profile"&&<><section className="profileGrid">{data.grades.map(x=><button className="profileCard" key={x.entry} onClick={()=>setProfile(x.entry)}><div className="profileIcon">{x.icon}</div><span>{x.label}</span><h3>{x.manager}</h3><p>{x.team}</p><b>{x.editorial}/10</b><small>{x.form}</small></button>)}</section>{profileData&&<Profile p={profileData} close={()=>setProfile(null)}/>}</>}
-   {data&&tab==="historia"&&<section className="megaGrid">
+   {data&&tab==="historia"&&<section className="megaGrid"><V39Jug data={data}/>
      <Card title="🏅 Hall of Shame">
        {data.hallOfShame.length
          ? data.hallOfShame.map((x,i)=><div className="record shameRecord" key={i}><b>{x.kind}</b><strong>{x.manager} — {x.value}</strong><small>{x.team}</small></div>)
@@ -1084,18 +1130,15 @@ export default function FPLPage(){
      </Card>
    </section>}
    {data&&tab==="muzeum"&&<section className="megaGrid">
-     <Card title="🏛️ Muzeum kompromitacji">
-       <div className="awardGallery">{data.museum.map((x,i)=><div className="awardBig" key={i}><span>{x.icon}</span><div><b>{x.name}</b><strong>{x.manager}</strong><small>{x.team} • {x.value}</small></div></div>)}</div>
+     <Card title={data.gw>=38&&data.gwFinished?"🏛️ Muzeum sezonu — finał":"🏛️ Muzeum sezonu"}>
+       <p className="sectionLead">Jedna wspólna gablota: najlepsze osiągnięcia, rekordy sezonu i największe kompromitacje. Bez dwóch zakładek pokazujących prawie to samo.</p>
+       <div className="awardGallery">{(data.combinedMuseumAwards||[...(data.seasonAwards||[]),...(data.museum||[])]).map((x,i)=><div className="awardBig" key={`${x.name}-${x.manager}-${i}`}><span>{x.icon}</span><div><b>{x.name}</b><strong>{x.manager}</strong><small>{x.team} • {x.value}</small></div></div>)}</div>
      </Card>
-        <Card title={data.gw>=38&&data.gwFinished?"🏁 FPLowa Awards — GALA FINAŁOWA":"🏆 FPLowa Awards — stan na dziś"}>
-       <div className="awardGallery">{data.seasonAwards.map((x,i)=><div className="awardBig" key={i}><span>{x.icon}</span><div><b>{x.name}</b><strong>{x.manager}</strong><small>{x.team} • {x.value}</small></div></div>)}</div>
-     </Card>
-</section>}
+   </section>}
    {data&&tab==="studio"&&<>
      <PostMatchStudio data={data}/>
      <section className="megaGrid studioExtras">
        <V39RivalReplies data={data}/>
-       <V39Jug data={data}/>
      </section>
    </>}
    {data&&tab==="rywalizacja"&&<section className="megaGrid">
@@ -1168,9 +1211,26 @@ function PostMatchStudio({data}){
   {q:`A co z menedżerami, którzy po GW ${data.gw} są gdzieś pomiędzy paradą zwycięstwa a śmietnikiem historii?`,a:middleLines[(seed>>7)%middleLines.length],b:`I właśnie dlatego ${middle?.manager} może dziś spać spokojniej niż ${victim?.manager}. Nie dobrze. Po prostu spokojniej.`},
   {q:`Ostatnie słowo przed następnym deadlinem?`,a:closings[(seed>>9)%closings.length],b:`Redakcja przypomina: jeśli transfer wydaje się genialny o 01:47 w nocy, prawdopodobnie należy odłożyć telefon.`}
  ];
+ const managerAnswers=people.slice(0,Math.min(6,people.length)).map((p,i)=>{
+   const rank=gwRank(p,people);
+   const isL=(p.manager||"").toLowerCase().includes("malinowski");
+   const lines=isL?[
+     `Nie będę udawał skromnego. ${p.gwPoints} punktów to efekt tego, że po prostu lepiej czytam tę grę niż większość tutaj. Reszta może sobie robić notatki.`,
+     `Możecie pytać o presję, ale presję mają ludzie, którzy próbują mnie dogonić. Ja patrzę tylko przed siebie, bo za plecami jest głównie hałas.`,
+     `Jeżeli komuś przeszkadza moja pewność siebie, polecam zdobywać więcej punktów. To zwykle leczy kompleksy szybciej niż dyskusja na grupie.`
+   ]:[
+     `Mam ${p.gwPoints} pkt i ${rank}. wynik tej rundy. Nie będę robił z tego epopei — część decyzji siadła, część była kompletnie z dupy i następna GW wszystko zweryfikuje.`,
+     `Po tej kolejce najbardziej wkurwia mnie to, że zawsze widzisz idealny ruch dopiero po fakcie. Przed deadlinem człowiek jest strategiem, po deadlinie archeologiem własnych błędów.`,
+     `Nie zamierzam kopiować liderów tylko dlatego, że coś im siadło. Jak mam się wyjebać, to przynajmniej na własnym pomyśle, a nie cudzym.`,
+     `Najgorsze w FPL jest to, że jedna dobra decyzja daje ci poczucie geniuszu, a pięć minut później drugi zawodnik przypomina, że nadal jesteś zwykłym debilem z aplikacją.`,
+     `Wynik jest jaki jest. Nie potrzebuję konferencyjnego PR-u — potrzebuję, żeby moi piłkarze w następnej kolejce przestali zachowywać się jak statyści.`
+   ];
+   return {p,text:lines[(seed+i+data.gw)%lines.length]};
+ });
  return <section className="studioWrap">
    <div className="studioTitle"><span>📺</span><div><span className="paperKicker">FPLOWA TV</span><h2>Pomeczowe studio GW {data.gw}</h2></div></div>
    {dialogues.map((d,i)=><article className="studioSegment" key={`${data.gw}-${i}`}><h3>{d.q}</h3><div className="expertLine"><b>🎙️ Ekspert A:</b><p>{d.a}</p></div><div className="expertLine"><b>🗣️ Ekspert B:</b><p>{d.b}</p></div></article>)}
+   <article className="studioSegment"><h3>🎤 Głos menedżerów po kolejce</h3>{managerAnswers.map(({p,text})=><div className="expertLine" key={`studio-manager-${p.entry}-${data.gw}`}><b>{p.icon||"🎙️"} {p.manager}:</b><p>{text}</p></div>)}</article>
  </section>
 }
 
