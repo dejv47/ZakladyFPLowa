@@ -12,6 +12,15 @@ async function fpl(path) {
   return r.json();
 }
 
+async function fplCached(path, revalidate = 3600) {
+  const r = await fetch(`${BASE}${path}`, {
+    next: { revalidate },
+    headers: { "User-Agent": "ZakladyLive/1.0" }
+  });
+  if (!r.ok) throw new Error(`FPL ${r.status}: ${await r.text()}`);
+  return r.json();
+}
+
 function seeded(items, seed, count=2) {
   if (!items.length) return [];
   const arr=[...items];
@@ -50,6 +59,37 @@ export async function GET() {
       (live.elements || []).map(x => [x.id, Number(x.stats?.total_points || 0)])
     );
 
+    // Season stat archive used by Awards. Old GWs are immutable, so they are cached.
+    // Current GW continues to use the fresh `live` response above.
+    const oldGwIds = Array.from({ length: Math.max(0, Number(gw) - 1) }, (_, i) => i + 1);
+    const oldGwLives = await Promise.all(
+      oldGwIds.map(id =>
+        fplCached(`/event/${id}/live/`, 21600).catch(() => ({ elements: [] }))
+      )
+    );
+
+    const gwPlayerStats = {};
+    oldGwIds.forEach((id, index) => {
+      gwPlayerStats[id] = Object.fromEntries(
+        (oldGwLives[index]?.elements || []).map(el => [
+          Number(el.id),
+          {
+            goals: Number(el.stats?.goals_scored || 0),
+            conceded: Number(el.stats?.goals_conceded || 0)
+          }
+        ])
+      );
+    });
+    gwPlayerStats[Number(gw)] = Object.fromEntries(
+      (live.elements || []).map(el => [
+        Number(el.id),
+        {
+          goals: Number(el.stats?.goals_scored || 0),
+          conceded: Number(el.stats?.goals_conceded || 0)
+        }
+      ])
+    );
+
     const players = Object.fromEntries(boot.elements.map(p => [p.id, p]));
     const teams = Object.fromEntries(boot.teams.map(t => [t.id, t]));
 
@@ -67,10 +107,13 @@ export async function GET() {
 
     const entries = league.standings.results;
     const details = await Promise.all(entries.map(async row => {
-      const [picks, hist, transfersAll] = await Promise.all([
+      const [picks, hist, transfersAll, firstGwPicks] = await Promise.all([
         fpl(`/entry/${row.entry}/event/${gw}/picks/`).catch(()=>null),
         fpl(`/entry/${row.entry}/history/`).catch(()=>null),
-        fpl(`/entry/${row.entry}/transfers/`).catch(()=>[])
+        fpl(`/entry/${row.entry}/transfers/`).catch(()=>[]),
+        Number(gw) === 1
+          ? Promise.resolve(null)
+          : fplCached(`/entry/${row.entry}/event/1/picks/`, 86400).catch(()=>null)
       ]);
       const h = hist?.current?.find(x => x.event === gw);
       const squad=(picks?.picks||[]).map(x => {
@@ -115,6 +158,14 @@ export async function GET() {
         best,
         worst,
         squad,
+        initialSquadIds: (
+          (Number(gw) === 1 ? picks?.picks : firstGwPicks?.picks) || []
+        ).map(z => Number(z.element)),
+        ownershipTransfers: (transfersAll || []).map(t => ({
+          event: Number(t.event),
+          inId: Number(t.element_in),
+          outId: Number(t.element_out)
+        })),
         history: (() => {
           const rows = (hist?.current || []).map(z => ({
             gw: Number(z.event),
@@ -485,6 +536,44 @@ export async function GET() {
       finalArticles.push({tag:a.tag,title:a.title,body:a.body});
     }
 
+    // Awards: reconstruct who each manager actually owned in every GW.
+    // We count all 15 players in the manager's FPL squad for that GW, including the bench.
+    // A player's goals/conceded only count while he was owned by that manager.
+    const seasonTeamStats = Object.fromEntries(
+      details.map(x => {
+        const squadIds = new Set((x.initialSquadIds || []).map(Number));
+        const transfersByGw = {};
+        for (const t of x.ownershipTransfers || []) {
+          if (!transfersByGw[t.event]) transfersByGw[t.event] = [];
+          transfersByGw[t.event].push(t);
+        }
+
+        let goals = 0;
+        let conceded = 0;
+
+        for (let event = 1; event <= Number(gw); event++) {
+          // GW1 initial squad is already the post-transfer squad.
+          if (event > 1) {
+            for (const t of transfersByGw[event] || []) {
+              squadIds.delete(Number(t.outId));
+              squadIds.add(Number(t.inId));
+            }
+          }
+
+          const stats = gwPlayerStats[event] || {};
+          for (const playerId of squadIds) {
+            goals += Number(stats[playerId]?.goals || 0);
+            conceded += Number(stats[playerId]?.conceded || 0);
+          }
+        }
+
+        return [
+          Number(x.entry),
+          { goals, conceded }
+        ];
+      })
+    );
+
     // ---------- FPLowa MEGA analytics v22 ----------
     const canonicalHistoryFor = (x) => {
       const hs = [...(x.history || [])];
@@ -504,118 +593,85 @@ export async function GET() {
       return hs.sort((a,b)=>a.gw-b.gw);
     };
 
-    const profileComment = (x, stats) => {
+    const profileComment = (x, stats, managerIndex) => {
       const {avg3, benchSeason, hitSeason, bestGW, worstGW, editorial} = stats;
       const hs = canonicalHistoryFor(x).filter(h => h.gw < gw || gwFinished);
       const last3 = hs.slice(-3);
-      const trend = last3.length >= 3 ? last3[2].points-last3[0].points : 0;
-      const spread = bestGW && worstGW ? bestGW.points-worstGW.points : 0;
+      const trend = last3.length >= 3 ? last3[2].points - last3[0].points : 0;
 
-      /*
-       * Every manager gets a private vocabulary bank.
-       * No sentence below is shared between manager slots.
-       * Slot is stable by league order/entry, so two managers cannot receive
-       * the same authored sentence even when their stats are identical.
-       */
-      const banks = [
-        [
-          `${x.manager} prowadzi ${x.team} jak laboratorium, w którym połowa eksperymentów działa, a druga połowa kończy się pytaniem „kto kurwa na to pozwolił?”.`,
-          `Miejsce ${x.rank}. i ocena ${editorial}/10 sugerują, że chaos ma tu przynajmniej jakiś regulamin.`,
-          `Forma ${avg3.toFixed(1)} z trzech GW wygląda ${avg3>=55?"jak coś, czym można się bezczelnie chwalić":"jak coś, co lepiej omawiać przy zgaszonym świetle"}.`,
-          `${benchSeason} punktów na ławce to ${benchSeason>=35?"mały pomnik złych przeczuć":"jeszcze nie materiał na komisję śledczą"}.`,
-          `Transferowe minusy wynoszą ${hitSeason}; księgowość ${x.team} ${hitSeason>=12?"już chowa ostre przedmioty":"na razie nie wzywa ochrony"}.`
-        ],
-        [
-          `${x.manager} traktuje ${x.team} jak własny serial: co kolejkę nowy odcinek i nigdy nie wiadomo, czy będzie dramat, komedia czy totalny burdel.`,
-          `Ranking #${x.rank} daje mu obecnie ${x.rank<=3?"prawo do kozaczenia":"więcej pytań niż powodów do szampana"}.`,
-          `Średnia ${avg3.toFixed(1)} w ostatnich trzech zakończonych kolejkach mówi więcej niż wszystkie pomeczowe wymówki razem.`,
-          `Rezerwowi uzbierali ${benchSeason} punktów i ${benchSeason>=35?"powoli mogą zakładać związek zawodowy":"jeszcze nie planują przewrotu"}.`,
-          `Za dodatkowe transfery zapłacił ${hitSeason} punktów — ${hitSeason?"cennik własnej niecierpliwości":"rzadki przypadek człowieka, który umie nie klikać"}.`
-        ],
-        [
-          `Kartoteka ${x.manager} wygląda jak raport z miejsca zdarzenia pod nazwą ${x.team}.`,
-          `Pozycja ${x.rank}. przy ratingu ${editorial}/10 oznacza ${editorial>=7?"zaskakująco mało dowodów obciążających":"że prokurator FPL ma co czytać"}.`,
-          `Ostatnia forma to ${avg3.toFixed(1)} i ${trend>10?"wyraźnie nabiera rozpędu":trend<-10?"zjeżdża jak wózek bez hamulców":"stoi mniej więcej tam, gdzie stała"}.`,
-          `Na ławce leży ${benchSeason} punktów — ${benchSeason>=40?"dowód rzeczowy numer jeden":"na razie tylko poszlaka"}.`,
-          `Hity zabrały ${hitSeason}, więc dział transferowy ${hitSeason>=12?"powinien mieć przesłuchanie":"może jeszcze chodzić bez adwokata"}.`
-        ],
-        [
-          `${x.team} pod wodzą ${x.manager} przypomina knajpę bez menu: czasem dostajesz świetne danie, czasem coś, czego nikt rozsądny nie zamawiał.`,
-          `Aktualne ${x.rank}. miejsce jest ${x.rank<=3?"ładnym widokiem z góry":"przypomnieniem, że tabela nie zna litości"}.`,
-          `Forma ${avg3.toFixed(1)} ${trend>=0?"nie daje powodów do ewakuacji":"uruchamia czujnik dymu"}.`,
-          `${benchSeason} oczek na rezerwie pokazuje, że ${benchSeason>30?"najlepsze pomysły czasem siedzą poza boiskiem":"selekcja jedenastki nie jest największym problemem"}.`,
-          `Koszt zmian ponad limit: ${hitSeason}; ${hitSeason>=8?"FOMO ma tu własne biurko":"cierpliwość jeszcze nie została zwolniona"}.`
-        ],
-        [
-          `${x.manager} zarządza ${x.team} jak człowiek próbujący rozbroić bombę instrukcją znalezioną na forum.`,
-          `Ocena ${editorial}/10 przy miejscu ${x.rank}. daje ${editorial>=6.5?"chwilowy immunitet od szydery":"redakcji pełne prawo do podnoszenia brwi"}.`,
-          `${avg3.toFixed(1)} średnio z trzech GW to ${avg3>=50?"przyzwoity puls":"wynik, przy którym lekarz pyta o rodzinę"}.`,
-          `Ławkowe ${benchSeason} punktów ${benchSeason>=35?"boli bardziej za każdym ponownym spojrzeniem":"nie wymaga jeszcze terapii"}.`,
-          `Transfery kosztowały ${hitSeason}; ${hitSeason>=12?"wizja okazała się płatnym DLC":"portfel punktowy przeżył"}.`
-        ],
-        [
-          `W ${x.team} rządzonym przez ${x.manager} zdrowy rozsądek ma kartę wstępu, ale nie zawsze wpuszczają go na stadion.`,
-          `Numer ${x.rank} w tabeli i ${editorial}/10 od redakcji tworzą ${editorial>=7?"całkiem elegancki obraz":"portret z kilkoma bardzo podejrzanymi plamami"}.`,
-          `Bieżąca forma ${avg3.toFixed(1)} ${trend>0?"idzie w stronę światła":"nie daje jeszcze podstaw do fanfar"}.`,
-          `Rezerwa połknęła ${benchSeason} punktów; ${benchSeason>=40?"to już pełnoprawna grabież":"straty są kontrolowane"}.`,
-          `${hitSeason} punktów za hity brzmi ${hitSeason>=12?"jak rachunek po pijanym deadline day":"zaskakująco odpowiedzialnie"}.`
-        ],
-        [
-          `${x.manager} zrobił z ${x.team} test cierpliwości, w którym uczestnikiem, badaczem i ofiarą jest ta sama osoba.`,
-          `Pozycja ${x.rank}. ${x.rank<=3?"pozwala chwilowo udawać geniusza":"nie daje wygodnej poduszki pod ego"}.`,
-          `Wskaźnik trzech GW wynosi ${avg3.toFixed(1)}; ${trend>=15?"maszyna właśnie złapała obroty":trend<=-15?"silnik wydaje dźwięki, których nie powinien":"silnik pracuje bez większych fajerwerków"}.`,
-          `${benchSeason} punktów pozostawionych poza składem to ${benchSeason>=35?"bardzo drogi kurs podejmowania decyzji":"jeszcze rozsądne czesne"}.`,
-          `Hity: ${hitSeason}; ${hitSeason>=8?"przycisk Confirm Transfers jest zdecydowanie zbyt łatwo dostępny":"palec pozostaje pod kontrolą"}.`
-        ],
-        [
-          `${x.team} ma w osobie ${x.manager} menedżera, który potrafi zamienić zwykłą sobotę w pełnoprawne wydarzenie kryzysowe.`,
-          `${x.rank}. lokata z notą ${editorial}/10 ${editorial>=7?"wygląda jak robota fachowca":"nie trafi do folderu „bez zarzutów”"}.`,
-          `Forma ${avg3.toFixed(1)} ${avg3>=55?"daje kibicom tlen":"każe kibicom oddychać przez papierową torbę"}.`,
-          `Ławka ma ${benchSeason} punktów i ${benchSeason>=30?"zaczyna patrzeć na podstawową XI z pogardą":"zna swoje miejsce"}.`,
-          `Koszt hitów ${hitSeason} ${hitSeason>=12?"wygląda jak mandat za seryjne parkowanie na zakazie":"nie zrujnował jeszcze budżetu"}.`
-        ],
-        [
-          `${x.manager} buduje sezon ${x.team} z precyzją człowieka składającego meble bez instrukcji i z dwiema śrubkami za dużo.`,
-          `Ranking #${x.rank} ${x.rank<=3?"sugeruje, że szafa jakimś cudem stoi":"sugeruje, że coś zaczyna się chwiać"}.`,
-          `${avg3.toFixed(1)} formy z trzech kolejek ${trend>=0?"nie wygląda źle w świetle dziennym":"najlepiej oglądać z daleka"}.`,
-          `${benchSeason} punktów na ławce ${benchSeason>=40?"to cała szuflada zamontowana odwrotnie":"nie psuje jeszcze konstrukcji"}.`,
-          `${hitSeason} kosztów transferowych ${hitSeason>=8?"pokazuje, że instrukcja naprawdę by się przydała":"nie jest dziś głównym problemem"}.`
-        ],
-        [
-          `Przypadek ${x.manager} w ${x.team} bada redakcja, statystycy i prawdopodobnie ktoś od zarządzania kryzysowego.`,
-          `Miejsce ${x.rank}. oraz nota ${editorial}/10 ${editorial>=6?"bronią oskarżonego":"nie wyglądają dobrze w materiale dowodowym"}.`,
-          `Średnia ${avg3.toFixed(1)} ${trend>10?"podnosi linię obrony":trend<-10?"właśnie zeznaje przeciwko niemu":"pozostaje świadkiem neutralnym"}.`,
-          `Ławkowe ${benchSeason} ${benchSeason>=35?"to obciążający załącznik A":"nie wnosi wiele do sprawy"}.`,
-          `Transferowe ${hitSeason} punktów ${hitSeason>=12?"stanowi załącznik B i C":"nie wystarcza jeszcze do postawienia zarzutów"}.`
-        ],
-        [
-          `${x.manager} prowadzi ${x.team} jak audycję na żywo: bez możliwości montażu i z mikrofonem włączonym podczas każdej głupiej decyzji.`,
-          `Pozycja ${x.rank}. przy ${editorial}/10 ${editorial>=7?"brzmi dziś całkiem profesjonalnie":"nie nadaje się do chwalenia na antenie"}.`,
-          `Forma ${avg3.toFixed(1)} ${avg3>=50?"utrzymuje słuchaczy przy odbiornikach":"sprawia, że część odbiorców zmienia stację"}.`,
-          `${benchSeason} punktów na ławce ${benchSeason>=35?"to długi blok reklamowy zmarnowanych okazji":"nie przerywa jeszcze programu"}.`,
-          `Hity kosztujące ${hitSeason} ${hitSeason>=8?"są segmentem pod tytułem „po chuj to było?”":"nie dominują ramówki"}.`
-        ],
-        [
-          `${x.team} z ${x.manager} na czele przypomina pogodę w kwietniu: prognozy istnieją głównie po to, żeby się z nich później śmiać.`,
-          `${x.rank}. miejsce i rating ${editorial}/10 ${editorial>=6.5?"dają dziś trochę słońca":"zapowiadają opady ironii"}.`,
-          `${avg3.toFixed(1)} średnio z 3 GW ${trend>0?"oznacza poprawę ciśnienia":trend<0?"oznacza front atmosferyczny z kierunku „wpierdol”":"oznacza bezwietrzną przeciętność"}.`,
-          `Ławka z ${benchSeason} punktami ${benchSeason>=40?"to lokalna powódź":"pozostaje pod kontrolą"}.`,
-          `${hitSeason} punktów hitów ${hitSeason>=12?"wywołało ostrzeżenie pierwszego stopnia":"nie wymaga alertu RCB"}.`
-        ]
+      // Each manager index gets a different authored voice.
+      const voices = [
+        {
+          lead:`${x.manager} prowadzi ${x.team} z irytującą mieszanką pewności siebie i gotowości do zrobienia czegoś kompletnie niepotrzebnego pięć minut przed deadline'em.`,
+          form: avg3>=55 ? `Ostatnio jednak trudno się przypierdalać: forma jest dobra, decyzje w większości się bronią, a rywale muszą szukać innych powodów do szydery.` : `Ostatnie tygodnie nie dają komfortu. Zespół żyje od pojedynczego haulu do pojedynczego haulu i coraz częściej wygląda, jakby sam prosił się o terapię.`,
+          verdict: editorial>=7 ? `Werdykt redakcji: na dziś więcej Guardioli niż idioty. Nie przyzwyczajajmy się.` : `Werdykt redakcji: potencjał jest, ale przycisk „Confirm Transfers” powinien mieć blokadę rodzicielską.`
+        },
+        {
+          lead:`W ${x.team} wszystko ma swój styl, nawet błędy. ${x.manager} nie kopiuje chaosu innych — produkuje własny, rozpoznawalny z daleka.`,
+          form: trend>10 ? `Forma idzie wyraźnie w górę. Ostatnie decyzje zaczynają wyglądać jak plan, co jest niewygodne dla wszystkich, którzy liczyli na dalszy cyrk.` : trend<-10 ? `Forma leci w dół i z każdym deadline'em robi się coraz trudniej sprzedawać narrację o „długoterminowym projekcie”.` : `Forma jest stabilna: żadnej eksplozji, żadnego pogrzebu. FPL-owy odpowiednik jazdy środkiem pasa.`,
+          verdict: `Werdykt redakcji: obserwować. Ten klub potrafi w jednej kolejce wyglądać jak maszyna, a tydzień później jak grupa ludzi, która poznała się w tunelu.`
+        },
+        {
+          lead:`${x.manager} jest przypadkiem dla ludzi, którzy lubią analizować FPL i zastanawiać się, w którym dokładnie momencie rozsądek opuszcza człowieka.`,
+          form: benchSeason>=35 ? `Największy problem nie siedzi nawet w kadrze, tylko na ławce — rezerwowi zbyt często wyglądają jak ci, którzy powinni byli wyjść od pierwszej minuty.` : `Zarządzanie ławką nie jest dziś głównym aktem oskarżenia. To już coś.`,
+          verdict: editorial>=6 ? `Werdykt: sprawa warunkowo umorzona. Menedżer może dalej prowadzić drużynę bez kuratora.` : `Werdykt: prokuratura FPL pozostawia telefon włączony.`
+        },
+        {
+          lead:`${x.team} przypomina serial, w którym scenarzystą jest ${x.manager}, a Premier League co tydzień dopisuje mu zakończenie bez pytania o zgodę.`,
+          form: avg3>=60 ? `Aktualny sezonowy wątek jest mocny: regularne punkty, niezła forma i zdecydowanie za dużo powodów do smugowego uśmiechu właściciela.` : `Aktualny wątek jest bardziej dramatyczny. Za mało punktów, za dużo patrzenia na telefon i klasyczne „przecież na papierze wyglądało dobrze”.`,
+          verdict: `Werdykt redakcji: oglądalność wysoka. Kompetencje oceniamy odcinek po odcinku.`
+        },
+        {
+          lead:`${x.manager} zarządza ${x.team} jak człowiek składający skomplikowany mebel bez instrukcji: chwilami stoi idealnie, chwilami zostają trzy śrubki i niepokojące pytania.`,
+          form: hitSeason>=12 ? `Dział transferów dokłada do tego własny chaos. Każdy dodatkowy hit wygląda jak zakup kolejnego narzędzia do naprawy czegoś, co samemu się przed chwilą zepsuło.` : `Przynajmniej na rynku transferowym nie ma seryjnego rozdawania punktów. Czasem brak ruchu jest najbardziej dojrzałym ruchem.`,
+          verdict: editorial>=7 ? `Werdykt: konstrukcja stoi i nawet wygląda dobrze. Nie dotykać bez potrzeby.` : `Werdykt: zanim ktoś usiądzie na tej szafie, warto jeszcze dokręcić kilka rzeczy.`
+        },
+        {
+          lead:`Właściciel ${x.team} ma charakterystyczną cechę: nawet gdy podejmuje normalną decyzję, człowiek czeka, gdzie pojawi się haczyk.`,
+          form: trend>=15 ? `Ostatnie tygodnie są jednak wyraźnym odbiciem. Forma rośnie, tabela zaczyna wyglądać przyjemniej, a szydera musi szukać mniej oczywistych punktów zaczepienia.` : trend<=-15 ? `Ostatnie tygodnie wyglądają jak seria małych pożarów, które ktoś gasi benzyną.` : `Nie ma dużego trendu. Drużyna stoi w miejscu i przynajmniej nie kopie sobie nowego dołu.`,
+          verdict: `Werdykt: ${editorial>=6.5?"spokojnie, ale bez samozachwytu":"potrzebna poprawa zanim ironia zamieni się w nekrolog"}.`
+        },
+        {
+          lead:`${x.manager} prowadzi ekipę w sposób, który trudno nazwać nudnym. ${x.team} praktycznie co GW daje redakcji nowy temat, nawet jeśli właściciel wolałby dawać tylko punkty.`,
+          form: bestGW&&worstGW ? `Skrajne kolejki pokazują dwie wersje tej samej drużyny: jedną, która potrafi wszystko, i drugą, której nie powinno się zostawiać samej z aplikacją.` : `Historia jest jeszcze krótka, ale już widać, że spokoju tu raczej nie będzie.`,
+          verdict: editorial>=7 ? `Werdykt: bardzo dobrze, niestety.` : `Werdykt: atrakcyjnie dla widza, mniej atrakcyjnie dla rankingu.`
+        },
+        {
+          lead:`W ${x.team} ${x.manager} próbuje łączyć analizę, instynkt i typowe dla FPL „a chuj, biorę go”. Rezultat bywa zaskakująco skuteczny albo dokładnie tak głupi, jak brzmi.`,
+          form: avg3>=50 ? `Forma ostatnio daje argumenty obronie. Nie jest idealnie, ale na konferencji prasowej da się mówić bez spuszczania wzroku.` : `Forma nie daje dobrych argumentów. Na konferencji lepiej mówić o procesie, kulturze klubu i innych rzeczach, których nie da się sprawdzić w tabeli.`,
+          verdict: `Werdykt: dopóki wynik nie zacznie regularnie boleć, projekt może trwać bez nadzoru ONZ.`
+        },
+        {
+          lead:`${x.manager} ma w ${x.team} własny ekosystem: trochę logiki, trochę emocji i wystarczająco dużo chaosu, żeby nie dało się przewidzieć następnego ruchu.`,
+          form: benchSeason>=50 ? `Ławka jest największym krytykiem menedżera. Regularnie pokazuje, że dobrych zawodników potrafi znaleźć — tylko nie zawsze potrafi ich wystawić.` : `Ławka nie robi dziś z menedżera mema. To rzadka i cenna informacja.`,
+          verdict: editorial>=6 ? `Werdykt: bilans jest na plus, a akt oskarżenia pozostaje pusty.` : `Werdykt: jedna głupia kolejka dzieli ten profil od pełnoprawnego aktu oskarżenia.`
+        },
+        {
+          lead:`${x.team} wygląda jak klub, który ma pomysł na siebie, tylko ${x.manager} czasem zmienia ten pomysł w piątek o 23:47.`,
+          form: hitSeason>=16 ? `Najbardziej cierpi stabilność kadry. Rynek transferowy stał się miejscem, gdzie punkty znikają szybciej niż cierpliwość.` : `Kadrowo jest względny spokój, co może oznaczać dyscyplinę albo chwilowy brak nowych obsesji transferowych.`,
+          verdict: `Werdykt redakcji: ${editorial>=7?"dobry sezon, kiepski materiał do wyśmiewania":"wciąż więcej pytań niż odpowiedzi"}.`
+        },
+        {
+          lead:`${x.manager} traktuje FPL jak szachy, tylko czasem rusza hetmanem jak pionkiem i dziwi się, że plansza zaczyna wyglądać dziwnie.`,
+          form: avg3>=65 ? `Obecna forma jest bezczelnie dobra. Jeśli to potrwa, trzeba będzie odłożyć żarty i zacząć szukać dowodów na doping analityczny.` : `Obecna forma nie zmusza nikogo do kontroli antydopingowej. Bardziej do kontroli decyzji.`,
+          verdict: `Werdykt: wciąż gra, wciąż żyje, wciąż może zarówno wygrać partię, jak i przewrócić stolik.`
+        },
+        {
+          lead:`${x.team} pod wodzą ${x.manager} to miejsce, gdzie statystyka spotyka się z ludzką słabością do „jeszcze jednego transferu”.`,
+          form: trend>0 ? `Ostatnio wygrywa statystyka. Kierunek jest dobry i nawet najbardziej złośliwy reporter musi to przyznać.` : `Ostatnio wygrywa ludzka słabość. Kierunek nie zachęca do drukowania koszulek mistrzowskich.`,
+          verdict: editorial>=6.5 ? `Werdykt: rozsądnie zarządzany bałagan.` : `Werdykt: bałagan zarządzany z dużą pewnością siebie.`
+        }
       ];
 
-      const slot = Math.abs(Number(x.entry)) % banks.length;
-      const lines = banks[slot];
-
-      // If league grows beyond authored banks, append a unique stat-only sentence,
-      // but current league managers use separate banks above.
-      if (details.length > banks.length) {
-        lines.push(`Dla ${x.manager} bilans techniczny tej konkretnej kolejki to ${x.overall} overall przy entry ${x.entry}.`);
-      }
-      return lines.join(" ");
+      const voice = voices[managerIndex % voices.length];
+      return {
+        lead: voice.lead,
+        form: voice.form,
+        verdict: voice.verdict
+      };
     };
 
-    const managerProfiles = details.map(x => {
+    const managerProfiles = details.map((x, managerIndex) => {
       const allHs = canonicalHistoryFor(x);
       const hs = allHs.filter(h => h.gw < gw || gwFinished);
       const last3 = hs.slice(-3);
@@ -659,10 +715,18 @@ export async function GET() {
         label === "JESZCZE ŻYJE" ? "😐" :
         label === "DO ZWOLNIENIA" ? "🚨" : "💀";
 
+      const narrative = profileComment(x, stats, managerIndex);
+      const seasonStats = seasonTeamStats[Number(x.entry)] || { goals: 0, conceded: 0 };
+
       return {
         entry:x.entry, team:x.team, manager:x.manager, rank:x.rank, overall:x.overall,
         gwPoints:x.gwPoints, ...stats, form, label, icon,
-        comment:profileComment(x, stats)
+        seasonGoals:Number(seasonStats.goals || 0),
+        seasonConceded:Number(seasonStats.conceded || 0),
+        profileLead:narrative.lead,
+        profileForm:narrative.form,
+        profileVerdict:narrative.verdict,
+        comment:narrative.verdict
       };
     });
 
@@ -892,6 +956,8 @@ export async function GET() {
     const byForm = [...managerProfiles].sort((a,b)=>b.avg3-a.avg3);
     const byBadForm = [...managerProfiles].sort((a,b)=>a.avg3-b.avg3);
     const byAverage = [...managerProfiles].sort((a,b)=>b.avg-a.avg);
+    const byGoals = [...managerProfiles].sort((a,b)=>b.seasonGoals-a.seasonGoals);
+    const byConceded = [...managerProfiles].sort((a,b)=>b.seasonConceded-a.seasonConceded);
     const byConsistency = [...managerProfiles].sort((a,b)=>{
       const as=(a.bestGW?.points??0)-(a.worstGW?.points??0);
       const bs=(b.bestGW?.points??0)-(b.worstGW?.points??0);
@@ -908,6 +974,8 @@ export async function GET() {
       byBadForm[0] && {icon:"🧊",name:"Lodówka sezonu",p:byBadForm[0],value:`${byBadForm[0].avg3} średnio / 3 GW`},
       byAverage[0] && {icon:"📈",name:"Najwyższa średnia",p:byAverage[0],value:`${byAverage[0].avg} pkt / GW`},
       byConsistency[0] && {icon:"🧱",name:"Mr. Stabilność",p:byConsistency[0],value:`spread ${(byConsistency[0].bestGW?.points??0)-(byConsistency[0].worstGW?.points??0)} pkt`},
+      byGoals[0] && {icon:"⚽",name:"Najwięcej bramek",p:byGoals[0],value:`${byGoals[0].seasonGoals} goli zdobytych przez posiadanych zawodników`},
+      byConceded[0] && {icon:"🥅",name:"Najwięcej straconych bramek",p:byConceded[0],value:`${byConceded[0].seasonConceded} goli straconych przez posiadanych zawodników`},
       byRank.at(-1) && {icon:"🪦",name:"Piwnica tabeli",p:byRank.at(-1),value:`#${byRank.at(-1).rank} • ${byRank.at(-1).overall} pkt`}
     ].filter(Boolean).map(x=>({
       icon:x.icon,name:x.name,manager:x.p.manager,team:x.p.team,

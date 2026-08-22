@@ -619,3 +619,17 @@ body::after {
 .brandTab{font-weight:900;color:#f7d789;text-decoration:none;font-size:18px}
 .kolejnikTabs{display:flex;gap:8px}.kolejnikTabs a,.kolejnikExternalTab{border:1px solid rgba(112,170,204,.22);background:rgba(8,22,34,.8);color:#c8d3db;border-radius:999px;padding:9px 13px;font-weight:800;text-decoration:none;white-space:nowrap}
 .kolejnikTabs a.active,.kolejnikExternalTab{border-color:rgba(246,198,91,.45);color:#f7d789;background:rgba(246,198,91,.08)}
+
+.profileHeader{display:flex;align-items:center;gap:14px;margin-bottom:16px}
+.profileHeader h2{margin:2px 0}.profileHeader p{margin:0;color:var(--muted)}
+.profileHeroIcon{display:grid;place-items:center;width:58px;height:58px;border-radius:16px;background:rgba(246,198,91,.09);border:1px solid rgba(246,198,91,.24);font-size:30px}
+.profileStory{display:grid;gap:11px;margin-top:16px}
+.profileStory section{padding:14px 15px;border-radius:13px;background:rgba(255,255,255,.026);border:1px solid rgba(112,170,204,.14)}
+.profileStory section>span{display:block;font-size:10px;letter-spacing:.12em;font-weight:900;color:#9edfff;margin-bottom:7px}
+.profileStory p{margin:0;line-height:1.65;color:#d5dee5}
+.profileStory .profileVerdict{border-color:rgba(246,198,91,.25);background:rgba(246,198,91,.05)}
+.profileStory .profileVerdict>span{color:#f7d789}
+.profileExtremes{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:12px}
+.profileExtremes>div{display:grid;gap:4px;padding:11px;border-radius:11px;background:rgba(255,255,255,.03);border:1px solid rgba(112,170,204,.12)}
+.profileExtremes span{font-size:11px;color:var(--muted)}
+@media(max-width:580px){.profileExtremes{grid-template-columns:1fr}}

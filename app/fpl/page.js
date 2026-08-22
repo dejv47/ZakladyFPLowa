@@ -3,101 +3,114 @@ import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { BetsTab } from "./BetsTab";
 
-function pressQuote(p, gw){
- const banks=[
+function pressQuote(p, gw, managerIndex){
+ const scripts=[
   [
-   `Powiem tak: ten weekend wyglądał momentami jak sabotaż, tylko niestety wszystkie decyzje podpisywałem osobiście.`,
-   `Mam ${p.avg3} średnio z ostatnich trzech GW i nie zamierzam robić z siebie pierdolonego wizjonera, bo FPL bardzo szybko leczy takie zapędy.`,
-   `Jeżeli na ławce zostało ${p.benchSeason} punktów, to trudno — następnym razem może zostawię tam tych, którzy faktycznie nic nie zrobią.`,
-   `Najważniejsze teraz to nie odpierdolić panicznego transferu pięć minut przed deadline'em. Znam siebie, więc niczego nie obiecuję.`
+   `Powiem bez pierdolenia: jeśli coś dziś wyglądało jak sabotaż, to niestety sabotażysta siedzi właśnie przed wami.`,
+   `Nie zamierzam udawać wizjonera tylko dlatego, że kilka decyzji weszło; FPL bardzo szybko leczy takie ego.`,
+   `Ławka i transfery są moją odpowiedzialnością, więc nie będę zwalał winy na księżyc, pogodę ani algorytm.`,
+   `Przed następnym deadline'em mam jeden cel: nie zrobić czegoś genialnego wyłącznie we własnej głowie.`,
+   `Jeżeli znowu odjebię ruch pięć minut przed zamknięciem, możecie tę wypowiedź wydrukować i rzucić mi w twarz.`
   ],
   [
-   `Nie będę wam wciskał kitu o „procesie”, jeżeli wynik wygląda jak gówno. Proces ma dawać punkty, a nie ładne slajdy.`,
-   `Jesteśmy na miejscu ${p.rank}. i dokładnie tyle warte są dziś wszystkie moje mądre analizy z piątku wieczorem.`,
-   `Koszt hitów wynosi ${p.hitSeason}; czasem człowiek płaci cztery punkty za poprawę drużyny, a czasem cztery punkty za możliwość wkurwienia się dwa razy.`,
-   `Szatnia jest spokojna. Ja mniej. Następne pytanie, zanim zacznę wymieniać nazwiska.`
+   `Nie kupuję narracji o pechu. Jak pech wraca co tydzień, to zaczyna wyglądać jak część sztabu szkoleniowego.`,
+   `Tabela pokazuje prawdę brutalniej niż jakikolwiek dziennikarz, więc nie mam zamiaru pudrować gówna.`,
+   `Każdy hit miał swoje uzasadnienie; problem w tym, że część uzasadnień po weekendzie brzmi jak zeznanie po pijaku.`,
+   `Nie będziemy teraz przewracać składu do góry nogami tylko dlatego, że Twitter odkrył nowego must-have'a.`,
+   `Najpierw chłodna analiza, potem transfer. Przynajmniej taki jest oficjalny plan, zanim otworzę aplikację.`
   ],
   [
-   `Patrzyłem na wynik i przez chwilę zastanawiałem się, czy aplikacja się nie zjebała. Niestety działała prawidłowo.`,
-   `Forma ${p.avg3} nie jest czymś, co chcę oprawić w ramkę, ale przynajmniej dokładnie wiemy, gdzie jesteśmy.`,
-   `${p.benchSeason} punktów na ławce? Rezerwowi mogą się śmiać. Mają do tego pełne prawo, skurczybyki.`,
-   `Nie będzie rewolucji. Będzie analiza, kawa i prawdopodobnie kilka bardzo niecenzuralnych słów przy ekranie transferów.`
+   `Przez chwilę myślałem, że punkty na ekranie są błędem. Niestety jedynym błędem byłem miejscami ja.`,
+   `Nie będę gadał o expected points, jeżeli actual points wyglądają jak rachunek za głupotę.`,
+   `Rezerwowi mają pełne prawo patrzeć na mnie z pogardą, kiedy siedzą z haulami obok ludzi blankujących w podstawie.`,
+   `Nie potrzebujemy wielkiej rewolucji, potrzebujemy kilku normalnych decyzji z rzędu, co brzmi prościej niż jest.`,
+   `Kolejna GW pokaże, czy wyciągnęliśmy wnioski, czy tylko nauczyliśmy się ładniej o nich opowiadać.`
   ],
   [
-   `Ja naprawdę miałem plan. Problem polega na tym, że Premier League najwyraźniej nie dostała maila z tym planem.`,
-   `Ocena ${p.editorial}/10 od redakcji mnie nie rusza. Trochę rusza. Dobra, wkurwia mnie.`,
-   `Nie zamierzam kopiować wszystkich ruchów rywali tylko dlatego, że ich zawodnicy nagle zaczęli punktować jak pojebani.`,
-   `Do kolejnej GW podchodzimy spokojnie. Jeżeli zobaczycie trzy transfery za minus osiem, uznajcie, że ta wypowiedź się zdezaktualizowała.`
+   `Miałem plan i nadal mam plan. Problem jest taki, że Premier League regularnie ma własny plan i ma mój w dupie.`,
+   `Oceny redakcji mnie podobno nie obchodzą, ale oczywiście pierwsze co robię, to je czytam i się wkurwiam.`,
+   `Nie będę kopiował rywali jak bezmyślna owca tylko dlatego, że ich zawodnik zrobił piętnaście punktów w jednym meczu.`,
+   `Jeżeli dokonam transferu, chcę wiedzieć po co go robię, a nie obudzić się w sobotę z minus osiem i kacem decyzyjnym.`,
+   `Spokojna głowa jest teraz ważniejsza niż kolejny pieprzony differential znaleziony na X o pierwszej w nocy.`
   ],
   [
-   `To nie był masterclass. To nawet nie był class. Momentami to była pierdolona przerwa obiadowa.`,
-   `Mamy ${p.avg3} średnio z trzech kolejek i tabela nie przyjmuje argumentu „ale expected points wyglądały dobrze”.`,
-   `Ławka kosztuje mnie już ${p.benchSeason} punktów, więc chyba stworzyłem najlepszą drużynę rezerw w całej lidze.`,
-   `Nie szukam winnych. Winny siedzi przed wami i za chwilę znowu otworzy stronę FPL.`
+   `To nie był masterclass. To nawet nie stało obok masterclassu na parkingu.`,
+   `Kiedy drużyna wygląda źle, menedżer może mówić o procesie albo przyznać, że coś zjebał; wybieram drugą opcję.`,
+   `Mam bardzo dobrą kadrę rezerwowych, co byłoby świetną wiadomością, gdyby ta gra dawała za nich wszystkie punkty.`,
+   `Nie szukam kozła ofiarnego, bo musiałbym postawić lustro na środku konferencji.`,
+   `Następny tydzień poświęcamy na ograniczenie twórczości własnej i zwiększenie liczby normalnych decyzji.`
   ],
   [
-   `Kiedy zamykałem skład, wszystko wyglądało logicznie. To jest właśnie najbardziej wkurwiająca część tej historii.`,
-   `Pozycja ${p.rank}. nie jest powodem do paniki, ale też nie będę udawał, że mam ochotę urządzić paradę.`,
-   `Za transfery oddałem ${p.hitSeason} punktów i każdy z nich pamiętam lepiej niż większość dobrych decyzji.`,
-   `Teraz trzeba mieć jaja, niczego nie rozwalić bez potrzeby i pozwolić tej ekipie wreszcie zrobić swoją robotę.`
+   `Najbardziej boli mnie to, że przed deadline'em wszystko wydawało się logiczne. Logika po weekendzie uciekła bez pożegnania.`,
+   `Nie będę panikował z powodu miejsca w tabeli, ale nie będę też robił z niego dekoracji na ścianę.`,
+   `Każdy minus za transfer pamięta się dłużej niż dobry darmowy ruch, taka jest ta cholerna gra.`,
+   `W tej chwili potrzebuję bardziej cierpliwości niż nowego zawodnika, co jest dla mnie wyjątkowo niewygodne.`,
+   `Jeżeli zespół zrobi swoje, nic nie ruszam. Jeżeli nie zrobi, nie ręczę za stan kadry w piątek wieczorem.`
   ],
   [
-   `Nie wiem, kto wymyślił tę grę, ale ewidentnie miał osobisty problem z ludzkim spokojem psychicznym.`,
-   `Moja forma wynosi ${p.avg3}; można to nazwać statystyką, można też nazwać cotygodniowym testem charakteru.`,
-   `${p.benchSeason} punktów poza XI wygląda źle, ale zapewniam, że patrzenie na nie na żywo wygląda jeszcze gorzej.`,
-   `Nie będę teraz robił gwałtownych ruchów. Najpierw się prześpię, potem zrobię gwałtowne ruchy z pełną świadomością.`
+   `Twórca FPL musiał mieć osobisty konflikt z ludzkim spokojem, bo inaczej nie da się wytłumaczyć tej gry.`,
+   `Statystyki pokazują formę, ale nie pokazują liczby razy, kiedy człowiek patrzy na ławkę i mówi „ja pierdolę”.`,
+   `Nie chcę gwałtownych ruchów, bo gwałtowne ruchy są dokładnie tym, co najczęściej wpędza mnie w to gówno.`,
+   `Zawodnicy mają dostać zaufanie, a ja mam przestać traktować jeden blank jak wezwanie do przebudowy całego klubu.`,
+   `Najpierw sen, później decyzje. To brzmi banalnie, a w FPL jest niemal przełomową metodologią.`
   ],
   [
-   `Dzisiaj nie będę pierdolił o pechu. Jak pech pojawia się co tydzień, to zaczyna mieć nazwisko menedżera.`,
-   `Jestem ${p.rank}. i mam ${p.editorial}/10. Nie trzeba kończyć matematyki, żeby wiedzieć, czy mam się czym chwalić.`,
-   `Rynek transferowy już zabrał ${p.hitSeason} punktów, więc kolejne genialne pomysły będą przechodziły kontrolę trzeźwości.`,
-   `Kibicom mogę obiecać jedno: następny skład też będzie ustawiony z pełnym przekonaniem. I to mnie najbardziej przeraża.`
+   `Dziś nie będę mówił o pechu, bo po pewnym czasie „pech” staje się bardzo eleganckim słowem na złe zarządzanie.`,
+   `Nie jestem zadowolony z rankingu i nie mam zamiaru opowiadać, że tabela nie pokazuje całego obrazu. Pokazuje wystarczająco dużo.`,
+   `Rynek transferowy już kilka razy dostał ode mnie punkty w prezencie i ten program charytatywny musi się skończyć.`,
+   `Każdy następny ruch będzie przechodził test: czy robię go z powodu danych, czy dlatego, że właśnie się wkurwiłem.`,
+   `Kibicom obiecuję jedno — jeśli znowu coś odjebę, przynajmniej nie będę później udawał, że było to genialne.`
   ],
   [
-   `Miał być zielony arrow, wyszła sekcja zwłok. Taki jest futbol, a właściwie takie jest to cholerne fantasy.`,
-   `Średnia ${p.avg3} mówi jasno, czy ostatnie tygodnie były dobre; nie będę pudrował liczb jak rzecznik prasowy po 0:5.`,
-   `Jeśli ${p.benchSeason} punktów siedzi na ławce, to najwyraźniej mam świetne oko do zawodników i fatalne oko do ustawiania ich we właściwym miejscu.`,
-   `Idziemy dalej. Nie dlatego, że mam wielką przemowę motywacyjną, tylko dlatego, że następny deadline i tak przyjdzie.`
+   `Miał być zielony arrow, a przez moment wyglądało to jak sekcja zwłok własnego rankingu.`,
+   `Nie będę pudrował średnich punktów słowami o przewadze optycznej, bo to nie jest Premier League i nikt nie daje punktów za styl.`,
+   `Kiedy najlepiej punktują ludzie na ławce, trener ma dwa wyjścia: mówić o pechu albo spojrzeć w lustro. Lustro wygrało.`,
+   `W kolejnym tygodniu chcę mniej narracji, mniej przekombinowania i zdecydowanie mniej genialnych pomysłów po alkoholu.`,
+   `Deadline przyjdzie bez względu na naszą traumę, więc trzeba się ogarnąć i zachowywać jak dorośli. Przynajmniej przez godzinę.`
   ],
   [
-   `Przed kolejką byłem pewny siebie. Po kolejce jestem przede wszystkim bogatszy o kilka nowych przekleństw.`,
-   `Miejsce ${p.rank}. to aktualny stan faktyczny, a nie opinia hejterów, więc trzeba to kurwa przyjąć.`,
-   `Hity na poziomie ${p.hitSeason} są rachunkiem za moje przekonanie, że zawsze da się coś jeszcze „ulepszyć”.`,
-   `Na razie nikogo nie wyrzucam. Po pierwszym price rise nie gwarantuję już absolutnie niczego.`
+   `Przed kolejką byłem pewny swoich decyzji. Teraz jestem pewny głównie tego, że FPL potrafi upokorzyć każdego.`,
+   `Ranking jest faktem, nie hejtem, więc zamiast się obrażać trzeba zacząć robić rzeczy, które dają punkty.`,
+   `Mam słabość do poprawiania składu, nawet kiedy skład nie prosi o poprawę; to choroba zawodowa.`,
+   `Nie będziemy kupować każdego zawodnika, który raz zrobi dwucyfrówkę, bo wtedy za miesiąc będę miał piętnastu ludzi i zero planu.`,
+   `Po konferencji wyłączam social media, zanim jakiś thread przekona mnie do kolejnego kretyńskiego ruchu.`
   ],
   [
-   `Nie mam zamiaru robić konferencji w stylu „byliśmy lepsi niż wynik”. W FPL wynik jest całym pieprzonym sensem zabawy.`,
-   `Forma ${p.avg3} i nota ${p.editorial}/10 dają materiał do analizy, ale nie do wymyślania bajek.`,
-   `Ławka uzbierała ${p.benchSeason}; może powinienem następnym razem ustawić skład przez odwrócenie telefonu ekranem do dołu.`,
-   `Przed następną GW potrzebujemy mniej geniuszu, więcej normalności i zero transferów robionych podczas siedzenia na kiblu.`
+   `Nie będę mówił, że byliśmy lepsi niż wynik. W FPL wynik jest jedyną rzeczą, która naprawdę obchodzi tabelę.`,
+   `Dane są ważne, ale dane nie mogą być alibi dla kapitana, który przynosi tyle punktów co worek ziemniaków.`,
+   `Jeżeli ktoś jeszcze zobaczy mnie robiącego transfer podczas siedzenia na kiblu, ma pełne prawo zabrać mi telefon.`,
+   `Potrzebujemy mniej kombinowania, więcej prostych ruchów i choć jednego weekendu bez poczucia, że sami sobie robimy krzywdę.`,
+   `Nie oczekuję cudów. Oczekuję tylko, że przestaniemy produkować problemy, których wcześniej nie mieliśmy.`
   ],
   [
-   `Ta kolejka była jak kopnięcie w jaja od zawodnika, którego sam kupiłeś. Najgorsze, że jeszcze mu za to podziękowałeś transferem.`,
-   `Ranking ${p.rank} nie kłamie, chociaż bardzo chciałbym dziś zgłosić reklamację.`,
-   `${p.hitSeason} punktów za hity oraz ${p.benchSeason} na ławce to duet, którego nie zamawiałem, ale najwyraźniej dostałem w pakiecie.`,
-   `Co dalej? Mniej kombinowania. A przynajmniej taki jest plan do momentu, aż zobaczę pierwszy bullshitowy tweet o kontuzji.`
+   `Ta kolejka była jak kopnięcie w jaja od zawodnika, którego sam kupiłeś i jeszcze dałeś mu opaskę.`,
+   `Nie zgłaszam reklamacji na tabelę, bo niestety wszystkie paragony z głupich decyzji są moje.`,
+   `Jeżeli hity i ławka zaczynają tworzyć duet, który kosztuje więcej niż połowa składu zdobywa, czas przerwać eksperyment.`,
+   `Nie zamierzam obiecywać, że przestanę kombinować, bo nikt by w to nie uwierzył. Mogę obiecać, że spróbuję kombinować trochę mądrzej.`,
+   `Następny bullshitowy tweet o urazie nie może sterować moim życiem. To jest mój cel rozwojowy na ten tydzień.`
   ]
  ];
- const slot=Math.abs(Number(p.entry))%banks.length;
- return `„${banks[slot].join(" ")}”`;
+ const script=scripts[managerIndex % scripts.length];
+ const statSentence=`W liczbach wygląda to tak: forma ${p.avg3}, ławka ${p.benchSeason}, hity ${p.hitSeason}, miejsce ${p.rank}; i każda z tych liczb daje mi inny powód do ${p.editorial>=6?"ostrożnego optymizmu":"przeklinania"}.`;
+ return `„${[script[0], statSentence, ...script.slice(1)].join(" ")}”`;
 }
 
-function pressReaction(p, gw){
- const banks=[
-  `Redakcja: ${p.manager} właśnie wygłosił cztery zdania i każde pachniało człowiekiem, który wie, że jeden zły deadline dzieli go od kompletnego rozpierdolu.`,
-  `Redakcja: konferencja ${p.manager} była bardziej uporządkowana niż część jego decyzji. Poprzeczka nie wisiała wysoko.`,
-  `Redakcja: ${p.manager} nie szuka wymówek, co jest miłe. My za to bez problemu znajdujemy materiał do szydery.`,
-  `Redakcja: w ${p.team} spokój oficjalny. Nieoficjalnie słychać nerwowe odświeżanie price predictorów.`,
-  `Redakcja: ${p.manager} zachował twarz. Teraz wypadałoby jeszcze zachować punkty.`,
-  `Redakcja: słowa rozsądne, ton stanowczy, historia decyzji nadal dostępna publicznie. Pech.`,
-  `Redakcja: ${p.manager} brzmi dziś jak człowiek po terapii. Zobaczymy, czy efekt utrzyma się do deadline'u.`,
-  `Redakcja: odpowiedzialność przyjęta. Czekamy, aż przyjmą się również jakieś sensowne transfery.`,
-  `Redakcja: PR ${p.team} zdał egzamin. Komisja sportowa wciąż poprawia odpowiedzi.`,
-  `Redakcja: ${p.manager} obiecał mniej chaosu. Bukmacherzy nie przyjmują zakładów na dotrzymanie tej obietnicy.`,
-  `Redakcja: piękna przemowa. Gdyby FPL przyznawało punkty za samoświadomość, byłaby zielona strzałka.`,
-  `Redakcja: ${p.manager} zakończył konferencję przed pierwszym pytaniem o wildcard. Rozsądna decyzja.`
+function pressReaction(p, gw, managerIndex){
+ const reactions=[
+  `Redakcja: dużo samoświadomości, niewiele immunitetu. Następny głupi deadline i wyciągamy ten cytat z archiwum.`,
+  `Redakcja: brzmi rozsądnie, co jest niepokojące. Najgorsze decyzje często zaczynają się właśnie od poczucia, że wszystko jest pod kontrolą.`,
+  `Redakcja: konferencja lepsza niż część występów. Na szczęście za PR nie ma punktów.`,
+  `Redakcja: właściciel mówi o cierpliwości. Bukmacherzy nie chcą wystawić kursu, że wytrzyma do piątku.`,
+  `Redakcja: samokrytyka przyjęta. Teraz prosimy o wersję praktyczną, najlepiej widoczną w zielonej strzałce.`,
+  `Redakcja: wypowiedź profesjonalna, historia transferów nadal dostępna publicznie i psuje część efektu.`,
+  `Redakcja: słowa o spokoju padły przekonująco. Palec na przycisku Confirm Transfers wygląda mniej przekonująco.`,
+  `Redakcja: menedżer bierze odpowiedzialność, co jest eleganckim sposobem powiedzenia „tak, to ja to zjebałem”.`,
+  `Redakcja: mniej wymówek niż zwykle, więcej konkretu. Niestety tabela nie daje premii za rozwój osobisty.`,
+  `Redakcja: zapowiedź rozsądku brzmi dobrze. Czekamy na pierwszy price rise, który ją brutalnie zweryfikuje.`,
+  `Redakcja: to była dobra konferencja dla człowieka, który następnie musi wrócić do znacznie trudniejszego zadania — ustawienia składu.`,
+  `Redakcja: przynajmniej nikt nie powiedział „zaufajcie procesowi”. Za to przyznajemy symboliczny punkt.`
  ];
- return banks[Math.abs(Number(p.entry))%banks.length];
+ return reactions[managerIndex % reactions.length];
 }
 
 export default function FPLPage(){
@@ -192,7 +205,7 @@ export default function FPLPage(){
        <div className="awardGallery">{data.seasonAwards.map((x,i)=><div className="awardBig" key={i}><span>{x.icon}</span><div><b>{x.name}</b><strong>{x.manager}</strong><small>{x.team} • {x.value}</small></div></div>)}</div>
      </Card>
      <Card title="🎙️ Konferencja prasowa">
-       {data.grades.map(x=><blockquote key={x.entry}><div className="pressSpeaker"><span>🎙️</span><div><b>{x.manager}</b><small>{x.team}</small></div></div>{pressQuote(x,data.gw)}<small><b>Redakcja:</b> {pressReaction(x,data.gw)}</small></blockquote>)}
+       {data.grades.map((x,i)=><blockquote key={x.entry}><div className="pressSpeaker"><span>🎙️</span><div><b>{x.manager}</b><small>{x.team}</small></div></div>{pressQuote(x,data.gw,i)}<small>{pressReaction(x,data.gw,i)}</small></blockquote>)}
      </Card>
    </section>}
  </main>
@@ -200,4 +213,44 @@ export default function FPLPage(){
 }
 function Card({title,children}){return <section className="megaCard"><h2>{title}</h2>{children}</section>}
 function Standings({data,onProfile}){return <section className="fplStandings"><div className="sectionHead"><div><span className="sectionLabel">LIGA 286732</span><h2>{data.league.name}</h2></div><span>GW {data.gw}</span></div><div className="fplTable"><div className="fplTr fplTh"><span>#</span><span>Drużyna</span><span>GW</span><span>Suma</span><span>Zmiana</span></div>{data.standings.map(x=><button className="fplTr fplRowBtn" key={x.entry} onClick={()=>onProfile(x.entry)}><strong>{x.rank}</strong><div><strong>{x.team}</strong><small>{x.manager}</small></div><strong>{x.gwPoints}</strong><span>{x.overall}</span><span>{x.lastRank>x.rank?`▲ ${x.lastRank-x.rank}`:x.lastRank<x.rank?`▼ ${x.rank-x.lastRank}`:"—"}</span></button>)}</div></section>}
-function Profile({p,close}){return <div className="profileModal"><button onClick={close}>✕</button><span className="newsTag">{p.icon} {p.label}</span><h2>{p.manager} — {p.team}</h2><div className="profileStats"><b>Overall #{p.rank}</b><b>Forma {p.form}</b><b>Ocena {p.editorial}/10</b><b>Średnia {p.avg}</b><b>3 GW {p.avg3}</b><b>Ławka {p.benchSeason}</b><b>Hity -{p.hitSeason}</b></div>{p.bestGW&&<p>Najlepsza GW: <b>{p.bestGW.points} pkt (GW{p.bestGW.gw})</b></p>}{p.worstGW&&<p>Najgorsza GW: <b>{p.worstGW.points} pkt (GW{p.worstGW.gw})</b></p>}<div className="profileComment"><b>Opinia redakcji:</b><p>{p.comment}</p></div></div>}
+function Profile({p,close}){
+ return <div className="profileModal">
+   <button onClick={close}>✕</button>
+   <div className="profileHeader">
+     <div className="profileHeroIcon">{p.icon}</div>
+     <div><span className="newsTag">{p.label}</span><h2>{p.manager}</h2><p>{p.team}</p></div>
+   </div>
+
+   <div className="profileStats">
+     <b>🏁 Overall #{p.rank}</b>
+     <b>🌡️ Forma {p.form}</b>
+     <b>⭐ Ocena {p.editorial}/10</b>
+     <b>📊 Średnia {p.avg}</b>
+     <b>⚡ 3 GW {p.avg3}</b>
+     <b>🪑 Ławka {p.benchSeason}</b>
+     <b>💸 Hity -{p.hitSeason}</b>
+     <b>⚽ Gole {p.seasonGoals ?? 0}</b>
+     <b>🥅 Stracone {p.seasonConceded ?? 0}</b>
+   </div>
+
+   <div className="profileStory">
+     <section>
+       <span>🧠 PORTRET MENEDŻERA</span>
+       <p>{p.profileLead}</p>
+     </section>
+     <section>
+       <span>📈 CO MÓWI FORMA</span>
+       <p>{p.profileForm}</p>
+     </section>
+     <section className="profileVerdict">
+       <span>🗞️ WERDYKT REDAKCJI</span>
+       <p>{p.profileVerdict}</p>
+     </section>
+   </div>
+
+   <div className="profileExtremes">
+     {p.bestGW&&<div><span>🚀 Najlepsza GW</span><b>{p.bestGW.points} pkt • GW{p.bestGW.gw}</b></div>}
+     {p.worstGW&&<div><span>🪦 Najgorsza GW</span><b>{p.worstGW.points} pkt • GW{p.worstGW.gw}</b></div>}
+   </div>
+ </div>
+}
