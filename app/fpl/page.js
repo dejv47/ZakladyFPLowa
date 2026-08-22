@@ -268,21 +268,111 @@ const VOICE_QUOTES=[
  ["„Strategię na następny wyścig upraszczamy. Mniej pit stopów, więcej tempa.”","„Nie chcę znowu przegrywać GW w garażu.”","„Tempo jest ważniejsze niż desperacki undercut na transferach.”","„Następny weekend chcę zakończyć na mecie, nie w bandzie.”"]
 ];
 
+const LONG_CONF_MIDDLE = [
+ [
+  "Najważniejsze jest to, że nie zamierzam teraz udawać proroka tylko dlatego, że jedna kolejka poszła po mojej myśli. W tej grze wystarczy tydzień, żeby z geniusza zrobić kompletnego debila.",
+  "Patrzę na skład i widzę kilka rzeczy, które zadziałały, ale też parę min, na które jeszcze mogę wejść obiema nogami. Nie będę robił transferu tylko po to, żeby mieć poczucie, że coś zrobiłem.",
+  "Rywale mogą się śmiać albo wkurwiać, mnie interesuje następny deadline. Najgorsze co można zrobić po dobrym wyniku, to dostać nagle syndrom Guardioli i zacząć poprawiać coś, co działa.",
+  "Nie mam zamiaru kopiować ruchów ludzi nade mną ani uciekać od tych pode mną. Jeżeli mój plan jest dobry, punkty w końcu powinny to pokazać; jeżeli jest gówniany, tabela zrobi ze mnie mema bez niczyjej pomocy."
+ ],
+ [
+  "Liczby są jakie są i nie będę ich pudrował jak dział PR po fatalnym kwartale. Każdy transfer ma mieć sens, a nie wyglądać dobrze na grafice przed deadlinem.",
+  "Mam zawodników, którym jeszcze ufam, i takich, których najchętniej zapakowałbym do kartonu jeszcze dziś wieczorem. Problem w tym, że FPL zwykle najbardziej karze właśnie transfery robione wkurwioną ręką.",
+  "Jeżeli ktoś oczekuje ode mnie rewolucji, to się nie doczeka. Rewolucje są fajne do momentu, kiedy w sobotę patrzysz na -12 i trzech nowych zawodników z dwoma punktami łącznie.",
+  "Nie interesuje mnie, kto był popularnym transferem tygodnia. Internet nie zapłaci mi punktów, kiedy ten sam zawodnik po pięciu minutach złapie żółtą kartkę i zejdzie z urazem."
+ ],
+ [
+  "Przed kolejką wszystko wygląda mądrze: tabelki, fixture tickery, expected points i inne czary. Potem zaczyna się mecz i jeden przypadkowy rykoszet potrafi wysadzić cały ten doktorat w powietrze.",
+  "Nie chcę zarządzać drużyną jak człowiek po trzech espresso. Spokojna głowa jest więcej warta niż kolejny hit zrobiony dlatego, że jakiś typ na Twitterze napisał MUST BUY wielkimi literami.",
+  "Ławka zawsze wygląda genialnie dopiero po meczu. Przed deadlinem jakoś żaden skurczybyk nie przychodzi i nie mówi mi, że akurat ten obrońca zrobi piętnaście punktów.",
+  "Plan na następny tydzień jest prosty: nie panikować, nie gonić punktów z poprzedniej kolejki i nie wmówić sobie, że jeden blank oznacza nagle koniec kariery zawodnika."
+ ],
+ [
+  "W tej lidze nikt nie dostaje punktów za ładne tłumaczenia. Mogę przez dziesięć minut opowiadać o procesie, ale jeśli tabela pokazuje gówno, to nadal jest gówno tylko opisane bardziej profesjonalnym językiem.",
+  "Najbardziej mnie wkurwia, kiedy decyzja była logiczna, a kończy się katastrofą. Ale jeszcze bardziej wkurwia mnie, kiedy decyzja była idiotyczna i dopiero po fakcie próbuję sobie wmówić, że miała sens.",
+  "Nie będę patrzył rywalom do składów i kopiował każdego ruchu jak bezmyślna owca. Differential ma sens wtedy, kiedy jest dobrym wyborem, a nie dlatego, że posiada go siedem osób na świecie.",
+  "Do następnej GW chcę podejść bez zbędnego pierdolenia. Jeden lub dwa konkretne ruchy, sensowny kapitan i żadnego wciskania sobie na siłę, że trzeba być sprytniejszym od całej gry."
+ ],
+ [
+  "Każda kolejka zostawia jakiś trup w szafie: zły kapitan, punkty na ławce albo transfer, którego człowiek żałuje po dwudziestu minutach. Sztuka polega na tym, żeby nie otworzyć od razu kolejnych pięciu szaf.",
+  "Nie zamierzam karać całego składu za jeden weekend. To byłoby jak zwolnić całą firmę, bo drukarka się zacięła, chociaż przyznam, że czasem dokładnie tak się czuję po sobocie.",
+  "Jeżeli forma któregoś zawodnika faktycznie siada, zareaguję. Ale nie będę sprzedawał ludzi dlatego, że raz trafili w słupek zamiast w bramkę. Jeszcze trochę rozsądku mi zostało.",
+  "Ranking jest bezlitosny, ale przynajmniej uczciwie pokazuje skalę problemu. Nie potrzebuję motywacyjnych cytatów. Potrzebuję, żeby moi piłkarze zaczęli, kurwa, punktować."
+ ],
+ [
+  "Wiem, że po każdej kolejce najłatwiej znaleźć winnego. Raz kapitan, raz bramkarz, raz ja. Niestety ten ostatni podejrzany pojawia się w śledztwie podejrzanie często.",
+  "Nie chcę podejmować decyzji pod wpływem tego, co wydarzyło się pięć minut temu. FPL ma pamięć złotej rybki, a ja nie zamierzam jeszcze jej w tym pomagać.",
+  "Czasem najlepszy transfer to brak transferu. Brzmi nudno, ale nudne decyzje potrafią dawać więcej punktów niż te wszystkie genialne pomysły, które potem trzeba tłumaczyć na konferencji.",
+  "Mam tydzień na analizę i zamierzam go wykorzystać. Jeżeli w piątek znowu zmienię plan pięć minut przed deadlinem, możecie spokojnie wyciągnąć ten cytat i napisać, że jestem idiotą."
+ ],
+ [
+  "Nie będę udawał, że wszystko kontroluję. Nikt w FPL wszystkiego nie kontroluje, chyba że kontrolą nazywa patrzenie, jak twój kapitan marnuje setkę w dziewięćdziesiątej minucie.",
+  "Ważniejsze od pojedynczego wyniku jest to, czy decyzje da się obronić przed meczem. Po meczu każdy jest najmądrzejszym ekspertem świata i dokładnie wie, kogo należało kupić.",
+  "Jeżeli trzeba będzie zrobić hit, zrobię go, ale nie dla samego poczucia ruchu. Minus cztery to nie jest darmowy kupon na poprawę humoru, tylko cztery jebane punkty.",
+  "Chcę, żeby skład był gotowy nie tylko na następną sobotę, ale też na kolejne tygodnie. Wiem, brzmi odpowiedzialnie. Sam jestem ciekaw, jak długo wytrzymam."
+ ],
+ [
+  "Największym błędem byłoby teraz reagować na hałas. Jeden haul potrafi zrobić z przeciętnego zawodnika narodową obsesję, a tydzień później wszyscy zastanawiają się, po co go kupili.",
+  "Patrzę przede wszystkim na minuty, rolę, terminarz i to, czy zawodnik faktycznie wygląda jak ktoś zdolny regularnie punktować. Nazwisko i hype nie wpisują punktów do tabeli.",
+  "Nie zamierzam budować drużyny pod poprzednią kolejkę. Tamte punkty już odjechały i choćbym teraz kupił wszystkich jej bohaterów, nikt mi ich, kurwa, nie dopisze.",
+  "Następny deadline będzie kolejnym testem cierpliwości. Oby tym razem zdał go również menedżer, bo zawodników najłatwiej obwiniać za cudze kliknięcia."
+ ]
+];
+
+const MOOD_PARAGRAPHS = {
+ great:[
+  "Nie będę ściemniał: taki weekend smakuje zajebiście. Wreszcie można otworzyć tabelę bez odruchu natychmiastowego zamykania przeglądarki.",
+  "Dzisiaj mam prawo być zadowolony, bo wynik nie wziął się wyłącznie z przypadku. Kilka decyzji naprawdę siadło i dobrze czasem zobaczyć, że cały ten czas poświęcony na FPL nie jest kompletnie zmarnowany.",
+  "To była kolejka, po której człowiek zaczyna podejrzewać, że może jednak coś umie. Trzeba tylko szybko zabić tę myśl, zanim skończy się trzema transferami za minus osiem.",
+  "Zielona strzałka jest duża, humor jeszcze większy. Rywale mogą dziś słuchać tej konferencji na własną odpowiedzialność."
+ ],
+ good:[
+  "Jestem zadowolony. Nie będę urządzał parady po mieście, ale też pierwszy raz nie mam ochoty wyrzucić połowy drużyny przez okno.",
+  "Solidny weekend. Kilku ludzi zrobiło robotę, kilku przeżyło dzięki temu, że reszta przykryła ich blanki. Takie kolejki trzeba po prostu brać.",
+  "Nie wszystko siadło, ale wystarczająco dużo, żeby nie szukać wymówek. To jest poziom, który trzeba teraz powtarzać zamiast wymyślać rewolucję.",
+  "Wynik jest dobry i daje trochę spokoju przed następnym deadlinem. W FPL spokój jest towarem luksusowym, więc zamierzam go wykorzystać."
+ ],
+ neutral:[
+  "Nie mam po tej kolejce ani kaca zwycięzcy, ani potrzeby terapii. Było przeciętnie i dokładnie tak samo ekscytująco, jak brzmi.",
+  "Kilka rzeczy wyszło, kilka nie. Gdybym miał robić rewolucję po każdym takim wyniku, do grudnia nie zostałby mi ani jeden transfer, którego bym nie żałował.",
+  "To jest najgorszy rodzaj kolejki do komentowania: za dobra, żeby się porządnie wkurwić, i za słaba, żeby się czymkolwiek chwalić.",
+  "Biorę punkty i idę dalej. Nie każda GW musi być historią o geniuszu albo katastrofie; czasem jest po prostu szarym wtorkiem w świecie fantasy."
+ ],
+ bad:[
+  "Było słabo i nie mam zamiaru ubierać tego w słowa typu „proces”. Wynik jest czerwony, humor też, a kilka moich decyzji zasługuje na solidnego kopa w dupę.",
+  "Najbardziej boli to, że część problemów zrobiłem sobie sam. FPL potrafi człowieka skrzywdzić bez pomocy, więc dokładanie do tego własnej głupoty jest wyjątkowo nieefektywne.",
+  "Nie będę zwalał wszystkiego na pecha. Pech nie klika transferów, nie wybiera kapitana i nie zostawia punktów na ławce. Niestety.",
+  "To był weekend do zapomnienia. Teraz najważniejsze, żeby z jednego złego wyniku nie zrobić dwóch poprzez paniczne naprawianie wszystkiego naraz."
+ ],
+ awful:[
+  "Nie ma czego analizować eleganckim językiem: dostaliśmy wpierdol. Taki z tych, po których tabela wygląda jak osobisty atak, a telefon powinien mieć blokadę na aplikację FPL.",
+  "To była katastrofa od początku do końca. Gdybym próbował dziś przekonywać, że wszystko idzie zgodnie z planem, należałoby natychmiast zabrać mi dostęp do drużyny.",
+  "Każda rzecz, która mogła pójść źle, najwyraźniej dostała zaproszenie. Kapitan, skład, ławka — pełna orkiestra spierdolenia.",
+  "Nie będę szukał pozytywów na siłę. Jedynym pozytywem jest to, że ta kolejka już się kończy i regulamin nie każe rozgrywać jej drugi raz."
+ ]
+};
+
 function pressQuote(p,gw,managerIndex,league){
  const mood=conferenceMood(p,league);
  const voice=MANAGER_VOICES[managerIndex % MANAGER_VOICES.length];
  const variants=voice[mood];
- const v=(gw-1)%variants.length;
- const intro=variants[v](p);
- const quote=VOICE_QUOTES[managerIndex % VOICE_QUOTES.length][(gw-1)%4];
+ const variant=(gw-1)%variants.length;
+ const intro=variants[variant](p);
  const rank=gwRank(p,league);
- const statSentence=[
-   `${p.manager} kończy GW${gw} na ${rank}. miejscu kolejki z ${p.gwPoints} pkt; forma ostatnich trzech to ${p.avg3}.`,
-   `Bilans tej konkretnej GW dla ${p.team}: ${p.gwPoints} punktów i ${rank}. wynik w lidze.`,
-   `Tablica po GW${gw}: ${p.manager} — ${p.gwPoints} pkt, pozycja w kolejce ${rank}, bench season ${p.benchSeason}.`,
-   `Liczby przed kolejnym deadlinem: ${p.gwPoints} w GW${gw}, miejsce ${rank}, koszt hitów sezonu ${p.hitSeason}.`
+ const moodText=MOOD_PARAGRAPHS[mood][(gw+managerIndex)%MOOD_PARAGRAPHS[mood].length];
+ const middleSet=LONG_CONF_MIDDLE[managerIndex % LONG_CONF_MIDDLE.length];
+ const middle1=middleSet[(gw-1)%middleSet.length];
+ const middle2=middleSet[(gw+managerIndex+2)%middleSet.length];
+ const personal=VOICE_QUOTES[managerIndex % VOICE_QUOTES.length][(gw-1)%4];
+
+ const stats=[
+  `W tej kolejce mam ${p.gwPoints} pkt i ${rank}. wynik w naszej lidze. Średnia z ostatnich trzech GW to ${p.avg3}, więc przynajmniej wiadomo, czy dzisiejszy wynik jest trendem, czy jednorazowym wybrykiem.`,
+  `GW${gw} kończę z ${p.gwPoints} punktami na ${rank}. miejscu kolejki. Ławka w całym sezonie kosztowała mnie już ${p.benchSeason} pkt, więc materiału do samokrytyki zdecydowanie nie brakuje.`,
+  `Tabela mówi konkretnie: ${p.gwPoints} pkt w GW${gw}, ${rank}. miejsce w tej rundzie i ${p.avg3} średnio z ostatnich trzech. Liczby nie potrzebują konferencji prasowej, żeby człowieka czasem obrazić.`,
+  `Bilans GW${gw} to ${p.gwPoints} punktów i ${rank}. pozycja wśród naszych menedżerów. Do tego koszt hitów w sezonie wynosi ${p.hitSeason}, więc każdy następny minus cztery będzie musiał mieć naprawdę dobre alibi.`
  ][(gw+managerIndex)%4];
- return `„${intro} ${statSentence} ${quote}”`;
+
+ return `„${intro} ${moodText} ${stats} ${middle1} ${middle2} ${personal}”`;
 }
 
 function pressReaction(p,gw,managerIndex,league){
