@@ -55,6 +55,24 @@ export async function GET() {
       fpl(`/fixtures/?event=${gw}`).catch(() => [])
     ]);
 
+    // Editorial embargo:
+    // publish generated/editorial text only 24h after the last official match of the GW.
+    // We use last kickoff + 3h as a safe match-finish estimate, then add 24h.
+    const kickoffTimes = (fixtures || [])
+      .map(f => f?.kickoff_time ? new Date(f.kickoff_time).getTime() : NaN)
+      .filter(Number.isFinite);
+    const lastKickoffMs = kickoffTimes.length ? Math.max(...kickoffTimes) : null;
+    const estimatedGwEndMs = lastKickoffMs ? lastKickoffMs + 3 * 60 * 60 * 1000 : null;
+    const editorialReleaseMs = estimatedGwEndMs ? estimatedGwEndMs + 24 * 60 * 60 * 1000 : null;
+    const editorialReady = Boolean(
+      gwFinished &&
+      editorialReleaseMs &&
+      Date.now() >= editorialReleaseMs
+    );
+    const editorialReleaseAt = editorialReleaseMs
+      ? new Date(editorialReleaseMs).toISOString()
+      : null;
+
     const livePoints = Object.fromEntries(
       (live.elements || []).map(x => [x.id, Number(x.stats?.total_points || 0)])
     );
@@ -1236,6 +1254,8 @@ export async function GET() {
       ok:true, league:{id:LEAGUE_ID,name:league.league.name}, gw,
       updatedAt:new Date().toISOString(),
       gwFinished,
+      editorialReady,
+      editorialReleaseAt,
       teamScoreSource:"league.standings.event_total",
       overallSource:"league.standings.total",
       pointsSource:`/event/${gw}/live/`,
@@ -1248,17 +1268,6 @@ export async function GET() {
       captainRanking, captainFraud, noTouchRanking, museum, combinedMuseumAwards
     }, {headers:{"Cache-Control":"no-store, no-cache, must-revalidate, max-age=0"}});
   } catch(e) {
-    const combinedMuseumAwards = [
-      ...seasonAwards,
-      ...museum.filter(m => !seasonAwards.some(a =>
-        a.manager === m.manager &&
-        (a.name === m.name ||
-         (a.name.includes("ławki") && m.name.includes("ławce")) ||
-         (a.name.includes("Transferowy") && m.name.includes("hity")) ||
-         (a.name.includes("kapitan") && m.name.includes("kapitan")))
-      ))
-    ];
-
     return NextResponse.json({ok:false,error:String(e?.message||e)}, {status:500});
   }
 }

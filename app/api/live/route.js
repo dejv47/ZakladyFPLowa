@@ -49,6 +49,7 @@ export async function GET() {
         let conditionMet = false;
         if (b.live.condition === "outsideTop4") conditionMet = s.rank > 4;
         if (b.live.condition === "top4") conditionMet = s.rank <= 4;
+        if (b.live.condition === "top8") conditionMet = s.rank <= 8;
 
         let leader = null;
         if (b.live.yes && b.live.no) {
@@ -80,6 +81,46 @@ export async function GET() {
         if (!a || !c) return { ...base, liveText: "Brak danych drużyny" };
         const noGames = (a.played ?? 0) === 0 && (c.played ?? 0) === 0;
         return { ...base, liveText: `${a.team}: ${a.rank}. (${a.points} pkt) — ${c.team}: ${c.rank}. (${c.points} pkt)`, leader: noGames || a.rank === c.rank ? "Remis" : a.rank < c.rank ? b.live.yes : b.live.no };
+      }
+
+      if (b.mode === "city-five-points") {
+        const norm = v => String(v || "").toLowerCase()
+          .normalize("NFD").replace(/[\u0300-\u036f]/g, "");
+        const cityName = norm(b.live.team);
+        const wanted = b.live.opponents.map(norm);
+
+        const relevant = matches.filter(m => {
+          const home = norm(m.home), away = norm(m.away);
+          const cityHome = home.includes(cityName);
+          const cityAway = away.includes(cityName);
+          if (!cityHome && !cityAway) return false;
+          const opponent = cityHome ? away : home;
+          return wanted.some(w => opponent.includes(w) || w.includes(opponent));
+        });
+
+        const finished = relevant.filter(m => m.status === "FINISHED");
+        let points = 0;
+        const rows = finished.map(m => {
+          const cityHome = norm(m.home).includes(cityName);
+          const cityGoals = cityHome ? Number(m.homeGoals) : Number(m.awayGoals);
+          const oppGoals = cityHome ? Number(m.awayGoals) : Number(m.homeGoals);
+          points += cityGoals > oppGoals ? 3 : cityGoals === oppGoals ? 1 : 0;
+          return `${m.home} ${m.homeGoals}:${m.awayGoals} ${m.away}`;
+        });
+
+        const remaining = Math.max(0, 5 - finished.length);
+        const maxPossible = points + remaining * 3;
+        const target = Number(b.live.target || 12);
+        const alreadyWon = points >= target;
+        const impossible = maxPossible < target;
+
+        return {
+          ...base,
+          liveText:
+            `${points}/${target} pkt • rozegrano ${finished.length}/5` +
+            (rows.length ? ` • ${rows.join(" • ")}` : " • żaden z pięciu meczów jeszcze się nie zakończył"),
+          leader: alreadyWon ? b.live.yes : impossible ? b.live.no : points >= Math.ceil(target * finished.length / 5) ? b.live.yes : b.live.no
+        };
       }
 
       if (b.mode === "h2h-win") {

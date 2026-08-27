@@ -469,8 +469,38 @@ function pressQuote(p,gw,managerIndex,league){
  const isMalinowski=normalizedManager.includes("łukasz malinowski")||normalizedManager.includes("lukasz malinowski");
  const isKoszela=normalizedManager.includes("patryk koszela");
  const isCichon=normalizedManager.includes("jan cichoń")||normalizedManager.includes("jan cichon");
+ const isZbiegen=normalizedManager.includes("kacper zbiegień")||normalizedManager.includes("kacper zbiegen");
+ const isPaszkaniak=normalizedManager.includes("dominik paszkaniak");
+
  const arrogance=isMalinowski
    ? `Powiem wprost: większość tej ligi może sobie analizować moje ruchy dopiero wtedy, kiedy nauczy się grać na moim poziomie. Jak jestem nad nimi, to dlatego, że jestem lepszy; jak akurat nie jestem, to tylko chwilowa anomalia, którą zaraz naprawię.`
+   : "";
+
+ const politics=isMalinowski
+   ? [
+      `W moim składzie nie ma socjalu dla blankujących zawodników. Nie dowozisz punktów, rynek cię weryfikuje i wypierdalasz. Wolny transferowy rynek, zero dopłat do nieefektywności.`,
+      `Nie potrzebuję centralnego planowania składu przez twitterowych ekspertów. Własność prywatna drużyny, odpowiedzialność indywidualna i żadnego ratowania nierentownych picków za publiczne minus cztery.`,
+      `Każdy zawodnik ma równe prawo wejść do mojego składu, ale nikt nie ma prawa w nim zostać tylko dlatego, że jest popularny. Meritokracja, porządek i koniec transferowego socjalizmu.`,
+      `Regulacje? Minimalne. Podatki? Żadnych hitów bez wyraźnego zwrotu. Państwo opiekuńcze dla graczy po pięciu blankach? Nie u mnie.`
+     ][(gw-1)%4]
+   : "";
+
+ const submission=isZbiegen
+   ? [
+      `Jeżeli Łukasz Malinowski mówi, że coś jest złym ruchem, to ja naprawdę dwa razy to sprawdzam. Nie będę udawał, że wiem więcej od człowieka, który potrafi wejść na konferencję i zdominować ją jeszcze zanim usiądzie.`,
+      `Nie mam problemu powiedzieć, że Malinowski jest punktem odniesienia. Jak on coś mówi o rynku, ja słucham. Wolę być rozsądnie posłuszny niż bohatersko głupi.`,
+      `Łukasz ma mocny charakter i czasem lepiej po prostu nie wchodzić mu w drogę. Jak mówi „nie rób tego transferu”, moja ręka naprawdę odsuwa się od przycisku.`,
+      `Nie zamierzam się ścigać z Malinowskim na ego. On ma go za dwóch, ja wolę po prostu nie dostać od niego publicznego wykładu po kolejnym głupim ruchu.`
+     ][(gw-1)%4]
+   : "";
+
+ const stoic=isPaszkaniak
+   ? [
+      `Nie kontroluję tego, czy zawodnik trafi w słupek. Kontroluję tylko własną decyzję przed deadlinem. Reszta to hałas, a człowiek, który walczy z hałasem, przegrywa dwa razy.`,
+      `Punkty przychodzą i odchodzą. Ranking rośnie i spada. Jedyną rzeczą wartą uwagi jest to, czy decyzja była rozsądna w chwili, gdy ją podejmowałem.`,
+      `Nie ma sensu obrażać się na FPL. Gra nie wie, że istniejesz. Można tylko spokojnie przyjąć wynik, poprawić proces i iść dalej.`,
+      `Mądrość w tej grze polega czasem na tym, żeby niczego nie robić. Człowiek najczęściej niszczy dobry plan wtedy, gdy próbuje na siłę udowodnić, że jest potrzebny.`
+     ][(gw-1)%4]
    : "";
  const feud=isKoszela
    ? [
@@ -480,10 +510,12 @@ function pressQuote(p,gw,managerIndex,league){
      ][(gw-1)%3]
    : isCichon
    ? [
-      `Koszela może sobie urządzać konferencje zwycięstwa nawet po przeciętnej kolejce. Patryk zawsze był mocniejszy w narracji niż w zachowywaniu ciszy, kiedy wypadałoby ją zachować.`,
-      `Jeżeli Patryk Koszela chce mnie zaczepiać, niech najpierw upewni się, że jego skład nie wygląda jak lista przypadkowych nazwisk wyciągniętych z kapelusza pięć minut przed deadlinem.`,
-      `Koszela dużo mówi o innych. To wygodne, bo wtedy przez chwilę nikt nie pyta go o jego własne decyzje. Ja chętnie będę pytał.`
-     ][(gw-1)%3]
+      `Koszela może sobie urządzać konferencje zwycięstwa nawet po przeciętnej kolejce. Może ałun daje mu aż taką pewność siebie — szkoda, że nie działa również na decyzje transferowe.`,
+      `Jeżeli Patryk Koszela chce mnie zaczepiać, niech najpierw odłoży ten swój legendarny ałun i spojrzy na skład. Dezodorant może ograniczać pot, ale nie ogranicza głupich transferów.`,
+      `Koszela dużo mówi o innych. Pewnie po ałunie czuje się świeżo i pewnie. Szkoda, że jego skład czasem wygląda tak, jakby świeżości nie widział od kilku kolejek.`,
+      `Patryk podobno znowu poleca ałun. Ja polecam coś skuteczniejszego: fixture ticker, kalkulator i nieklikanie transferów pod wpływem natchnienia.`,
+      `Nie mam nic przeciwko ałunowi Koszeli. Mam tylko pytanie, czy da się nim posmarować jego skład, żeby przestał tak śmierdzieć decyzjami.`
+     ][(gw-1)%5]
    : "";
 
  const stats=[
@@ -493,7 +525,7 @@ function pressQuote(p,gw,managerIndex,league){
   `Bilans GW${gw} to ${p.gwPoints} punktów i ${rank}. pozycja wśród naszych menedżerów. Do tego koszt hitów w sezonie wynosi ${p.hitSeason}, więc każdy następny minus cztery będzie musiał mieć naprawdę dobre alibi.`
  ][(gw+managerIndex)%4];
 
- return `„${intro} ${moodText} ${arrogance} ${feud} ${extreme} ${brutal} ${stats} ${middle1} ${extremeShot} ${middle2} ${personal} ${brutalEnding}”`;
+ return `„${intro} ${moodText} ${arrogance} ${politics} ${submission} ${stoic} ${feud} ${extreme} ${brutal} ${stats} ${middle1} ${extremeShot} ${middle2} ${personal} ${brutalEnding}”`;
 }
 
 function pressReaction(p,gw,managerIndex,league){
@@ -1044,6 +1076,21 @@ function V39Notes({data}){
 function v39Jug(data){return [...(data?.managerProfiles||data?.grades||[])].map(p=>{let bench=shameNum(p.benchSeason),hits=shameNum(p.hitSeason),avg=shameNum(p.avg3),gw=shameNum(p.gwPoints);let score=Math.max(0,Math.round(bench*.55+hits*1.35+Math.max(0,50-avg)*.45+Math.max(0,45-gw)*.15));let why=[];if(bench)why.push(`${bench} pkt na ławce`);if(hits)why.push(`${hits} pkt hitów`);if(avg<45)why.push(`forma ${avg}`);return {...p,jugScore:score,jugWhy:why}}).sort((a,b)=>b.jugScore-a.jugScore)}
 function V39Jug({data}){const r=v39Jug(data),l=r[0];return <Card title="🏆 Złoty Dzban sezonu"><p className="sectionLead">Całosezonowa tabela kompromitacji — głównie ławka, hity i długotrwała chujowa forma.</p>{l&&<div className="jugLeader"><span>👑 AKTUALNY LIDER DZBANA</span><h3>{l.manager}</h3><strong>{l.jugScore} pkt dzbana</strong><p>{l.jugWhy.join(" • ")||"Podejrzanie czysta kartoteka"}</p></div>}<div className="jugTable">{r.map((x,i)=><div className="jugRow" key={x.entry}><span>#{i+1}</span><div><b>{x.manager}</b><small>{x.team}</small></div><strong>{x.jugScore}</strong></div>)}</div></Card>}
 
+function EditorialLock({data,label="Materiały redakcyjne"}){
+ const release=data?.editorialReleaseAt ? new Date(data.editorialReleaseAt) : null;
+ const when=release && !Number.isNaN(release.getTime())
+   ? release.toLocaleString("pl-PL",{dateStyle:"medium",timeStyle:"short"})
+   : null;
+ return <section className="editorialLock">
+   <div className="editorialLockIcon">🔒</div>
+   <div>
+     <h3>{label} jeszcze zamknięte</h3>
+     <p>Teksty powstają dopiero po pełnym zakończeniu oficjalnej kolejki. Nie używamy punktów live do roastów, konferencji ani podsumowań.</p>
+     {when&&<small>Publikacja około 24 godziny po ostatnim meczu GW: <b>{when}</b></small>}
+   </div>
+ </section>;
+}
+
 export default function FPLPage(){
 
  const [data,setData]=useState(null),[error,setError]=useState(""),[tab,setTab]=useState("gazeta"),[profile,setProfile]=useState(null);
@@ -1085,9 +1132,11 @@ export default function FPLPage(){
    {error&&<div className="error">{error}</div>}{!data&&!error&&<div className="loading">Redakcja zbiera materiały...</div>}
    {tab==="zaklady"&&<BetsTab/>}
    {data&&tab==="gazeta"&&<>
-     <section className="awardStrip">{data.awards?.map((a,i)=><div className="awardMini" key={i}><b>{a.icon} {a.name}</b><strong>{a.manager}</strong><small>{a.value}</small></div>)}</section>
-     {data.breakingNews?.length>0&&<section className="breaking"><b>🔴 BREAKING NEWS</b><div className="ticker">{data.breakingNews.join(" • ")}</div></section>}
-     <section className="articles">{data.articles.map((a,i)=><article className={`newsCard ${i===0?"leadStory":""}`} key={i}><span className="newsTag">{a.tag}</span><h2>{a.title}</h2><p>{a.body}</p></article>)}</section>
+     {data.editorialReady?<>
+       <section className="awardStrip">{data.awards?.map((a,i)=><div className="awardMini" key={i}><b>{a.icon} {a.name}</b><strong>{a.manager}</strong><small>{a.value}</small></div>)}</section>
+       {data.breakingNews?.length>0&&<section className="breaking"><b>🔴 BREAKING NEWS</b><div className="ticker">{data.breakingNews.join(" • ")}</div></section>}
+       <section className="articles">{data.articles.map((a,i)=><article className={`newsCard ${i===0?"leadStory":""}`} key={i}><span className="newsTag">{a.tag}</span><h2>{a.title}</h2><p>{a.body}</p></article>)}</section>
+     </>:<EditorialLock data={data} label="Gazeta kolejki"/>}
      <Standings data={data} onProfile={setProfile}/>
    </>}
    {data&&tab==="live"&&<section className="megaGrid">
@@ -1098,7 +1147,7 @@ export default function FPLPage(){
      <Card title="🔮 Typy redakcji"><p><b>{data.predictions.label}</b></p><p>Typ na mocny wynik: <b>{data.predictions.winner?.manager}</b> ({data.predictions.winner?.avg3} średnio z ostatnich 3 GW).</p><p>Kandydat do wpierdolu: <b>{data.predictions.danger?.manager}</b> ({data.predictions.danger?.avg3}).</p></Card>
      <Card title="💰 Wirtualne kursy na mistrza"><small>Tylko zabawowa symulacja, bez prawdziwych zakładów.</small>{data.virtualOdds.map(x=><div className="chance" key={x.manager}><span>{x.manager} • {x.prob}%</span><b>{x.odds}</b></div>)}</Card>
    </section>}
-   {data&&tab==="profile"&&<><section className="profileGrid">{data.grades.map(x=><button className="profileCard" key={x.entry} onClick={()=>setProfile(x.entry)}><div className="profileIcon">{x.icon}</div><span>{x.label}</span><h3>{x.manager}</h3><p>{x.team}</p><b>{x.editorial}/10</b><small>{x.form}</small></button>)}</section>{profileData&&<Profile p={profileData} close={()=>setProfile(null)}/>}</>}
+   {data&&tab==="profile"&&<><section className="profileGrid">{data.grades.map(x=><button className="profileCard" key={x.entry} onClick={()=>setProfile(x.entry)}><div className="profileIcon">{x.icon}</div><span>{x.label}</span><h3>{x.manager}</h3><p>{x.team}</p><b>{x.editorial}/10</b><small>{x.form}</small></button>)}</section>{profileData&&<Profile p={profileData} editorialReady={data.editorialReady} editorialReleaseAt={data.editorialReleaseAt} close={()=>setProfile(null)}/>}</>}
    {data&&tab==="historia"&&<section className="megaGrid"><V39Jug data={data}/>
      <Card title="🏅 Hall of Shame">
        {data.hallOfShame.length
@@ -1136,10 +1185,10 @@ export default function FPLPage(){
      </Card>
    </section>}
    {data&&tab==="studio"&&<>
-     <PostMatchStudio data={data}/>
-     <section className="megaGrid studioExtras">
-       <V39RivalReplies data={data}/>
-     </section>
+     {data.editorialReady?<>
+       <PostMatchStudio data={data}/>
+       <section className="megaGrid studioExtras"><V39RivalReplies data={data}/></section>
+     </>:<EditorialLock data={data} label="Studio pomeczowe"/>}
    </>}
    {data&&tab==="rywalizacja"&&<section className="megaGrid">
      <Card title="🥊 Rywalizacje head-to-head">
@@ -1160,16 +1209,16 @@ export default function FPLPage(){
        </div>
      </Card>
      <Card title="⭐ Oceny redakcji">
-       {[...data.grades].sort((a,b)=>b.editorial-a.editorial).map(x=><div className="grade" key={x.entry}><b>{x.icon} {x.manager}: {x.editorial}/10 — {x.label}</b><p>{x.comment}</p></div>)}
+       {data.editorialReady?[...data.grades].sort((a,b)=>b.editorial-a.editorial).map(x=><div className="grade" key={x.entry}><b>{x.icon} {x.manager}: {x.editorial}/10 — {x.label}</b><p>{x.comment}</p></div>):<EditorialLock data={data} label="Oceny redakcji"/>}
      </Card>
    </section>}
    {data&&tab==="gala"&&<section className="megaGrid">
-     <div className="conferenceNotesLayout">
+     {data.editorialReady?<div className="conferenceNotesLayout">
        <div className="notesSticky"><V39Notes data={data}/></div>
        <Card title="🎙️ Konferencja prasowa">
          {data.grades.map((x,i)=><blockquote key={x.entry}><div className="pressSpeaker"><span>🎙️</span><div><b>{x.manager}</b><small>{x.team}</small></div></div>{pressQuote(x,data.gw,i,data.grades)}<small>{pressReaction(x,data.gw,i,data.grades)}</small></blockquote>)}
        </Card>
-     </div>
+     </div>:<EditorialLock data={data} label="Konferencje i Community Notes"/>}
    </section>}
  </main>
  </>
@@ -1213,11 +1262,22 @@ function PostMatchStudio({data}){
  ];
  const managerAnswers=people.slice(0,Math.min(6,people.length)).map((p,i)=>{
    const rank=gwRank(p,people);
-   const isL=(p.manager||"").toLowerCase().includes("malinowski");
+   const mn=(p.manager||"").toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+   const isL=mn.includes("lukasz malinowski");
+   const isZ=mn.includes("kacper zbiegen");
+   const isP=mn.includes("dominik paszkaniak");
    const lines=isL?[
-     `Nie będę udawał skromnego. ${p.gwPoints} punktów to efekt tego, że po prostu lepiej czytam tę grę niż większość tutaj. Reszta może sobie robić notatki.`,
-     `Możecie pytać o presję, ale presję mają ludzie, którzy próbują mnie dogonić. Ja patrzę tylko przed siebie, bo za plecami jest głównie hałas.`,
-     `Jeżeli komuś przeszkadza moja pewność siebie, polecam zdobywać więcej punktów. To zwykle leczy kompleksy szybciej niż dyskusja na grupie.`
+     `Nie będę udawał skromnego. ${p.gwPoints} punktów to efekt tego, że po prostu lepiej czytam tę grę niż większość tutaj. Reszta może sobie robić notatki. W mojej drużynie nie ma transferowego socjalu — nie dowozisz, wolny rynek robi swoje.`,
+     `Możecie pytać o presję, ale presję mają ludzie, którzy próbują mnie dogonić. Ja patrzę tylko przed siebie. Meritokracja składu jest prosta: zasługujesz, grasz; blankujesz bez końca, wypierdalasz.`,
+     `Jeżeli komuś przeszkadza moja pewność siebie, polecam zdobywać więcej punktów. I mniej centralnego planowania transferów przez internetowych ekspertów, bo każdy powinien odpowiadać za własny skład.`
+   ]:isZ?[
+     `Ja nie mam potrzeby udowadniać Malinowskiemu, że wiem lepiej. Jak Łukasz mówi, że ruch jest debilny, to najpierw zakładam, że może mieć rację i dopiero potem sprawdzam.`,
+     `Malinowski ma mocną pozycję i ja to respektuję. Wolę zejść mu z drogi niż zostać przez niego rozjechany na żywo w Studiu.`,
+     `Nie będę zgrywał alfa. Łukasz ma do tego większe predyspozycje, ja wolę po cichu dowozić punkty i nie prowokować wykładu.`
+   ]:isP?[
+     `Nie jestem ani zadowolony, ani rozczarowany. Wynik jest tylko faktem. Ważniejsze jest, czy decyzje były racjonalne w momencie ich podejmowania.`,
+     `Nie warto walczyć z tym, czego nie kontrolujesz. Słupek, rotacja, przypadek — to nie są rzeczy, które zasługują na gniew. Następna decyzja już tak.`,
+     `Człowiek cierpi w FPL głównie wtedy, gdy chce kontrolować rzeczy niekontrolowalne. Ja wolę pilnować własnego procesu i zostawić chaos samemu sobie.`
    ]:[
      `Mam ${p.gwPoints} pkt i ${rank}. wynik tej rundy. Nie będę robił z tego epopei — część decyzji siadła, część była kompletnie z dupy i następna GW wszystko zweryfikuje.`,
      `Po tej kolejce najbardziej wkurwia mnie to, że zawsze widzisz idealny ruch dopiero po fakcie. Przed deadlinem człowiek jest strategiem, po deadlinie archeologiem własnych błędów.`,
@@ -1236,7 +1296,7 @@ function PostMatchStudio({data}){
 
 function Card({title,children}){return <section className="megaCard"><h2>{title}</h2>{children}</section>}
 function Standings({data,onProfile}){return <section className="fplStandings"><div className="sectionHead"><div><span className="sectionLabel">LIGA 286732</span><h2>{data.league.name}</h2></div><span>GW {data.gw}</span></div><div className="fplTable"><div className="fplTr fplTh"><span>#</span><span>Drużyna</span><span>GW</span><span>Suma</span><span>Zmiana</span></div>{data.standings.map(x=><button className="fplTr fplRowBtn" key={x.entry} onClick={()=>onProfile(x.entry)}><strong>{x.rank}</strong><div><strong>{x.team}</strong><small>{x.manager}</small></div><strong>{x.gwPoints}</strong><span>{x.overall}</span><span>{x.lastRank>x.rank?`▲ ${x.lastRank-x.rank}`:x.lastRank<x.rank?`▼ ${x.rank-x.lastRank}`:"—"}</span></button>)}</div></section>}
-function Profile({p,close}){
+function Profile({p,close,editorialReady,editorialReleaseAt}){
  return <div className="profileModal">
    <button onClick={close}>✕</button>
    <div className="profileHeader">
@@ -1256,20 +1316,11 @@ function Profile({p,close}){
      <b>🥅 Stracone {p.seasonConceded ?? 0}</b>
    </div>
 
-   <div className="profileStory">
-     <section>
-       <span>🧠 PORTRET MENEDŻERA</span>
-       <p>{p.profileLead}</p>
-     </section>
-     <section>
-       <span>📈 CO MÓWI FORMA</span>
-       <p>{p.profileForm}</p>
-     </section>
-     <section className="profileVerdict">
-       <span>🗞️ WERDYKT REDAKCJI</span>
-       <p>{p.profileVerdict}</p>
-     </section>
-   </div>
+   {editorialReady?<div className="profileStory">
+     <section><span>🧠 PORTRET MENEDŻERA</span><p>{p.profileLead}</p></section>
+     <section><span>📈 CO MÓWI FORMA</span><p>{p.profileForm}</p></section>
+     <section className="profileVerdict"><span>🗞️ WERDYKT REDAKCJI</span><p>{p.profileVerdict}</p></section>
+   </div>:<EditorialLock data={{editorialReleaseAt}} label="Opis redakcyjny profilu"/>}
 
    {p.achievements?.length>0&&<div className="trophyCabinet"><span>🏆 GABLOTA</span><div>{p.achievements.map((a,i)=><div className="trophy" key={i}><b>{a.icon} {a.name}</b><small>{a.value}</small></div>)}</div></div>}
 

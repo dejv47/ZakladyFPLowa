@@ -651,3 +651,6 @@ body::after {
 .notesSticky .communityNote p{font-size:.92rem;line-height:1.5}
 .notesSticky .sectionLead{font-size:.84rem}
 @media(max-width:900px){.conferenceNotesLayout{grid-template-columns:1fr}.notesSticky{position:static;max-height:none;overflow:visible}}
+
+.editorialLock{display:flex;gap:14px;align-items:flex-start;padding:18px;border-radius:16px;border:1px solid rgba(246,198,91,.22);background:rgba(246,198,91,.055);margin:8px 0 16px}
+.editorialLockIcon{font-size:28px}.editorialLock h3{margin:0 0 6px}.editorialLock p{margin:0 0 7px;line-height:1.55;color:#d7dee5}.editorialLock small{color:var(--muted)}
