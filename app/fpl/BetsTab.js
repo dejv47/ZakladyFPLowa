@@ -269,7 +269,7 @@ function leaderDisplayName(b) {
   return names.find(n => n.toLowerCase() !== String(firstOwner || "").toLowerCase()) || b.leader;
 }
 
-function BetsTab() {
+export function BetsTab() {
   const [data, setData] = useState(null);
   const [manual, setManual] = useState({});
   const [error, setError] = useState("");

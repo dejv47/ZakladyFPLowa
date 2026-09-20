@@ -148,3 +148,6 @@ Etykieta `Prowadzi:` pokazuje nick gracza zamiast technicznego `Pierwszy typ` / 
 
 ## v62
 Naprawa crasha v61: mapa właścicieli typów jest współdzielona poza komponentem; nick prowadzącego renderuje się bez ReferenceError.
+
+## v63
+Naprawa React #130: przywrócony named export `BetsTab`, którego `app/fpl/page.js` używa jako `<BetsTab />`.
