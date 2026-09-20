@@ -142,3 +142,6 @@ Konfiguracja na Vercel:
 4. `/api/manual-state/health` powinno zwrócić `{"ok":true,"hasUrl":true,"hasToken":true}`.
 
 localStorage pozostaje tylko cache/fallbackiem do odczytu. Zapis jest uznany za udany dopiero po zapisie we wspólnym KV.
+
+## v61
+Etykieta `Prowadzi:` pokazuje nick gracza zamiast technicznego `Pierwszy typ` / `Drugi typ`.

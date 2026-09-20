@@ -491,7 +491,7 @@ export function BetsTab() {
               <div className="liveTop">
                 <span className="sectionLabel">AKTUALNY STAN</span>
                 {b.leader && b.leader !== "Remis" && (
-                  <span className="leaderBadge">Prowadzi: {b.leader}</span>
+                  <span className="leaderBadge">Prowadzi: {leaderDisplayName(b)}</span>
                 )}
                 {b.leader === "Remis" && (
                   <span className="leaderBadge neutral">Remis</span>
@@ -575,4 +575,18 @@ export function BetsTab() {
     </main>
     </>
   );
+}function leaderDisplayName(b) {
+  if (!b?.leader || b.leader === "Remis") return b?.leader;
+  if (b.leader !== "Pierwszy typ" && b.leader !== "Drugi typ") return b.leader;
+
+  const names = String(b.people || "").split(" i ").map(x => x.trim()).filter(Boolean);
+  const firstOwner = firstPickOwnerByBet[b.id];
+
+  if (b.leader === "Pierwszy typ") {
+    return names.find(n => n.toLowerCase() === String(firstOwner || "").toLowerCase()) || firstOwner || b.leader;
+  }
+
+  return names.find(n => n.toLowerCase() !== String(firstOwner || "").toLowerCase()) || b.leader;
 }
+
+
