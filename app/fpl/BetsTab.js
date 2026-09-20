@@ -66,25 +66,46 @@ function manualLeader(type, value) {
 }
 
 async function saveManualBet(betId, data) {
+  // Najpierw zapisujemy tym samym klientem Supabase, którym odczytujemy wyniki.
+  // Dzięki temu edycja nie zależy od działania dodatkowego endpointu /api/manual-bets.
+  if (supabase) {
+    const { error } = await supabase
+      .from("manual_bets")
+      .upsert(
+        { bet_id: Number(betId), data, updated_at: new Date().toISOString() },
+        { onConflict: "bet_id" }
+      );
+
+    if (!error) return { ok: true };
+    // Jeśli bezpośredni zapis jest blokowany przez RLS, próbujemy endpointu serwerowego.
+  }
+
   const response = await fetch("/api/manual-bets", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ betId, data })
+    cache: "no-store",
+    body: JSON.stringify({ betId: Number(betId), data })
   });
   const payload = await response.json().catch(() => ({}));
-  if (!response.ok) throw new Error(payload.error || `Błąd zapisu (${response.status})`);
+  if (!response.ok) {
+    throw new Error(payload.error || `Błąd zapisu (${response.status})`);
+  }
   return payload;
 }
 
-function SettledControl({ betId, value, onSaved }) {
-  const settled = Boolean(value?.settled);
+function BetStatusControl({ betId, value, onSaved }) {
+  const status = value?.cancelled ? "cancelled" : value?.settled ? "settled" : "active";
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
-  async function setSettled(next) {
+  async function setStatus(next) {
     setSaving(true);
     setMsg("");
-    const data = { ...(value || {}), settled: next };
+    const data = {
+      ...(value || {}),
+      settled: next === "settled",
+      cancelled: next === "cancelled"
+    };
     try {
       await saveManualBet(betId, data);
       onSaved?.(betId, data);
@@ -98,10 +119,11 @@ function SettledControl({ betId, value, onSaved }) {
 
   return (
     <div className="settledControl">
-      <span className="sectionLabel">ROZLICZONY?</span>
+      <span className="sectionLabel">STATUS ZAKŁADU</span>
       <div className="settledButtons">
-        <button type="button" disabled={saving} className={!settled ? "settledActive" : ""} onClick={() => setSettled(false)}>NIE</button>
-        <button type="button" disabled={saving} className={settled ? "settledActive" : ""} onClick={() => setSettled(true)}>TAK</button>
+        <button type="button" disabled={saving} className={status === "active" ? "settledActive" : ""} onClick={() => setStatus("active")}>AKTYWNY</button>
+        <button type="button" disabled={saving} className={status === "settled" ? "settledActive" : ""} onClick={() => setStatus("settled")}>ROZLICZONY</button>
+        <button type="button" disabled={saving} className={status === "cancelled" ? "cancelledActive" : ""} onClick={() => setStatus("cancelled")}>ANULOWANY</button>
         {msg && <small>{msg}</small>}
       </div>
     </div>
@@ -232,11 +254,25 @@ export function BetsTab() {
   }
 
   async function loadManual() {
-    if (!supabase) return;
-    const { data: rows } = await supabase.from("manual_bets").select("bet_id,data");
-    const map = {};
-    (rows || []).forEach(r => { map[r.bet_id] = r.data; });
-    setManual(map);
+    try {
+      let rows = null;
+      if (supabase) {
+        const result = await supabase.from("manual_bets").select("bet_id,data");
+        if (!result.error) rows = result.data;
+      }
+
+      if (!rows) {
+        const response = await fetch(`/api/manual-bets?t=${Date.now()}`, { cache: "no-store" });
+        const payload = await response.json().catch(() => ({}));
+        if (response.ok) rows = payload.rows || [];
+      }
+
+      const map = {};
+      (rows || []).forEach(r => { map[r.bet_id] = r.data; });
+      setManual(map);
+    } catch {
+      // Nie blokujemy reszty zakładki, jeśli magazyn ręcznych wyników chwilowo nie odpowiada.
+    }
   }
 
   useEffect(() => {
@@ -252,10 +288,11 @@ export function BetsTab() {
     leader: null
   }))).map(b => {
     const saved = manual[b.id] || {};
-    if (b.mode !== "manual") return { ...b, settled: Boolean(saved.settled) };
+    if (b.mode !== "manual") return { ...b, settled: Boolean(saved.settled), cancelled: Boolean(saved.cancelled) };
     return {
       ...b,
       settled: Boolean(saved.settled),
+      cancelled: Boolean(saved.cancelled),
       liveText: manualText(b.manualType, saved),
       leader: manualLeader(b.manualType, saved)
     };
@@ -291,7 +328,7 @@ export function BetsTab() {
     };
 
     rows.forEach(b => {
-      if (b.settled) return;
+      if (b.settled || b.cancelled) return;
       if (!b.leader || b.leader === "Remis") return;
 
       const names = b.people.split(" i ").map(x => x.trim());
@@ -415,6 +452,8 @@ export function BetsTab() {
                 <span className={b.mode === "manual" ? "modeBadge manualMode" : "modeBadge autoMode"}>
                   {b.mode === "manual" ? "Ręczny" : "Auto"}
                 </span>
+                {b.cancelled && <span className="cancelledBadge">ANULOWANY</span>}
+                {b.settled && !b.cancelled && <span className="settledBadge">ROZLICZONY</span>}
                 <span className="amount">{b.amount}</span>
               </div>
             </div>
@@ -451,7 +490,7 @@ export function BetsTab() {
               </div>
             )}
 
-            <SettledControl
+            <BetStatusControl
               betId={b.id}
               value={manual[b.id]}
               onSaved={(id, value) => setManual(prev => ({ ...prev, [id]: value }))}

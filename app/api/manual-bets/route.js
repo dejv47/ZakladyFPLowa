@@ -10,6 +10,20 @@ function client() {
   return createClient(url, key, { auth: { persistSession: false } });
 }
 
+export async function GET() {
+  try {
+    const supabase = client();
+    if (!supabase) {
+      return NextResponse.json({ ok: false, error: "Brak konfiguracji Supabase." }, { status: 500 });
+    }
+    const { data, error } = await supabase.from("manual_bets").select("bet_id,data");
+    if (error) return NextResponse.json({ ok: false, error: error.message }, { status: 500 });
+    return NextResponse.json({ ok: true, rows: data || [] });
+  } catch (error) {
+    return NextResponse.json({ ok: false, error: error?.message || "Błąd odczytu." }, { status: 500 });
+  }
+}
+
 export async function POST(request) {
   try {
     const supabase = client();
