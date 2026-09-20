@@ -122,3 +122,9 @@ Jeżeli zapis nadal nie działa, otwórz po deployu `/api/manual-bets/health`.
 Backend akceptuje `SUPABASE_URL` lub `NEXT_PUBLIC_SUPABASE_URL`; opcjonalnie można podać samo `SUPABASE_PROJECT_REF`.
 Do autoryzacji preferowany jest `SUPABASE_SERVICE_ROLE_KEY`, a fallback to `SUPABASE_ANON_KEY` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
 Błąd zapisu pokazuje teraz kod niskopoziomowy (np. ENOTFOUND/ECONNRESET), żeby nie zgadywać przy kolejnym problemie.
+
+## v59 — ręczne zakłady bez Supabase
+Ręczne wyniki, rozliczenie i anulowanie są zapisywane wyłącznie w localStorage przeglądarki.
+Ta funkcja nie wykonuje żadnego requestu do Supabase ani `/api/manual-bets`.
+`ROZLICZONY?` ma jeden przycisk TAK; ponowne kliknięcie cofa rozliczenie.
+`ANULUJ ZAKŁAD` oznacza zakład jako anulowany i wyłącza go z salda.

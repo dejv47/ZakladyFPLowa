@@ -64,52 +64,38 @@ function manualLeader(type, value) {
   return null;
 }
 
-async function manualApi(path = "", options = {}) {
-  let response;
-  try {
-    response = await fetch(`/api/manual-bets${path}`, {
-      cache: "no-store",
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(options.headers || {})
-      }
-    });
-  } catch (error) {
-    throw new Error(`Nie można połączyć się z /api/manual-bets: ${error?.message || "błąd sieci"}`);
-  }
+const MANUAL_STORAGE_KEY = "zaklady-manual-v1";
 
-  const payload = await response.json().catch(() => ({}));
-  if (!response.ok || payload.ok === false) {
-    throw new Error(payload.error || `API manual-bets: HTTP ${response.status}`);
+function readManualStorage() {
+  if (typeof window === "undefined") return {};
+  try {
+    return JSON.parse(window.localStorage.getItem(MANUAL_STORAGE_KEY) || "{}") || {};
+  } catch {
+    return {};
   }
-  return payload;
 }
 
 async function saveManualBet(betId, data) {
-  return manualApi("", {
-    method: "POST",
-    body: JSON.stringify({ betId: Number(betId), data })
-  });
+  if (typeof window === "undefined") return { ok: true };
+  const all = readManualStorage();
+  all[String(betId)] = data;
+  window.localStorage.setItem(MANUAL_STORAGE_KEY, JSON.stringify(all));
+  return { ok: true };
 }
 
 function BetFlagsControl({ betId, value, onSaved }) {
   const settled = Boolean(value?.settled);
   const cancelled = Boolean(value?.cancelled);
-  const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
   async function patch(data) {
-    setSaving(true);
-    setMsg("");
     try {
       await saveManualBet(betId, data);
       onSaved?.(betId, data);
       setMsg("Zapisano");
+      window.setTimeout(() => setMsg(""), 1200);
     } catch (error) {
       setMsg(error?.message || "Nie udało się zapisać.");
-    } finally {
-      setSaving(false);
     }
   }
 
@@ -117,19 +103,24 @@ function BetFlagsControl({ betId, value, onSaved }) {
     <div className="settledControl">
       <span className="sectionLabel">ROZLICZONY?</span>
       <div className="settledButtons">
-        <button type="button" disabled={saving} className={!settled ? "settledActive" : ""} onClick={() => patch({ ...(value || {}), settled: false })}>NIE</button>
-        <button type="button" disabled={saving} className={settled ? "settledActive" : ""} onClick={() => patch({ ...(value || {}), settled: true })}>TAK</button>
+        <button
+          type="button"
+          className={settled ? "settledActive" : ""}
+          onClick={() => patch({ ...(value || {}), settled: !settled })}
+        >
+          {settled ? "TAK ✓" : "TAK"}
+        </button>
       </div>
 
       <div className="cancelBetRow">
         {!cancelled ? (
-          <button type="button" className="cancelBetBtn" disabled={saving} onClick={() => patch({ ...(value || {}), cancelled: true })}>
+          <button type="button" className="cancelBetBtn" onClick={() => patch({ ...(value || {}), cancelled: true })}>
             ANULUJ ZAKŁAD
           </button>
         ) : (
           <>
             <span className="cancelledBetText">ZAKŁAD ANULOWANY</span>
-            <button type="button" className="restoreBetBtn" disabled={saving} onClick={() => patch({ ...(value || {}), cancelled: false })}>
+            <button type="button" className="restoreBetBtn" onClick={() => patch({ ...(value || {}), cancelled: false })}>
               Cofnij anulowanie
             </button>
           </>
@@ -264,14 +255,7 @@ export function BetsTab() {
   }
 
   async function loadManual() {
-    try {
-      const payload = await manualApi(`?t=${Date.now()}`);
-      const map = {};
-      (payload.rows || []).forEach(r => { map[r.bet_id] = r.data; });
-      setManual(map);
-    } catch (error) {
-      console.error("manual_bets load:", error);
-    }
+    setManual(readManualStorage());
   }
 
   useEffect(() => {
