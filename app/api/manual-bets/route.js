@@ -4,12 +4,16 @@ export const dynamic = "force-dynamic";
 export const revalidate = 0;
 
 function config() {
-  const url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  let url = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const projectRef = process.env.SUPABASE_PROJECT_REF;
+  if (!url && projectRef) url = `https://${projectRef}.supabase.co`;
+  if (url && !/^https?:\/\//i.test(url)) url = `https://${url}`;
+  url = url?.replace(/\/+$/, "");
   const key =
     process.env.SUPABASE_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_ANON_KEY ||
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-  return { url: url?.replace(/\/+$/, ""), key };
+  return { url, key };
 }
 
 function noStore(body, status = 200) {
@@ -32,6 +36,7 @@ async function supabaseRest(path, options = {}) {
     response = await fetch(`${url}/rest/v1/${path}`, {
       ...options,
       cache: "no-store",
+      signal: AbortSignal.timeout(10000),
       headers: {
         apikey: key,
         Authorization: `Bearer ${key}`,
@@ -40,7 +45,7 @@ async function supabaseRest(path, options = {}) {
       }
     });
   } catch (error) {
-    throw new Error(`Serwer Vercel nie może połączyć się z Supabase: ${error?.message || "fetch failed"}`);
+    throw new Error(`Vercel -> Supabase (${url}): ${error?.cause?.code || error?.cause?.message || error?.message || "fetch failed"}`);
   }
 
   const text = await response.text();

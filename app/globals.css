@@ -668,3 +668,8 @@ body::after {
 .settledBadge{opacity:.8}
 
 .flagSecondLabel{display:block;margin-top:14px}
+
+.cancelBetRow{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-top:14px}
+.cancelBetBtn,.restoreBetBtn{padding:9px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.28);background:transparent;color:inherit;font-weight:900;cursor:pointer}
+.cancelBetBtn{border-color:rgba(255,255,255,.45)}
+.cancelledBetText{font-size:.78rem;font-weight:900;letter-spacing:.08em;text-decoration:line-through;opacity:.8}

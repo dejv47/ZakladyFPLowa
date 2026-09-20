@@ -115,3 +115,10 @@ v56 pokazuje też prawdziwy komunikat błędu Supabase zamiast maskować go komu
 
 Status zakładu nie jest już trzema wzajemnie wykluczającymi się stanami. Każdy zakład pozostaje zakładem aktywnym,
 a osobno ustawiasz `ROZLICZONY? TAK/NIE` i `ANULOWANY? TAK/NIE`. Rozliczone lub anulowane nie wchodzą do salda.
+
+## v58 — zapis manualny / diagnostyka
+Jeżeli zapis nadal nie działa, otwórz po deployu `/api/manual-bets/health`.
+`ok` musi być `true`, `supabaseHost` musi wskazywać host projektu Supabase.
+Backend akceptuje `SUPABASE_URL` lub `NEXT_PUBLIC_SUPABASE_URL`; opcjonalnie można podać samo `SUPABASE_PROJECT_REF`.
+Do autoryzacji preferowany jest `SUPABASE_SERVICE_ROLE_KEY`, a fallback to `SUPABASE_ANON_KEY` / `NEXT_PUBLIC_SUPABASE_ANON_KEY`.
+Błąd zapisu pokazuje teraz kod niskopoziomowy (np. ENOTFOUND/ECONNRESET), żeby nie zgadywać przy kolejnym problemie.

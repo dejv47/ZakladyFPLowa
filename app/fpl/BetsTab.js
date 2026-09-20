@@ -99,10 +99,9 @@ function BetFlagsControl({ betId, value, onSaved }) {
   const [saving, setSaving] = useState(false);
   const [msg, setMsg] = useState("");
 
-  async function patchFlag(field, next) {
+  async function patch(data) {
     setSaving(true);
     setMsg("");
-    const data = { ...(value || {}), [field]: next };
     try {
       await saveManualBet(betId, data);
       onSaved?.(betId, data);
@@ -118,14 +117,23 @@ function BetFlagsControl({ betId, value, onSaved }) {
     <div className="settledControl">
       <span className="sectionLabel">ROZLICZONY?</span>
       <div className="settledButtons">
-        <button type="button" disabled={saving} className={!settled ? "settledActive" : ""} onClick={() => patchFlag("settled", false)}>NIE</button>
-        <button type="button" disabled={saving} className={settled ? "settledActive" : ""} onClick={() => patchFlag("settled", true)}>TAK</button>
+        <button type="button" disabled={saving} className={!settled ? "settledActive" : ""} onClick={() => patch({ ...(value || {}), settled: false })}>NIE</button>
+        <button type="button" disabled={saving} className={settled ? "settledActive" : ""} onClick={() => patch({ ...(value || {}), settled: true })}>TAK</button>
       </div>
 
-      <span className="sectionLabel flagSecondLabel">ANULOWANY?</span>
-      <div className="settledButtons">
-        <button type="button" disabled={saving} className={!cancelled ? "settledActive" : ""} onClick={() => patchFlag("cancelled", false)}>NIE</button>
-        <button type="button" disabled={saving} className={cancelled ? "cancelledActive" : ""} onClick={() => patchFlag("cancelled", true)}>TAK</button>
+      <div className="cancelBetRow">
+        {!cancelled ? (
+          <button type="button" className="cancelBetBtn" disabled={saving} onClick={() => patch({ ...(value || {}), cancelled: true })}>
+            ANULUJ ZAKŁAD
+          </button>
+        ) : (
+          <>
+            <span className="cancelledBetText">ZAKŁAD ANULOWANY</span>
+            <button type="button" className="restoreBetBtn" disabled={saving} onClick={() => patch({ ...(value || {}), cancelled: false })}>
+              Cofnij anulowanie
+            </button>
+          </>
+        )}
         {msg && <small>{msg}</small>}
       </div>
     </div>
