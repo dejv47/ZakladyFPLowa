@@ -75,11 +75,37 @@ function readManualStorage() {
   }
 }
 
+function writeManualStorage(all) {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(MANUAL_STORAGE_KEY, JSON.stringify(all || {}));
+}
+
+async function sharedManualRequest(options = {}) {
+  const response = await fetch("/api/manual-state", {
+    cache: "no-store",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...(options.headers || {})
+    }
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok || payload.ok === false) {
+    throw new Error(payload.error || `Błąd zapisu HTTP ${response.status}`);
+  }
+  return payload;
+}
+
 async function saveManualBet(betId, data) {
-  if (typeof window === "undefined") return { ok: true };
+  // Natychmiastowy lokalny zapis jako cache, ale źródłem wspólnym jest KV na serwerze.
   const all = readManualStorage();
   all[String(betId)] = data;
-  window.localStorage.setItem(MANUAL_STORAGE_KEY, JSON.stringify(all));
+  writeManualStorage(all);
+
+  await sharedManualRequest({
+    method: "POST",
+    body: JSON.stringify({ betId: Number(betId), data })
+  });
   return { ok: true };
 }
 
@@ -255,7 +281,15 @@ export function BetsTab() {
   }
 
   async function loadManual() {
-    setManual(readManualStorage());
+    try {
+      const payload = await sharedManualRequest();
+      const map = payload.manual || {};
+      setManual(map);
+      writeManualStorage(map);
+    } catch (error) {
+      console.error("shared manual state:", error);
+      setManual(readManualStorage());
+    }
   }
 
   useEffect(() => {

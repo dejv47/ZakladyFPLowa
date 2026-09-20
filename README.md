@@ -128,3 +128,17 @@ Ręczne wyniki, rozliczenie i anulowanie są zapisywane wyłącznie w localStora
 Ta funkcja nie wykonuje żadnego requestu do Supabase ani `/api/manual-bets`.
 `ROZLICZONY?` ma jeden przycisk TAK; ponowne kliknięcie cofa rozliczenie.
 `ANULUJ ZAKŁAD` oznacza zakład jako anulowany i wyłącza go z salda.
+
+## v60 — wspólne ręczne wyniki/statusy dla wszystkich
+Ręczne wyniki, `ROZLICZONY? TAK` i `ANULUJ ZAKŁAD` są wspólne dla wszystkich przeglądarek.
+Nie używamy Supabase. Backend korzysta z Vercel KV / Upstash Redis przez REST.
+
+Konfiguracja na Vercel:
+1. Project -> Storage / Marketplace -> dodaj Upstash Redis (KV) do tego projektu.
+2. Vercel automatycznie doda zmienne. Kod obsługuje zarówno:
+   - `KV_REST_API_URL` + `KV_REST_API_TOKEN`
+   - `UPSTASH_REDIS_REST_URL` + `UPSTASH_REDIS_REST_TOKEN`
+3. Zrób Redeploy.
+4. `/api/manual-state/health` powinno zwrócić `{"ok":true,"hasUrl":true,"hasToken":true}`.
+
+localStorage pozostaje tylko cache/fallbackiem do odczytu. Zapis jest uznany za udany dopiero po zapisie we wspólnym KV.
