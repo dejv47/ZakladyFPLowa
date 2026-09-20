@@ -16,6 +16,7 @@ function defaultsFor(type) {
   }
   if (type === "fpl") return { dejv: 0, radek: 0, note: "" };
   if (type === "cherki-mbeumo") return { cherkiGoals: 0, cherkiAssists: 0, mbeumoGoals: 0, mbeumoAssists: 0 };
+  if (type === "cherki-minutes") return { minutes: 0 };
   return {};
 }
 
@@ -37,6 +38,7 @@ function manualText(type, value) {
   }
 
   if (type === "cherki-mbeumo") { const c=Number(v.cherkiGoals||0)+Number(v.cherkiAssists||0), m=Number(v.mbeumoGoals||0)+Number(v.mbeumoAssists||0); return `Rayan Cherki: ${v.cherkiGoals||0}G + ${v.cherkiAssists||0}A = ${c} G+A — Bryan Mbeumo: ${v.mbeumoGoals||0}G + ${v.mbeumoAssists||0}A = ${m} G+A`; }
+  if (type === "cherki-minutes") { const minutes=Math.max(0,Number(v.minutes||0)); return `Rayan Cherki: ${minutes}/2000 min • pozostało ${Math.max(0,2000-minutes)} min`; }
   return "Ręczne rozliczenie";
 }
 
@@ -225,6 +227,14 @@ function ManualEditor({ betId, type, value, onSaved }) {
         </div>
       )}
 {type === "cherki-mbeumo" && (<><div className="editorGroup"><strong>Rayan Cherki</strong><label>Gole<input type="number" min="0" value={form.cherkiGoals??0} onChange={e=>setForm({...form,cherkiGoals:Number(e.target.value)})}/></label><label>Asysty<input type="number" min="0" value={form.cherkiAssists??0} onChange={e=>setForm({...form,cherkiAssists:Number(e.target.value)})}/></label></div><div className="editorGroup"><strong>Bryan Mbeumo</strong><label>Gole<input type="number" min="0" value={form.mbeumoGoals??0} onChange={e=>setForm({...form,mbeumoGoals:Number(e.target.value)})}/></label><label>Asysty<input type="number" min="0" value={form.mbeumoAssists??0} onChange={e=>setForm({...form,mbeumoAssists:Number(e.target.value)})}/></label></div></>)}
+
+      {type === "cherki-minutes" && (
+        <div className="editorGroup">
+          <label className="wide">Minuty Rayan Cherki
+            <input type="number" min="0" step="1" value={form.minutes ?? 0} onChange={e => setForm({ ...form, minutes: e.target.value })} />
+          </label>
+        </div>
+      )}
 
       {type === "resovia" && (
         <div className="editorGroup">

@@ -154,3 +154,9 @@ Naprawa React #130: przywrócony named export `BetsTab`, którego `app/fpl/page.
 
 ## v64
 Naprawione saldo: ręczny zakład Resovii wyznacza lidera z ustawionego statusu, a techniczne `Pierwszy typ`/`Drugi typ` są mapowane dynamicznie z pola TYPY zamiast z niepełnej listy ID. Zakłady #22 i #23 są dzięki temu doliczane do bilansu Dejv–San Kory.
+
+## v65
+Naprawione dopasowanie zawodników: Morgan Gibbs-White nie może już zostać pomylony z Morganem Rogersem przez wspólne imię `Morgan`. Zakład #6 liczy G+A Gibbs-White'a.
+
+## v66
+Zakład #16: minuty Cherkiego są edytowane ręcznie i zapisywane we wspólnym KV; prowadzący liczy się automatycznie względem 2000 minut.
