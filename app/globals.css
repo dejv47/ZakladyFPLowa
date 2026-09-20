@@ -666,3 +666,5 @@ body::after {
 .cancelledBadge,.settledBadge{font-size:.68rem;font-weight:900;letter-spacing:.08em;padding:5px 8px;border-radius:999px;border:1px solid rgba(255,255,255,.22)}
 .cancelledBadge{text-decoration:line-through;opacity:.8}
 .settledBadge{opacity:.8}
+
+.flagSecondLabel{display:block;margin-top:14px}

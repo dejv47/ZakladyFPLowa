@@ -106,3 +106,12 @@ Każda kategoria dostaje relevance score; publikowane jest tylko 10 najwyżej oc
 - Każdy klub ma też dużą pulę uniwersalnych roastów.
 - Punchline'y są mieszane z istniejącymi bankami tekstów zależnie od GW i kategorii,
   więc artykuły są znacznie bardziej zróżnicowane.
+
+
+## v56 — ważne dla ręcznej edycji
+Jeżeli strona była wdrożona przed dodaniem ręcznych wyników/statusów, uruchom ponownie CAŁY plik `SUPABASE_SETUP.sql`
+w Supabase -> SQL Editor. Plik tworzy/odświeża polityki INSERT/UPDATE oraz granty potrzebne do zapisu z aplikacji.
+v56 pokazuje też prawdziwy komunikat błędu Supabase zamiast maskować go komunikatem `TypeError: fetch failed`.
+
+Status zakładu nie jest już trzema wzajemnie wykluczającymi się stanami. Każdy zakład pozostaje zakładem aktywnym,
+a osobno ustawiasz `ROZLICZONY? TAK/NIE` i `ANULOWANY? TAK/NIE`. Rozliczone lub anulowane nie wchodzą do salda.
