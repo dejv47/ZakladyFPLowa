@@ -245,7 +245,31 @@ function ManualEditor({ betId, type, value, onSaved }) {
   );
 }
 
-export function BetsTab() {
+export const FIRST_PICK_OWNER_BY_BET = {
+  3: "Dejv",
+  5: "Dejv",
+  6: "Dejv",
+  7: "Janek",
+  8: "Dejv",
+  9: "Dejv",
+  11: "Dejv",
+  19: "Janek"
+};
+
+function leaderDisplayName(b) {
+  if (!b?.leader || b.leader === "Remis") return b?.leader;
+  if (b.leader !== "Pierwszy typ" && b.leader !== "Drugi typ") return b.leader;
+
+  const names = String(b.people || "").split(" i ").map(x => x.trim()).filter(Boolean);
+  const firstOwner = FIRST_PICK_OWNER_BY_BET[b.id];
+
+  if (b.leader === "Pierwszy typ") {
+    return names.find(n => n.toLowerCase() === String(firstOwner || "").toLowerCase()) || firstOwner || b.leader;
+  }
+  return names.find(n => n.toLowerCase() !== String(firstOwner || "").toLowerCase()) || b.leader;
+}
+
+function BetsTab() {
   const [data, setData] = useState(null);
   const [manual, setManual] = useState({});
   const [error, setError] = useState("");
@@ -333,16 +357,7 @@ export function BetsTab() {
   const debts = useMemo(() => {
     const pairMap = {};
 
-    const firstPickOwnerByBet = {
-      3: "Dejv",
-      5: "Dejv",
-      6: "Dejv",
-      7: "Janek",
-      8: "Dejv",
-      9: "Dejv",
-      11: "Dejv",
-      19: "Janek"
-    };
+    
 
     rows.forEach(b => {
       if (b.settled || b.cancelled) return;
@@ -356,12 +371,12 @@ export function BetsTab() {
       );
 
       if (!winner && b.leader === "Pierwszy typ") {
-        const owner = firstPickOwnerByBet[b.id];
+        const owner = FIRST_PICK_OWNER_BY_BET[b.id];
         winner = names.find(n => n.toLowerCase() === String(owner).toLowerCase());
       }
 
       if (!winner && b.leader === "Drugi typ") {
-        const owner = firstPickOwnerByBet[b.id];
+        const owner = FIRST_PICK_OWNER_BY_BET[b.id];
         winner = names.find(n => n.toLowerCase() !== String(owner).toLowerCase());
       }
 
@@ -575,18 +590,4 @@ export function BetsTab() {
     </main>
     </>
   );
-}function leaderDisplayName(b) {
-  if (!b?.leader || b.leader === "Remis") return b?.leader;
-  if (b.leader !== "Pierwszy typ" && b.leader !== "Drugi typ") return b.leader;
-
-  const names = String(b.people || "").split(" i ").map(x => x.trim()).filter(Boolean);
-  const firstOwner = firstPickOwnerByBet[b.id];
-
-  if (b.leader === "Pierwszy typ") {
-    return names.find(n => n.toLowerCase() === String(firstOwner || "").toLowerCase()) || firstOwner || b.leader;
-  }
-
-  return names.find(n => n.toLowerCase() !== String(firstOwner || "").toLowerCase()) || b.leader;
 }
-
-

@@ -145,3 +145,6 @@ localStorage pozostaje tylko cache/fallbackiem do odczytu. Zapis jest uznany za 
 
 ## v61
 Etykieta `Prowadzi:` pokazuje nick gracza zamiast technicznego `Pierwszy typ` / `Drugi typ`.
+
+## v62
+Naprawa crasha v61: mapa właścicieli typów jest współdzielona poza komponentem; nick prowadzącego renderuje się bez ReferenceError.
