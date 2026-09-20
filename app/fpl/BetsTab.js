@@ -59,6 +59,13 @@ function manualLeader(type, value) {
     return "Remis";
   }
 
+  if (type === "resovia") {
+    const status = String(v.status || "").toLowerCase();
+    if (status.includes("nie awansuje") || status.startsWith("nie —")) return "Pachana";
+    if (status.includes("awansuje") || status.startsWith("tak —")) return "Łukaszek";
+    return null;
+  }
+
   if (type === "cherki-minutes") return Number(v.minutes||0)>=2000 ? "Dejv" : "Janek";
   if (type === "cherki-mbeumo") { const c=Number(v.cherkiGoals||0)+Number(v.cherkiAssists||0), m=Number(v.mbeumoGoals||0)+Number(v.mbeumoAssists||0); return c>m?"Dejv":m>c?"Rudy":"Remis"; }
   return null;
@@ -245,28 +252,29 @@ function ManualEditor({ betId, type, value, onSaved }) {
   );
 }
 
-export const FIRST_PICK_OWNER_BY_BET = {
-  3: "Dejv",
-  5: "Dejv",
-  6: "Dejv",
-  7: "Janek",
-  8: "Dejv",
-  9: "Dejv",
-  11: "Dejv",
-  19: "Janek"
-};
+function pickOwners(b) {
+  const people = String(b?.people || "").split(" i ").map(x => x.trim()).filter(Boolean);
+  const pick = String(b?.pick || "");
+  const segments = pick.split("•").map(x => x.trim()).filter(Boolean);
+
+  const owners = segments.map(segment => {
+    const colon = segment.indexOf(":");
+    return colon >= 0 ? segment.slice(0, colon).trim() : "";
+  }).filter(Boolean);
+
+  // Normalnie TYPY są zapisane w kolejności: Nick1: typ • Nick2: typ.
+  // Jeśli parser nie znajdzie obu nicków, kolejność people jest bezpiecznym fallbackiem.
+  return {
+    first: owners[0] || people[0] || null,
+    second: owners[1] || people[1] || null
+  };
+}
 
 function leaderDisplayName(b) {
   if (!b?.leader || b.leader === "Remis") return b?.leader;
   if (b.leader !== "Pierwszy typ" && b.leader !== "Drugi typ") return b.leader;
-
-  const names = String(b.people || "").split(" i ").map(x => x.trim()).filter(Boolean);
-  const firstOwner = FIRST_PICK_OWNER_BY_BET[b.id];
-
-  if (b.leader === "Pierwszy typ") {
-    return names.find(n => n.toLowerCase() === String(firstOwner || "").toLowerCase()) || firstOwner || b.leader;
-  }
-  return names.find(n => n.toLowerCase() !== String(firstOwner || "").toLowerCase()) || b.leader;
+  const owners = pickOwners(b);
+  return b.leader === "Pierwszy typ" ? (owners.first || b.leader) : (owners.second || b.leader);
 }
 
 export function BetsTab() {
@@ -370,14 +378,10 @@ export function BetsTab() {
         n => n.toLowerCase() === String(b.leader).toLowerCase()
       );
 
-      if (!winner && b.leader === "Pierwszy typ") {
-        const owner = FIRST_PICK_OWNER_BY_BET[b.id];
-        winner = names.find(n => n.toLowerCase() === String(owner).toLowerCase());
-      }
-
-      if (!winner && b.leader === "Drugi typ") {
-        const owner = FIRST_PICK_OWNER_BY_BET[b.id];
-        winner = names.find(n => n.toLowerCase() !== String(owner).toLowerCase());
+      if (!winner && (b.leader === "Pierwszy typ" || b.leader === "Drugi typ")) {
+        const owners = pickOwners(b);
+        const owner = b.leader === "Pierwszy typ" ? owners.first : owners.second;
+        winner = names.find(n => n.toLowerCase() === String(owner || "").toLowerCase());
       }
 
       if (!winner) return;

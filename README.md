@@ -151,3 +151,6 @@ Naprawa crasha v61: mapa właścicieli typów jest współdzielona poza komponen
 
 ## v63
 Naprawa React #130: przywrócony named export `BetsTab`, którego `app/fpl/page.js` używa jako `<BetsTab />`.
+
+## v64
+Naprawione saldo: ręczny zakład Resovii wyznacza lidera z ustawionego statusu, a techniczne `Pierwszy typ`/`Drugi typ` są mapowane dynamicznie z pola TYPY zamiast z niepełnej listy ID. Zakłady #22 i #23 są dzięki temu doliczane do bilansu Dejv–San Kory.
