@@ -654,3 +654,10 @@ body::after {
 
 .editorialLock{display:flex;gap:14px;align-items:flex-start;padding:18px;border-radius:16px;border:1px solid rgba(246,198,91,.22);background:rgba(246,198,91,.055);margin:8px 0 16px}
 .editorialLockIcon{font-size:28px}.editorialLock h3{margin:0 0 6px}.editorialLock p{margin:0 0 7px;line-height:1.55;color:#d7dee5}.editorialLock small{color:var(--muted)}
+
+.settledControl{margin-top:14px;padding:12px;border:1px solid rgba(255,255,255,.12);border-radius:12px;background:rgba(0,0,0,.14)}
+.settledButtons{display:flex;gap:8px;align-items:center;margin-top:8px;flex-wrap:wrap}
+.settledButtons button{padding:8px 14px;border-radius:9px;border:1px solid rgba(255,255,255,.25);background:transparent;color:inherit;cursor:pointer;font-weight:800}
+.settledButtons button.settledActive{background:rgba(255,255,255,.16);border-color:rgba(255,255,255,.55)}
+.settledButtons button:disabled{opacity:.55;cursor:wait}
+.settledButtons small{opacity:.75}

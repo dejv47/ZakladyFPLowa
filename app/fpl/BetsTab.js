@@ -65,6 +65,49 @@ function manualLeader(type, value) {
   return null;
 }
 
+async function saveManualBet(betId, data) {
+  const response = await fetch("/api/manual-bets", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ betId, data })
+  });
+  const payload = await response.json().catch(() => ({}));
+  if (!response.ok) throw new Error(payload.error || `Błąd zapisu (${response.status})`);
+  return payload;
+}
+
+function SettledControl({ betId, value, onSaved }) {
+  const settled = Boolean(value?.settled);
+  const [saving, setSaving] = useState(false);
+  const [msg, setMsg] = useState("");
+
+  async function setSettled(next) {
+    setSaving(true);
+    setMsg("");
+    const data = { ...(value || {}), settled: next };
+    try {
+      await saveManualBet(betId, data);
+      onSaved?.(betId, data);
+      setMsg("Zapisano");
+    } catch (error) {
+      setMsg(error?.message || "Nie udało się zapisać.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div className="settledControl">
+      <span className="sectionLabel">ROZLICZONY?</span>
+      <div className="settledButtons">
+        <button type="button" disabled={saving} className={!settled ? "settledActive" : ""} onClick={() => setSettled(false)}>NIE</button>
+        <button type="button" disabled={saving} className={settled ? "settledActive" : ""} onClick={() => setSettled(true)}>TAK</button>
+        {msg && <small>{msg}</small>}
+      </div>
+    </div>
+  );
+}
+
 function ManualEditor({ betId, type, value, onSaved }) {
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ ...defaultsFor(type), ...(value || {}) });
@@ -76,35 +119,20 @@ function ManualEditor({ betId, type, value, onSaved }) {
   }, [type, value]);
 
   async function save() {
-    if (!supabase) {
-      setMsg("Brak konfiguracji Supabase.");
-      return;
-    }
-
     setSaving(true);
     setMsg("");
 
-    const { error } = await supabase
-      .from("manual_bets")
-      .upsert(
-        {
-          bet_id: betId,
-          data: form,
-          updated_at: new Date().toISOString()
-        },
-        { onConflict: "bet_id" }
-      );
+    try {
+      await saveManualBet(betId, form);
 
-    setSaving(false);
-
-    if (error) {
-      setMsg(error.message);
-      return;
+      setMsg("Zapisano");
+      setEditing(false);
+      onSaved?.(betId, form);
+    } catch (error) {
+      setMsg(error?.message || "Nie udało się zapisać wyniku.");
+    } finally {
+      setSaving(false);
     }
-
-    setMsg("Zapisano");
-    setEditing(false);
-    onSaved?.(betId, form);
   }
 
   if (!editing) {
@@ -223,11 +251,13 @@ export function BetsTab() {
     liveText: b.mode === "manual" ? "Ręczne rozliczenie" : "Czeka na API",
     leader: null
   }))).map(b => {
-    if (b.mode !== "manual") return b;
+    const saved = manual[b.id] || {};
+    if (b.mode !== "manual") return { ...b, settled: Boolean(saved.settled) };
     return {
       ...b,
-      liveText: manualText(b.manualType, manual[b.id]),
-      leader: manualLeader(b.manualType, manual[b.id])
+      settled: Boolean(saved.settled),
+      liveText: manualText(b.manualType, saved),
+      leader: manualLeader(b.manualType, saved)
     };
   });
 
@@ -261,6 +291,7 @@ export function BetsTab() {
     };
 
     rows.forEach(b => {
+      if (b.settled) return;
       if (!b.leader || b.leader === "Remis") return;
 
       const names = b.people.split(" i ").map(x => x.trim());
@@ -297,7 +328,37 @@ export function BetsTab() {
       pairMap[key].amount += amount;
     });
 
-    return Object.values(pairMap).sort((a, b) => b.amount - a.amount);
+    // Bilansujemy wzajemne długi dla każdej pary. Jeśli A wisi B 100 zł,
+    // a B wisi A 50 zł, pokazujemy tylko: A wisi B 50 zł.
+    const netByPair = {};
+
+    Object.values(pairMap).forEach(({ loser, winner, amount }) => {
+      const a = loser.toLowerCase();
+      const b = winner.toLowerCase();
+      const pairKey = [a, b].sort().join("__");
+
+      if (!netByPair[pairKey]) {
+        const [first, second] = [loser, winner].sort((x, y) =>
+          x.toLowerCase().localeCompare(y.toLowerCase())
+        );
+        netByPair[pairKey] = { first, second, balance: 0 };
+      }
+
+      const pair = netByPair[pairKey];
+      if (loser.toLowerCase() === pair.first.toLowerCase()) {
+        pair.balance += amount;
+      } else {
+        pair.balance -= amount;
+      }
+    });
+
+    return Object.values(netByPair)
+      .filter(x => Math.abs(x.balance) > 0.001)
+      .map(x => x.balance > 0
+        ? { loser: x.first, winner: x.second, amount: x.balance }
+        : { loser: x.second, winner: x.first, amount: Math.abs(x.balance) }
+      )
+      .sort((a, b) => b.amount - a.amount);
   }, [rows]);
 
   return (
@@ -390,6 +451,12 @@ export function BetsTab() {
               </div>
             )}
 
+            <SettledControl
+              betId={b.id}
+              value={manual[b.id]}
+              onSaved={(id, value) => setManual(prev => ({ ...prev, [id]: value }))}
+            />
+
             {b.mode === "manual" && b.manualType && (
               <ManualEditor
                 betId={b.id}
@@ -403,7 +470,7 @@ export function BetsTab() {
       </section>
 
       <section className="tableWrap">
-        <h2>Kto komu wisi — na ten moment</h2>
+        <h2>Kto komu wisi — bilans na ten moment</h2>
         <p className="note">
           Liczone według tego, kto aktualnie prowadzi w każdym zakładzie.
           Remisy i zakłady bez ustalonego lidera nie są doliczane.
